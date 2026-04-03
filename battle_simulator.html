@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE FINALS — Battle Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0a0b0d;
+    --surface:  #111318;
+    --card:     #181b22;
+    --border:   #252932;
+    --accent:   #f5a623;
+    --red:      #e84040;
+    --green:    #3ddc84;
+    --blue:     #4a9eff;
+    --text:     #e8eaf0;
+    --muted:    #6b7280;
+    --light-cl: #4a9eff;
+    --med-cl:   #3ddc84;
+    --heavy-cl: #f5a623;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* scanline overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  header {
+    background: linear-gradient(135deg, #0f1217 0%, #1a1e28 100%);
+    border-bottom: 2px solid var(--accent);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  header .logo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 28px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(245,166,35,0.5);
+  }
+  header .sub {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    padding: 2px;
+    background: var(--border);
+  }
+
+  .panel {
+    background: var(--surface);
+    padding: 20px;
+  }
+
+  .panel-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+  }
+
+  /* Fighter cards */
+  .fighter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--border); }
+  .fighter-card { background: var(--card); padding: 16px; }
+
+  .fighter-header {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+  }
+  .fighter-header.p1 { color: #4a9eff; }
+  .fighter-header.p2 { color: #e84040; }
+
+  label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+    margin-top: 10px;
+  }
+
+  select, input[type=range], input[type=number] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  select:focus, input:focus { border-color: var(--accent); }
+
+  input[type=range] {
+    padding: 0;
+    height: 4px;
+    border: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+    background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--pct, 50%), var(--border) var(--pct,50%), var(--border) 100%);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 2px;
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(245,166,35,0.6);
+    cursor: pointer;
+  }
+
+  .range-row { display: flex; align-items: center; gap: 10px; }
+  .range-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    min-width: 40px;
+    color: var(--accent);
+  }
+
+  .stat-pills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+  .pill {
+    padding: 3px 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .pill.type-light { color: var(--light-cl); border-color: var(--light-cl); }
+  .pill.type-medium { color: var(--med-cl); border-color: var(--med-cl); }
+  .pill.type-heavy { color: var(--heavy-cl); border-color: var(--heavy-cl); }
+
+  /* Battle settings panel */
+  .settings-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  .toggle-group { display: flex; gap: 0; }
+  .toggle-btn {
+    flex: 1;
+    padding: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .toggle-btn:not(:first-child) { border-left: none; }
+  .toggle-btn.active {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .checkbox-row input[type=checkbox] {
+    width: 14px; height: 14px;
+    width: auto;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .checkbox-row span { font-size: 11px; color: var(--muted); }
+
+  /* Run button */
+  .run-area {
+    background: var(--surface);
+    padding: 20px;
+    border-top: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .btn-run {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 20px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    padding: 14px 40px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    cursor: pointer;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-run:hover {
+    background: #ffc044;
+    box-shadow: 0 0 30px rgba(245,166,35,0.5);
+    transform: translateY(-1px);
+  }
+  .btn-run:active { transform: translateY(0); }
+
+  .sim-count-wrap { display: flex; align-items: center; gap: 8px; }
+  .sim-count-wrap label { margin: 0; }
+  .sim-count-wrap input[type=number] { width: 80px; }
+
+  /* Results area */
+  #results {
+    background: var(--surface);
+    padding: 0;
+    border-top: 2px solid var(--border);
+    display: none;
+  }
+
+  .results-header {
+    background: var(--card);
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .winner-banner {
+    padding: 24px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .winner-label {
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .winner-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 48px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    text-shadow: 0 0 30px currentColor;
+  }
+  .winner-name.p1 { color: var(--blue); }
+  .winner-name.p2 { color: var(--red); }
+  .winner-name.tie { color: var(--accent); }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background: var(--border);
+    padding-bottom: 2px;
+  }
+
+  .stat-block {
+    background: var(--card);
+    padding: 16px 20px;
+  }
+  .stat-block-title {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .stat-big {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+  }
+  .stat-big.p1 { color: var(--blue); }
+  .stat-big.p2 { color: var(--red); }
+
+  /* Win rate bar */
+  .winrate-bar-wrap {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .winrate-label-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .winrate-bar {
+    height: 12px;
+    background: var(--border);
+    display: flex;
+    overflow: hidden;
+  }
+  .winrate-p1 { background: var(--blue); transition: width 0.6s ease; }
+  .winrate-p2 { background: var(--red); transition: width 0.6s ease; }
+  .winrate-tie { background: var(--accent); transition: width 0.6s ease; }
+
+  /* Combat log */
+  .log-wrap {
+    padding: 16px 24px 20px;
+  }
+  .log-title {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  #combat-log {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 12px 14px;
+    height: 220px;
+    overflow-y: auto;
+    font-size: 11px;
+    line-height: 1.8;
+  }
+  #combat-log .log-line { padding: 1px 0; }
+  #combat-log .log-line.hit-p1 { color: #7ab8ff; }
+  #combat-log .log-line.hit-p2 { color: #ff8a8a; }
+  #combat-log .log-line.head { color: var(--accent); }
+  #combat-log .log-line.info { color: var(--muted); }
+  #combat-log .log-line.kill { color: var(--green); font-weight: bold; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; letter-spacing: 2px; }
+  #combat-log .log-line.range-update { color: #9d7fff; }
+
+  /* Health bars in result */
+  .hp-bars { padding: 16px 24px; border-top: 1px solid var(--border); }
+  .hp-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .hp-name { width: 120px; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hp-bar-outer { flex: 1; height: 8px; background: var(--border); }
+  .hp-bar-inner { height: 100%; transition: width 0.4s ease; }
+  .hp-bar-inner.p1 { background: var(--blue); }
+  .hp-bar-inner.p2 { background: var(--red); }
+  .hp-val { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; min-width: 40px; text-align: right; }
+  .hp-val.p1 { color: var(--blue); }
+  .hp-val.p2 { color: var(--red); }
+
+  /* distance display */
+  .arena-display {
+    padding: 14px 24px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .arena-track {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    position: relative;
+  }
+  .arena-p1-icon, .arena-p2-icon {
+    position: absolute;
+    top: -8px;
+    font-size: 16px;
+    transform: translateX(-50%);
+    transition: left 0.3s ease;
+  }
+  .arena-p1-icon { left: 0%; }
+  .arena-p2-icon { left: 100%; }
+  .dist-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* weapon info tooltip-style */
+  .weapon-info {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border-left: 2px solid var(--accent);
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .section-divider {
+    grid-column: 1 / -1;
+    background: var(--border);
+    height: 2px;
+  }
+
+  @keyframes flash { 0%,100% { opacity:1; } 50% { opacity: 0.3; } }
+  .flashing { animation: flash 0.3s ease; }
+
+  .multi-sim-results {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+  }
+  .multi-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 10px; }
+  .multi-card { background: var(--bg); border: 1px solid var(--border); padding: 12px; text-align: center; }
+  .multi-card-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .multi-card-val { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 700; }
+  .multi-card-val.p1 { color: var(--blue); }
+  .multi-card-val.p2 { color: var(--red); }
+  .multi-card-val.tie { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">⚡ THE FINALS</div>
+    <div class="sub">Combat Simulation Engine v1.0</div>
+  </div>
+</header>
+
+<!-- Fighter Setup -->
+<div class="main-grid">
+  <div class="panel" style="grid-column:1/-1;">
+    <div class="panel-title"><span class="dot"></span> FIGHTER CONFIGURATION</div>
+    <div class="fighter-grid">
+      <!-- P1 -->
+      <div class="fighter-card">
+        <div class="fighter-header p1">◈ PLAYER 1</div>
+        <label>Class Filter</label>
+        <select id="p1-class" onchange="filterWeapons(1)">
+          <option value="">All Classes</option>
+          <option value="light">Light — 150 HP</option>
+          <option value="medium">Medium — 250 HP</option>
+          <option value="heavy">Heavy — 350 HP</option>
+        </select>
+        <label>Weapon</label>
+        <select id="p1-weapon" onchange="updateWeaponInfo(1)"></select>
+        <div id="p1-weapon-info" class="weapon-info"></div>
+        <div id="p1-pills" class="stat-pills"></div>
+
+        <label>Accuracy (% shots that hit)</label>
+        <div class="range-row">
+          <input type="range" id="p1-acc" min="1" max="100" value="75" oninput="updateRange(this,'p1-acc-val',1)">
+          <span class="range-val" id="p1-acc-val">75%</span>
+        </div>
+
+        <label>Headshot Chance (% of hits)</label>
+        <div class="range-row">
+          <input type="range" id="p1-hs" min="0" max="100" value="20" oninput="updateRange(this,'p1-hs-val',2)">
+          <span class="range-val" id="p1-hs-val">20%</span>
+        </div>
+      </div>
+
+      <!-- P2 -->
+      <div class="fighter-card">
+        <div class="fighter-header p2">◈ PLAYER 2</div>
+        <label>Class Filter</label>
+        <select id="p2-class" onchange="filterWeapons(2)">
+          <option value="">All Classes</option>
+          <option value="light">Light — 150 HP</option>
+          <option value="medium">Medium — 250 HP</option>
+          <option value="heavy">Heavy — 350 HP</option>
+        </select>
+        <label>Weapon</label>
+        <select id="p2-weapon" onchange="updateWeaponInfo(2)"></select>
+        <div id="p2-weapon-info" class="weapon-info"></div>
+        <div id="p2-pills" class="stat-pills"></div>
+
+        <label>Accuracy (% shots that hit)</label>
+        <div class="range-row">
+          <input type="range" id="p2-acc" min="1" max="100" value="75" oninput="updateRange(this,'p2-acc-val',3)">
+          <span class="range-val" id="p2-acc-val">75%</span>
+        </div>
+
+        <label>Headshot Chance (% of hits)</label>
+        <div class="range-row">
+          <input type="range" id="p2-hs" min="0" max="100" value="20" oninput="updateRange(this,'p2-hs-val',4)">
+          <span class="range-val" id="p2-hs-val">20%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Battle Settings -->
+  <div class="panel" style="grid-column:1/-1;">
+    <div class="panel-title"><span class="dot"></span> BATTLE SETTINGS</div>
+    <div class="settings-row">
+      <div>
+        <label>Starting Distance (meters)</label>
+        <div class="range-row">
+          <input type="range" id="start-dist" min="1" max="100" value="30" oninput="updateRange(this,'start-dist-val',5)">
+          <span class="range-val" id="start-dist-val">30m</span>
+        </div>
+      </div>
+      <div>
+        <label>Player Speed (m/s — melee closein)</label>
+        <div class="range-row">
+          <input type="range" id="speed" min="0" max="10" value="3" step="0.5" oninput="updateRange(this,'speed-val',6)">
+          <span class="range-val" id="speed-val">3.0</span>
+        </div>
+        <label class="checkbox-row" style="display:flex; margin-top:8px;">
+          <input type="checkbox" id="melee-advance"> <span>Both players advance (melee mode)</span>
+        </label>
+      </div>
+      <div>
+        <label>First Shot Advantage</label>
+        <div class="toggle-group">
+          <button class="toggle-btn active" onclick="setFirstShot('p1',this)">P1</button>
+          <button class="toggle-btn" onclick="setFirstShot('simultaneous',this)">BOTH</button>
+          <button class="toggle-btn" onclick="setFirstShot('p2',this)">P2</button>
+        </div>
+        <label style="margin-top:12px;">Simulation Mode</label>
+        <div class="toggle-group">
+          <button class="toggle-btn active" onclick="setSimMode('single',this)">SINGLE</button>
+          <button class="toggle-btn" onclick="setSimMode('multi',this)">MULTI</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="multi-options" style="display:none; margin-top:14px; display:none;">
+      <label>Number of Simulations</label>
+      <div class="sim-count-wrap">
+        <input type="number" id="sim-count" value="100" min="10" max="10000" style="width:120px;">
+        <span style="color:var(--muted); font-size:11px;">runs (max 10,000)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Run Button -->
+<div class="run-area">
+  <button class="btn-run" onclick="runSimulation()">▶ SIMULATE BATTLE</button>
+  <div style="font-size:11px; color:var(--muted); line-height:1.8;">
+    Range · Accuracy · Burst Timing · Headshots · Dropoff<br>
+    All mechanics simulated tick-by-tick
+  </div>
+</div>
+
+<!-- Results -->
+<div id="results">
+  <div class="results-header"><span class="dot"></span> BATTLE REPORT</div>
+
+  <div class="arena-display">
+    <span style="font-size:11px; color:var(--muted);">ARENA</span>
+    <div class="arena-track" id="arena-track">
+      <span class="arena-p1-icon" id="arena-p1">🔵</span>
+      <span class="arena-p2-icon" id="arena-p2">🔴</span>
+    </div>
+    <span class="dist-label" id="dist-display">— m</span>
+  </div>
+
+  <div class="winner-banner">
+    <div class="winner-label">VICTOR</div>
+    <div class="winner-name" id="winner-name">—</div>
+    <div style="font-size:11px; color:var(--muted); margin-top:6px;" id="winner-sub"></div>
+  </div>
+
+  <div class="hp-bars">
+    <div class="hp-row">
+      <div class="hp-name" id="res-p1-name">Player 1</div>
+      <div class="hp-bar-outer"><div class="hp-bar-inner p1" id="res-p1-bar" style="width:100%"></div></div>
+      <div class="hp-val p1" id="res-p1-hp">—</div>
+    </div>
+    <div class="hp-row">
+      <div class="hp-name" id="res-p2-name">Player 2</div>
+      <div class="hp-bar-outer"><div class="hp-bar-inner p2" id="res-p2-bar" style="width:100%"></div></div>
+      <div class="hp-val p2" id="res-p2-hp">—</div>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-block">
+      <div class="stat-block-title">P1 — Damage Dealt</div>
+      <div class="stat-big p1" id="res-p1-dmg">—</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-block-title">P2 — Damage Dealt</div>
+      <div class="stat-big p2" id="res-p2-dmg">—</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-block-title">P1 — Shots Fired / Hit / HS</div>
+      <div class="stat-big p1" id="res-p1-shots">—</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-block-title">P2 — Shots Fired / Hit / HS</div>
+      <div class="stat-big p2" id="res-p2-shots">—</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-block-title">Time-to-Kill</div>
+      <div class="stat-big" id="res-ttk" style="color:var(--accent)">—</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-block-title">Final Range</div>
+      <div class="stat-big" id="res-range" style="color:var(--accent)">—</div>
+    </div>
+  </div>
+
+  <!-- Multi sim results -->
+  <div id="multi-results" style="display:none;">
+    <div class="winrate-bar-wrap">
+      <div class="winrate-label-row">
+        <span id="winrate-p1-label" style="color:var(--blue)">P1: —%</span>
+        <span id="winrate-tie-label" style="color:var(--accent)">TIE: —%</span>
+        <span id="winrate-p2-label" style="color:var(--red)">P2: —%</span>
+      </div>
+      <div class="winrate-bar">
+        <div class="winrate-p1" id="winrate-p1-bar" style="width:0%"></div>
+        <div class="winrate-tie" id="winrate-tie-bar" style="width:0%"></div>
+        <div class="winrate-p2" id="winrate-p2-bar" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="multi-sim-results">
+      <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--muted);">MULTI-SIM SUMMARY</div>
+      <div class="multi-row">
+        <div class="multi-card">
+          <div class="multi-card-label">P1 Wins</div>
+          <div class="multi-card-val p1" id="ms-p1-wins">—</div>
+        </div>
+        <div class="multi-card">
+          <div class="multi-card-label">Ties</div>
+          <div class="multi-card-val tie" id="ms-ties">—</div>
+        </div>
+        <div class="multi-card">
+          <div class="multi-card-label">P2 Wins</div>
+          <div class="multi-card-val p2" id="ms-p2-wins">—</div>
+        </div>
+        <div class="multi-card">
+          <div class="multi-card-label">Avg TTK (P1 kills)</div>
+          <div class="multi-card-val p1" id="ms-avg-ttk-p1">—</div>
+        </div>
+        <div class="multi-card">
+          <div class="multi-card-label">Avg HP Remaining (P1)</div>
+          <div class="multi-card-val p1" id="ms-avg-hp-p1">—</div>
+        </div>
+        <div class="multi-card">
+          <div class="multi-card-label">Avg HP Remaining (P2)</div>
+          <div class="multi-card-val p2" id="ms-avg-hp-p2">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="log-wrap" id="log-section">
+    <div class="log-title">▼ COMBAT LOG (last single sim)</div>
+    <div id="combat-log"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  WEAPON DATA
+// ═══════════════════════════════════════════════
+const WEAPONS = [{"class":"light","type":"Handgun","firing_mode":"Burst","name":"93R","body_dmg":"24","head_damage":"36","rpm":"1000","magazine_size":"24","tactical_reload_time":"1.45s","empty_reload_time":"1.75s","shots_per_burst":"3","delay_in_bursts":"0.275","damage_dropoff_min_range":"30m","damage_dropoff_max_range":"37.5m","damage_reduction_at_max":"~50%","notes":null},{"class":"light","type":"Assault Riffle","firing_mode":"Automatic","name":"ARN-220","body_dmg":"17","head_damage":"25.5","rpm":"725","magazine_size":"60 (30)","tactical_reload_time":"2.45s","empty_reload_time":"2.80s (0.80s)","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"37.5m","damage_dropoff_max_range":"45m","damage_reduction_at_max":"~72%","notes":"Quick reload is 0.80s long."},{"class":"light","type":"Melee","firing_mode":null,"name":"DAGGER","body_dmg":"60","head_damage":null,"rpm":null,"magazine_size":null,"tactical_reload_time":null,"empty_reload_time":null,"shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":null},{"class":"light","type":"Melee","firing_mode":null,"name":"DAGGER (ALT.)","body_dmg":"75","head_damage":null,"rpm":null,"magazine_size":null,"tactical_reload_time":null,"empty_reload_time":null,"shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":"Has an 800ms wind-up time."},{"class":"light","type":"Melee","firing_mode":null,"name":"DAGGER (ALT. W/ BACKSTAB)","body_dmg":"320","head_damage":null,"rpm":null,"magazine_size":null,"tactical_reload_time":null,"empty_reload_time":null,"shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":"Backstab angle is 150 degrees."},{"class":"light","type":"Marksman Riffle","firing_mode":"Single","name":"LH1","body_dmg":"44","head_damage":"88","rpm":"280","magazine_size":"15","tactical_reload_time":"1.95s","empty_reload_time":"2.85s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"50m","damage_dropoff_max_range":"55m","damage_reduction_at_max":"~72%","notes":null},{"class":"light","type":"SMG","firing_mode":"Automatic","name":"M11","body_dmg":"16","head_damage":"24","rpm":"1000","magazine_size":"40","tactical_reload_time":"1.55s","empty_reload_time":"1.85s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"10m","damage_dropoff_max_range":"17.5m","damage_reduction_at_max":"~52%","notes":null},{"class":"light","type":"Shotgun","firing_mode":"Single","name":"M26 MATTER","body_dmg":"121","head_damage":null,"rpm":"85","magazine_size":"8","tactical_reload_time":"2.05s","empty_reload_time":"2.45s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"15m","damage_dropoff_max_range":"25m","damage_reduction_at_max":"~64%","notes":null},{"class":"light","type":"Marksman Riffle","firing_mode":"Single","name":"RECURVE BOW (UNCHARGED)","body_dmg":"60","head_damage":"90","rpm":"78","magazine_size":null,"tactical_reload_time":null,"empty_reload_time":null,"shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":"Rate of fire overall is 103 RPM."},{"class":"light","type":"Marksman Riffle","firing_mode":"Single","name":"RECURVE BOW (CHARGED)","body_dmg":"124","head_damage":"186","rpm":"48","magazine_size":null,"tactical_reload_time":null,"empty_reload_time":null,"shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":"Takes ~640ms to charge a shot."},{"class":"light","type":"Shotgun","firing_mode":"Single","name":"SH1900","body_dmg":"180","head_damage":null,"rpm":"80","magazine_size":"2","tactical_reload_time":"2.20s","empty_reload_time":"2.60s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":"Damage per bullet is 12*15 = 180 damage."},{"class":"light","type":"Marksman Riffle","firing_mode":"Single","name":"SR-84","body_dmg":"118","head_damage":"236","rpm":"40","magazine_size":"6","tactical_reload_time":"1.95s","empty_reload_time":"3.35s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"80m","damage_dropoff_max_range":"100m","damage_reduction_at_max":"~75%","notes":"Bullets are hitscan up until 40m."},{"class":"light","type":"Melee","firing_mode":null,"name":"SWORD","body_dmg":"88","head_damage":null,"rpm":null,"magazine_size":null,"tactical_reload_time":null,"empty_reload_time":null,"shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":null},{"class":"light","type":"Melee","firing_mode":null,"name":"SWORD (ALT.)","body_dmg":"120","head_damage":null,"rpm":null,"magazine_size":null,"tactical_reload_time":null,"empty_reload_time":null,"shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":"Can hit multiple targets in a single lunge."},{"class":"light","type":"Miscellaneous","firing_mode":"Automatic/Burst","name":"THROWING KNIVES","body_dmg":"60","head_damage":"90","rpm":"545.45","magazine_size":null,"tactical_reload_time":null,"empty_reload_time":null,"shots_per_burst":"2","delay_in_bursts":"0.59","damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":"Projectile travel time not accounted."},{"class":"light","type":"Miscellaneous","firing_mode":"Single","name":"THROWING KNIVES (ALT.)","body_dmg":"140","head_damage":"210","rpm":"27.7","magazine_size":null,"tactical_reload_time":null,"empty_reload_time":null,"shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":"Projectile travel time not accounted."},{"class":"light","type":"Handgun","firing_mode":"Single","name":"V9S","body_dmg":"38","head_damage":"57","rpm":"360","magazine_size":"20","tactical_reload_time":"1.25s","empty_reload_time":"1.50s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"15m","damage_dropoff_max_range":"20m","damage_reduction_at_max":"~65%","notes":null},{"class":"light","type":"SMG","firing_mode":"Automatic","name":"XP-54","body_dmg":"16","head_damage":"24","rpm":"880","magazine_size":"34","tactical_reload_time":"2.25s","empty_reload_time":"2.50s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"22.5m","damage_dropoff_max_range":"32.5m","damage_reduction_at_max":"~52%","notes":null},{"class":"medium","type":"Assault Riffle","firing_mode":"Automatic","name":"AKM","body_dmg":"20","head_damage":"30","rpm":"600","magazine_size":"34","tactical_reload_time":"2.35s","empty_reload_time":"2.35s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"30m","damage_dropoff_max_range":"37.5m","damage_reduction_at_max":"~55%","notes":null},{"class":"medium","type":"Marksman Riffle","firing_mode":"Single","name":"CB-01 REPEATER","body_dmg":"84","head_damage":"126","rpm":"82","magazine_size":"8","tactical_reload_time":"(varies)","empty_reload_time":"5.05s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"35m","damage_dropoff_max_range":"40m","damage_reduction_at_max":"~64%","notes":"Firing cancels reload."},{"class":"medium","type":"Shotgun","firing_mode":"Single","name":"CERBERUS 12GA","body_dmg":"104","head_damage":null,"rpm":"100","magazine_size":"3","tactical_reload_time":"(varies)","empty_reload_time":"2.95s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"10m","damage_dropoff_max_range":"17.5m","damage_reduction_at_max":"~63%","notes":"8 x 13 pellets per hit."},{"class":"medium","type":"Marksman Riffle","firing_mode":"Single","name":"CHIMERA-XB","body_dmg":"45","head_damage":"67.5","rpm":"260","magazine_size":"15","tactical_reload_time":"2.15s","empty_reload_time":"2.15s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"20m","damage_dropoff_max_range":"30m","damage_reduction_at_max":"~60%","notes":null},{"class":"medium","type":"Grenade Launcher","firing_mode":"Single","name":"CL-40 (DIRECT)","body_dmg":"105","head_damage":null,"rpm":"75","magazine_size":"5","tactical_reload_time":"(varies)","empty_reload_time":"3.95s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":"Self damage multiplier 1.4x."},{"class":"medium","type":"Grenade Launcher","firing_mode":"Single","name":"CL-40 (SPLASH)","body_dmg":"90","head_damage":null,"rpm":"75","magazine_size":"5","tactical_reload_time":"(varies)","empty_reload_time":"3.95s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":"Inner blast radius 0.6m."},{"class":"medium","type":"Melee","firing_mode":null,"name":"DUAL BLADES","body_dmg":"70","head_damage":null,"rpm":null,"magazine_size":null,"tactical_reload_time":null,"empty_reload_time":null,"shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":"LMB combo: 2x50, 2x60, 100. Avg ~70/hit used."},{"class":"medium","type":"Assault Riffle","firing_mode":"Burst","name":"FAMAS","body_dmg":"23","head_damage":"34.5","rpm":"1080","magazine_size":"27","tactical_reload_time":"2.15s","empty_reload_time":"2.60s","shots_per_burst":"3","delay_in_bursts":"0.27","damage_dropoff_min_range":"35m","damage_dropoff_max_range":"42.5m","damage_reduction_at_max":"~50%","notes":"Recoil recovery 0.24s."},{"class":"medium","type":"Assault Riffle","firing_mode":"Automatic","name":"FCAR","body_dmg":"23","head_damage":"34.5","rpm":"540","magazine_size":"25","tactical_reload_time":"2.10s","empty_reload_time":"2.10s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"35m","damage_dropoff_max_range":"40m","damage_reduction_at_max":"~55%","notes":null},{"class":"medium","type":"Shotgun","firing_mode":"Single","name":"MODEL 1887","body_dmg":"108","head_damage":null,"rpm":"69","magazine_size":"7","tactical_reload_time":"(varies)","empty_reload_time":"4.30s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"20m","damage_dropoff_max_range":"30m","damage_reduction_at_max":"~65%","notes":"Firing cancels reload."},{"class":"medium","type":"SMG","firing_mode":"Automatic","name":"P90","body_dmg":"14","head_damage":"21","rpm":"900","magazine_size":"50","tactical_reload_time":"2.45s","empty_reload_time":"2.70s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"18m","damage_dropoff_max_range":"24m","damage_reduction_at_max":"~62%","notes":null},{"class":"medium","type":"Marksman Riffle","firing_mode":"Single","name":"PIKE .556","body_dmg":"49","head_damage":"73.5","rpm":"200","magazine_size":"12","tactical_reload_time":"2.10s","empty_reload_time":"3.25s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"40m","damage_dropoff_max_range":"50m","damage_reduction_at_max":"~80%","notes":"Stronger than Repeater vs Heavy at range."},{"class":"medium","type":"Handgun","firing_mode":"Single","name":"R.357","body_dmg":"74","head_damage":"148","rpm":"140","magazine_size":"6","tactical_reload_time":"2.20s","empty_reload_time":"2.50s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"27.5m","damage_dropoff_max_range":"44m","damage_reduction_at_max":"~40%","notes":null},{"class":"medium","type":"Melee","firing_mode":null,"name":"RIOT SHIELD","body_dmg":"90","head_damage":null,"rpm":null,"magazine_size":null,"tactical_reload_time":null,"empty_reload_time":null,"shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":null},{"class":"heavy","type":"Handgun","firing_mode":"Single","name":".50 AKIMBO","body_dmg":"44","head_damage":"88","rpm":"230","magazine_size":"14","tactical_reload_time":"2.20s","empty_reload_time":"3.00s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"32m","damage_dropoff_max_range":"39m","damage_reduction_at_max":"~50%","notes":null},{"class":"heavy","type":"Handgun","firing_mode":"Single","name":"BFR TITAN","body_dmg":"88","head_damage":"132","rpm":"80.5","magazine_size":"5","tactical_reload_time":"(varies)","empty_reload_time":"5.00s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"25m","damage_dropoff_max_range":"40m","damage_reduction_at_max":"~65%","notes":null},{"class":"heavy","type":"Miscellaneous","firing_mode":"Automatic","name":"FLAMETHROWER","body_dmg":"30","head_damage":null,"rpm":"170","magazine_size":"30","tactical_reload_time":"3.55s","empty_reload_time":"3.55s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":"DoT data incomplete."},{"class":"heavy","type":"Shotgun","firing_mode":"Single","name":"KS-23","body_dmg":"100","head_damage":null,"rpm":"78","magazine_size":"6","tactical_reload_time":"(varies)","empty_reload_time":"5.55s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"18m","damage_dropoff_max_range":"23m","damage_reduction_at_max":"~70%","notes":"Hitscan within 25m."},{"class":"heavy","type":"LMG","firing_mode":"Automatic","name":"LEWIS GUN","body_dmg":"23","head_damage":"34.5","rpm":"500","magazine_size":"47","tactical_reload_time":"3.25s","empty_reload_time":"3.55s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"35m","damage_dropoff_max_range":"40m","damage_reduction_at_max":"~67%","notes":null},{"class":"heavy","type":"HMG","firing_mode":"Automatic","name":"M134 MINIGUN","body_dmg":"11","head_damage":"14.6","rpm":"1500","magazine_size":"300","tactical_reload_time":"5.00s","empty_reload_time":"5.25s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"30m","damage_dropoff_max_range":"50m","damage_reduction_at_max":"~53%","notes":"1.60s spin-up to max fire rate."},{"class":"heavy","type":"LMG","firing_mode":"Automatic","name":"M60","body_dmg":"20","head_damage":"30","rpm":"580","magazine_size":"70","tactical_reload_time":"3.55s","empty_reload_time":"3.55s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"25m","damage_dropoff_max_range":"35m","damage_reduction_at_max":"~50%","notes":null},{"class":"heavy","type":"Grenade Launcher","firing_mode":"Single","name":"MGL-32","body_dmg":"83","head_damage":null,"rpm":"90","magazine_size":"6","tactical_reload_time":"2.85s","empty_reload_time":"3.10s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":"Detonate on 1st bounce. Fuse 2.5s."},{"class":"heavy","type":"Shotgun","firing_mode":"Automatic/Single","name":"SA1216","body_dmg":"72","head_damage":null,"rpm":"190","magazine_size":"16 (4)","tactical_reload_time":"2.35s","empty_reload_time":"3.25s (0.80s)","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"12.5m","damage_dropoff_max_range":"20m","damage_reduction_at_max":"~67%","notes":"Quick reload available."},{"class":"heavy","type":"Assault Riffle","firing_mode":"Automatic","name":"SHAK-50","body_dmg":"30","head_damage":"45","rpm":"420","magazine_size":"20","tactical_reload_time":"2.40s","empty_reload_time":"3.20s","shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":"15m","damage_dropoff_max_range":"25m","damage_reduction_at_max":"~67%","notes":"2 bullets per round (15 dmg each)."},{"class":"heavy","type":"Melee","firing_mode":null,"name":"SLEDGEHAMMER","body_dmg":"100","head_damage":null,"rpm":null,"magazine_size":null,"tactical_reload_time":null,"empty_reload_time":null,"shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":null},{"class":"heavy","type":"Melee","firing_mode":null,"name":"SLEDGEHAMMER (ALT.)","body_dmg":"175","head_damage":null,"rpm":null,"magazine_size":null,"tactical_reload_time":null,"empty_reload_time":null,"shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":"Cannot hit multiple targets in one swing."},{"class":"heavy","type":"Melee","firing_mode":null,"name":"SPEAR","body_dmg":"78","head_damage":null,"rpm":null,"magazine_size":null,"tactical_reload_time":null,"empty_reload_time":null,"shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":"LMB combo: 65, 80, 90. Avg ~78."},{"class":"heavy","type":"Melee","firing_mode":null,"name":"SPEAR (ALT.)","body_dmg":"105","head_damage":null,"rpm":null,"magazine_size":null,"tactical_reload_time":null,"empty_reload_time":null,"shots_per_burst":null,"delay_in_bursts":null,"damage_dropoff_min_range":null,"damage_dropoff_max_range":null,"damage_reduction_at_max":null,"notes":"Per hit in 3-hit combo. 3m radius."}];
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+const CLASS_HP = { light: 150, medium: 250, heavy: 350 };
+const MELEE_RANGE = 2.0; // meters
+let firstShot = 'p1';
+let simMode = 'single';
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+function init() {
+  filterWeapons(1);
+  filterWeapons(2);
+  updateRange(document.getElementById('p1-acc'), 'p1-acc-val', 1);
+  updateRange(document.getElementById('p1-hs'),  'p1-hs-val',  2);
+  updateRange(document.getElementById('p2-acc'), 'p2-acc-val', 3);
+  updateRange(document.getElementById('p2-hs'),  'p2-hs-val',  4);
+  updateRange(document.getElementById('start-dist'), 'start-dist-val', 5);
+  updateRange(document.getElementById('speed'), 'speed-val', 6);
+}
+
+function filterWeapons(player) {
+  const classVal = document.getElementById(`p${player}-class`).value;
+  const sel = document.getElementById(`p${player}-weapon`);
+  sel.innerHTML = '';
+  const filtered = classVal ? WEAPONS.filter(w => w.class === classVal) : WEAPONS;
+  filtered.forEach((w, i) => {
+    const opt = document.createElement('option');
+    opt.value = WEAPONS.indexOf(w);
+    opt.textContent = `[${w.class.toUpperCase()}] ${w.name} — ${w.type}`;
+    sel.appendChild(opt);
+  });
+  updateWeaponInfo(player);
+}
+
+function updateWeaponInfo(player) {
+  const sel = document.getElementById(`p${player}-weapon`);
+  const w = WEAPONS[parseInt(sel.value)];
+  if (!w) return;
+  const info = document.getElementById(`p${player}-weapon-info`);
+  const parts = [];
+  if (w.body_dmg) parts.push(`DMG: ${w.body_dmg}`);
+  if (w.head_damage) parts.push(`HEAD: ${w.head_damage}`);
+  if (w.rpm) parts.push(`RPM: ${w.rpm}`);
+  if (w.magazine_size) parts.push(`MAG: ${w.magazine_size}`);
+  if (w.damage_dropoff_min_range) parts.push(`DROP: ${w.damage_dropoff_min_range}–${w.damage_dropoff_max_range} (${w.damage_reduction_at_max})`);
+  if (w.firing_mode) parts.push(`MODE: ${w.firing_mode}`);
+  if (w.shots_per_burst) parts.push(`BURST: ${w.shots_per_burst} @ ${w.delay_in_bursts}s delay`);
+  info.innerHTML = parts.join(' &nbsp;|&nbsp; ') + (w.notes ? `<br><span style="color:#9d7fff">${w.notes}</span>` : '');
+
+  const pills = document.getElementById(`p${player}-pills`);
+  pills.innerHTML = `
+    <span class="pill type-${w.class}">${w.class}</span>
+    <span class="pill">${w.type}</span>
+    ${w.firing_mode ? `<span class="pill">${w.firing_mode}</span>` : ''}
+    <span class="pill">HP: ${CLASS_HP[w.class]}</span>
+  `;
+}
+
+function updateRange(el, valId, rangeIdx) {
+  const val = parseFloat(el.value);
+  const min = parseFloat(el.min), max = parseFloat(el.max);
+  const pct = ((val - min) / (max - min)) * 100;
+  el.style.setProperty('--pct', pct + '%');
+  const display = document.getElementById(valId);
+  if (rangeIdx === 5) display.textContent = val + 'm';
+  else if (rangeIdx === 6) display.textContent = parseFloat(val).toFixed(1);
+  else display.textContent = val + '%';
+}
+
+function setFirstShot(val, btn) {
+  firstShot = val;
+  btn.parentElement.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function setSimMode(val, btn) {
+  simMode = val;
+  btn.parentElement.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('multi-options').style.display = val === 'multi' ? 'block' : 'none';
+}
+
+// ═══════════════════════════════════════════════
+//  WEAPON PARSING HELPERS
+// ═══════════════════════════════════════════════
+function parseFloat2(s) {
+  if (!s) return null;
+  const m = String(s).match(/[\d.]+/);
+  return m ? parseFloat(m[0]) : null;
+}
+
+function getWeaponStats(w) {
+  const bodyDmg = parseFloat2(w.body_dmg) || 0;
+  const headDmg = parseFloat2(w.head_damage) || bodyDmg * 1.5;
+  const rpm = parseFloat2(w.rpm) || 60; // melee: 1 hit/s default
+  const isMelee = w.type === 'Melee';
+  const isBurst = w.shots_per_burst != null;
+  const burstSize = isBurst ? parseInt(w.shots_per_burst) : 1;
+  const burstDelay = isBurst ? parseFloat(w.delay_in_bursts) : 0;
+
+  // Drop off
+  const dropMinR = parseFloat2(w.damage_dropoff_min_range);
+  const dropMaxR = parseFloat2(w.damage_dropoff_max_range);
+  const dropReduction = w.damage_reduction_at_max ? parseFloat(w.damage_reduction_at_max.replace(/[~%]/g,'')) / 100 : 0;
+
+  // Interval between shots in seconds
+  const shotInterval = 60 / rpm;
+
+  return { bodyDmg, headDmg, rpm, shotInterval, isMelee, isBurst, burstSize, burstDelay, dropMinR, dropMaxR, dropReduction };
+}
+
+function calcDamageMult(dist, stats) {
+  if (!stats.dropMinR || !stats.dropMaxR) return 1.0;
+  if (dist <= stats.dropMinR) return 1.0;
+  if (dist >= stats.dropMaxR) return 1.0 - stats.dropReduction;
+  const t = (dist - stats.dropMinR) / (stats.dropMaxR - stats.dropMinR);
+  return 1.0 - t * stats.dropReduction;
+}
+
+// ═══════════════════════════════════════════════
+//  CORE SIMULATION
+// ═══════════════════════════════════════════════
+function simulateBattle(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speed, meleeAdvance, firstShot, logLines) {
+  const s1 = getWeaponStats(p1w);
+  const s2 = getWeaponStats(p2w);
+  const maxHP1 = CLASS_HP[p1w.class];
+  const maxHP2 = CLASS_HP[p2w.class];
+
+  let hp1 = maxHP1, hp2 = maxHP2;
+  let dist = startDist;
+  let time = 0;
+  const DT = 0.01; // 10ms tick
+  const MAX_TIME = 60;
+
+  // Next shot timers — offset first shot
+  let t1 = firstShot === 'p2' ? s1.shotInterval : 0;
+  let t2 = firstShot === 'p1' ? s2.shotInterval : 0;
+
+  // Burst state
+  let b1 = { inBurst: false, shotsDone: 0, burstTimer: 0 };
+  let b2 = { inBurst: false, shotsDone: 0, burstTimer: 0 };
+
+  // Stats
+  let dmg1 = 0, dmg2 = 0;
+  let shots1 = 0, hits1 = 0, hs1 = 0;
+  let shots2 = 0, hits2 = 0, hs2 = 0;
+
+  const log = logLines !== null;
+
+  function doShot(attStats, acc, hsChance, targetHP, dist, who, log) {
+    const hit = Math.random() < acc;
+    if (log) shots1 + shots2; // just flag
+    let dmg = 0;
+    let isHS = false;
+    if (hit) {
+      isHS = attStats.headDmg > attStats.bodyDmg && Math.random() < hsChance;
+      const baseDmg = isHS ? attStats.headDmg : attStats.bodyDmg;
+      const mult = calcDamageMult(dist, attStats);
+      dmg = baseDmg * mult;
+    }
+    return { hit, isHS, dmg };
+  }
+
+  while (time < MAX_TIME && hp1 > 0 && hp2 > 0) {
+    // Advance distance if applicable
+    if (meleeAdvance || s1.isMelee || s2.isMelee) {
+      const advancing1 = s1.isMelee;
+      const advancing2 = s2.isMelee;
+      if (advancing1 || advancing2 || meleeAdvance) {
+        const closingSpeed = speed * ((advancing1 ? 1 : 0) + (advancing2 ? 1 : 0) + (meleeAdvance ? 1 : 0) > 1 ? 1 : 0.5);
+        dist = Math.max(0, dist - closingSpeed * DT);
+        if (log && Math.abs(time % 1) < DT) {
+          logLines.push({ type: 'range-update', text: `[${time.toFixed(1)}s] Range: ${dist.toFixed(1)}m` });
+        }
+      }
+    }
+
+    // P1 fires?
+    if (time >= t1) {
+      shots1++;
+      const r = doShot(s1, p1acc, p1hs, hp2, dist, 1);
+      if (r.hit) {
+        hits1++;
+        if (r.isHS) hs1++;
+        hp2 = Math.max(0, hp2 - r.dmg);
+        dmg1 += r.dmg;
+        if (log) logLines.push({ type: r.isHS ? 'head' : 'hit-p1', text: `[${time.toFixed(2)}s] P1 ${r.isHS ? '🎯 HEADSHOT' : '→ HIT'} P2 for ${r.dmg.toFixed(1)} dmg | P2 HP: ${hp2.toFixed(1)}` });
+      } else {
+        if (log) logLines.push({ type: 'info', text: `[${time.toFixed(2)}s] P1 → MISS` });
+      }
+
+      // Schedule next shot
+      if (s1.isBurst) {
+        b1.shotsDone++;
+        if (b1.shotsDone < s1.burstSize) {
+          t1 += s1.shotInterval;
+        } else {
+          b1.shotsDone = 0;
+          t1 += s1.burstDelay + s1.shotInterval;
+        }
+      } else {
+        t1 += s1.shotInterval;
+      }
+    }
+
+    if (hp2 <= 0) break;
+
+    // P2 fires?
+    if (time >= t2) {
+      shots2++;
+      const r = doShot(s2, p2acc, p2hs, hp1, dist, 2);
+      if (r.hit) {
+        hits2++;
+        if (r.isHS) hs2++;
+        hp1 = Math.max(0, hp1 - r.dmg);
+        dmg2 += r.dmg;
+        if (log) logLines.push({ type: r.isHS ? 'head' : 'hit-p2', text: `[${time.toFixed(2)}s] P2 ${r.isHS ? '🎯 HEADSHOT' : '→ HIT'} P1 for ${r.dmg.toFixed(1)} dmg | P1 HP: ${hp1.toFixed(1)}` });
+      } else {
+        if (log) logLines.push({ type: 'info', text: `[${time.toFixed(2)}s] P2 → MISS` });
+      }
+
+      if (s2.isBurst) {
+        b2.shotsDone++;
+        if (b2.shotsDone < s2.burstSize) {
+          t2 += s2.shotInterval;
+        } else {
+          b2.shotsDone = 0;
+          t2 += s2.burstDelay + s2.shotInterval;
+        }
+      } else {
+        t2 += s2.shotInterval;
+      }
+    }
+
+    if (hp1 <= 0) break;
+
+    time += DT;
+
+    // Melee range check — if melee user reaches target, deal instant tick dmg
+    if ((s1.isMelee || s2.isMelee) && dist <= MELEE_RANGE) {
+      // Already handled by normal shot schedule; just cap approach
+    }
+  }
+
+  let winner = null;
+  if (hp1 <= 0 && hp2 <= 0) winner = 'tie';
+  else if (hp2 <= 0) winner = 'p1';
+  else if (hp1 <= 0) winner = 'p2';
+  else winner = hp1 > hp2 ? 'p1' : hp2 > hp1 ? 'p2' : 'tie';
+
+  if (log) {
+    const msg = winner === 'tie' ? '⚡ TIE — BOTH DOWN' : winner === 'p1' ? '🏆 PLAYER 1 WINS' : '🏆 PLAYER 2 WINS';
+    logLines.push({ type: 'kill', text: msg });
+  }
+
+  return {
+    winner, time, dist,
+    hp1: Math.max(0, hp1), hp2: Math.max(0, hp2),
+    maxHP1, maxHP2,
+    dmg1, dmg2,
+    shots1, hits1, hs1,
+    shots2, hits2, hs2
+  };
+}
+
+// ═══════════════════════════════════════════════
+//  UI RUN HANDLER
+// ═══════════════════════════════════════════════
+function runSimulation() {
+  const p1w = WEAPONS[parseInt(document.getElementById('p1-weapon').value)];
+  const p2w = WEAPONS[parseInt(document.getElementById('p2-weapon').value)];
+  const p1acc = parseInt(document.getElementById('p1-acc').value) / 100;
+  const p1hs  = parseInt(document.getElementById('p1-hs').value)  / 100;
+  const p2acc = parseInt(document.getElementById('p2-acc').value) / 100;
+  const p2hs  = parseInt(document.getElementById('p2-hs').value)  / 100;
+  const startDist = parseInt(document.getElementById('start-dist').value);
+  const speed = parseFloat(document.getElementById('speed').value);
+  const meleeAdvance = document.getElementById('melee-advance').checked;
+  const simCount = simMode === 'multi' ? Math.min(10000, Math.max(1, parseInt(document.getElementById('sim-count').value) || 100)) : 1;
+
+  // Single sim with logging
+  const logLines = [];
+  const result = simulateBattle(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speed, meleeAdvance, firstShot, logLines);
+
+  // Show results
+  document.getElementById('results').style.display = 'block';
+
+  // Arena display
+  const maxDist = Math.max(startDist, 1);
+  const p2Pos = Math.min(100, (result.dist / startDist) * 100);
+  document.getElementById('arena-p1').style.left = '0%';
+  document.getElementById('arena-p2').style.left = Math.max(5, p2Pos) + '%';
+  document.getElementById('dist-display').textContent = result.dist.toFixed(1) + 'm';
+
+  // Winner
+  const wEl = document.getElementById('winner-name');
+  wEl.className = 'winner-name';
+  if (result.winner === 'p1') {
+    wEl.textContent = p1w.name;
+    wEl.classList.add('p1');
+    document.getElementById('winner-sub').textContent = `Player 1 — ${p1w.class.toUpperCase()} — HP remaining: ${result.hp1.toFixed(1)}`;
+  } else if (result.winner === 'p2') {
+    wEl.textContent = p2w.name;
+    wEl.classList.add('p2');
+    document.getElementById('winner-sub').textContent = `Player 2 — ${p2w.class.toUpperCase()} — HP remaining: ${result.hp2.toFixed(1)}`;
+  } else {
+    wEl.textContent = 'TIE';
+    wEl.classList.add('tie');
+    document.getElementById('winner-sub').textContent = 'Both players eliminated simultaneously';
+  }
+
+  // HP bars
+  document.getElementById('res-p1-name').textContent = p1w.name;
+  document.getElementById('res-p2-name').textContent = p2w.name;
+  document.getElementById('res-p1-hp').textContent = result.hp1.toFixed(0);
+  document.getElementById('res-p2-hp').textContent = result.hp2.toFixed(0);
+  document.getElementById('res-p1-bar').style.width = (result.hp1 / result.maxHP1 * 100) + '%';
+  document.getElementById('res-p2-bar').style.width = (result.hp2 / result.maxHP2 * 100) + '%';
+
+  // Stats
+  document.getElementById('res-p1-dmg').textContent = result.dmg1.toFixed(0);
+  document.getElementById('res-p2-dmg').textContent = result.dmg2.toFixed(0);
+  document.getElementById('res-p1-shots').textContent = `${result.shots1} / ${result.hits1} / ${result.hs1}`;
+  document.getElementById('res-p2-shots').textContent = `${result.shots2} / ${result.hits2} / ${result.hs2}`;
+  document.getElementById('res-ttk').textContent = result.time.toFixed(2) + 's';
+  document.getElementById('res-range').textContent = result.dist.toFixed(1) + 'm';
+
+  // Combat log
+  const logEl = document.getElementById('combat-log');
+  logEl.innerHTML = logLines.slice(0, 300).map(l => `<div class="log-line ${l.type}">${l.text}</div>`).join('');
+  logEl.scrollTop = logEl.scrollHeight;
+
+  // Multi-sim
+  const multiEl = document.getElementById('multi-results');
+  if (simMode === 'multi' && simCount > 1) {
+    multiEl.style.display = 'block';
+    let w1 = 0, w2 = 0, ties = 0;
+    let ttkP1 = [], ttkP2 = [];
+    let remainHP1 = [], remainHP2 = [];
+    for (let i = 0; i < simCount; i++) {
+      const r = simulateBattle(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speed, meleeAdvance, firstShot, null);
+      if (r.winner === 'p1') { w1++; ttkP1.push(r.time); }
+      else if (r.winner === 'p2') { w2++; ttkP2.push(r.time); }
+      else ties++;
+      remainHP1.push(r.hp1);
+      remainHP2.push(r.hp2);
+    }
+    const pct = v => ((v / simCount) * 100).toFixed(1);
+    document.getElementById('winrate-p1-bar').style.width = pct(w1) + '%';
+    document.getElementById('winrate-tie-bar').style.width = pct(ties) + '%';
+    document.getElementById('winrate-p2-bar').style.width = pct(w2) + '%';
+    document.getElementById('winrate-p1-label').textContent = `P1: ${pct(w1)}%`;
+    document.getElementById('winrate-tie-label').textContent = `TIE: ${pct(ties)}%`;
+    document.getElementById('winrate-p2-label').textContent = `P2: ${pct(w2)}%`;
+    document.getElementById('ms-p1-wins').textContent = w1;
+    document.getElementById('ms-p2-wins').textContent = w2;
+    document.getElementById('ms-ties').textContent = ties;
+    const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(2) : '—';
+    document.getElementById('ms-avg-ttk-p1').textContent = ttkP1.length ? avg(ttkP1) + 's' : '—';
+    document.getElementById('ms-avg-hp-p1').textContent = avg(remainHP1);
+    document.getElementById('ms-avg-hp-p2').textContent = avg(remainHP2);
+  } else {
+    multiEl.style.display = 'none';
+  }
+
+  // Scroll to results
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ═══════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
