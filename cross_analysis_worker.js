@@ -122,9 +122,9 @@ function runJob(job) {
     const r = simulate(
       attacker,
       defender,
-      profile.acc,   // attacker accuracy (from P1 sidebar)
-      profile.hs,    // attacker headshot chance
-      profile.acc,   // defender accuracy (symmetric per profile)
+      job.acc,        // ← Player 1 (YOUR slider)
+      job.hs,
+      profile.acc,    // ← Player 2 (profile)
       profile.hs,
       distance,
       speedOverride,
