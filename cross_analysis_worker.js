@@ -29,7 +29,7 @@ function getStats(w) {
   const dropMin = parseNum(w.damage_dropoff_min_range);
   const dropMax = parseNum(w.damage_dropoff_max_range);
   const dropR   = w.damage_reduction_at_max
-    ? parseFloat(w.damage_reduction_at_max.replace(/[~%]/g, '')) / 100
+    ? parseFloat(w.damage_reduction_at_max) 
     : 0;
   const interval = 60 / rpm;
   const classSpd = CLASS_SPEED[w.class];
@@ -42,7 +42,6 @@ function dropMult(dist, s) {
   if (dist >= s.dropMax) return 1 - s.dropR;
   return 1 - ((dist - s.dropMin) / (s.dropMax - s.dropMin)) * s.dropR;
 }
-
 function simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOverride, meleeAdv, fsa) {
   const s1 = getStats(p1w), s2 = getStats(p2w);
   const maxHP1 = CLASS_HP[p1w.class], maxHP2 = CLASS_HP[p2w.class];
@@ -58,39 +57,70 @@ function simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOverride, 
   let t2 = fsa === 'p1' ? s2.interval : 0;
   let b1shots = 0, b2shots = 0;
 
+  let mag1 = s1.magSize;
+  let mag2 = s2.magSize;
+
   while (time < MAX_TIME && hp1 > 0 && hp2 > 0) {
     const advancing1 = s1.isMelee || meleeAdv;
     const advancing2 = s2.isMelee || meleeAdv;
+
     if (advancing1) p1pos = Math.min(p1pos + spd1 * DT, p2pos - MELEE_RANGE);
     if (advancing2) p2pos = Math.max(p2pos - spd2 * DT, p1pos + MELEE_RANGE);
+
     dist = Math.max(0, p2pos - p1pos);
 
     let pendingDmgToP1 = 0;
     let pendingDmgToP2 = 0;
 
     if (time >= t1) {
-      if (Math.random() < p1acc) {
-        const isHS = (s1.headDmg > s1.bodyDmg) && Math.random() < p1hs;
-        pendingDmgToP2 += (isHS ? s1.headDmg : s1.bodyDmg) * dropMult(dist, s1);
-      }
-      if (s1.isBurst) {
-        b1shots++;
-        t1 += b1shots < s1.bSize ? s1.interval : (b1shots = 0, s1.bDelay + s1.interval);
+      if (mag1 <= 0) {
+        mag1 = s1.magSize;
+        b1shots = 0;
+        t1 += s1.emptyReload || s1.tacticalReload || 0;
       } else {
-        t1 += s1.interval;
+        if (Math.random() < p1acc) {
+          const isHS = (s1.headDmg > s1.bodyDmg) && Math.random() < p1hs;
+          pendingDmgToP2 += (isHS ? s1.headDmg : s1.bodyDmg) * dropMult(dist, s1);
+        }
+
+        if (!Number.isFinite(mag1)) {
+          // melee / effectively infinite mag
+        } else {
+          mag1--;
+        }
+
+        if (s1.isBurst) {
+          b1shots++;
+          t1 += b1shots < s1.bSize ? s1.interval : (b1shots = 0, s1.bDelay + s1.interval);
+        } else {
+          t1 += s1.interval;
+        }
       }
     }
 
     if (time >= t2) {
-      if (Math.random() < p2acc) {
-        const isHS = (s2.headDmg > s2.bodyDmg) && Math.random() < p2hs;
-        pendingDmgToP1 += (isHS ? s2.headDmg : s2.bodyDmg) * dropMult(dist, s2);
-      }
-      if (s2.isBurst) {
-        b2shots++;
-        t2 += b2shots < s2.bSize ? s2.interval : (b2shots = 0, s2.bDelay + s2.interval);
+      if (mag2 <= 0) {
+        mag2 = s2.magSize;
+        b2shots = 0;
+        t2 += s2.emptyReload || s2.tacticalReload || 0;
       } else {
-        t2 += s2.interval;
+        if (Math.random() < p2acc) {
+          const isHS = (s2.headDmg > s2.bodyDmg) && Math.random() < p2hs;
+          pendingDmgToP1 += (isHS ? s2.headDmg : s2.bodyDmg) * dropMult(dist, s2);
+        }
+
+        if (!Number.isFinite(mag2)) {
+          // melee / effectively infinite mag
+        } else {
+          mag2--;
+        }
+
+        if (s2.isBurst) {
+          b2shots++;
+          t2 += b2shots < s2.bSize ? s2.interval : (b2shots = 0, s2.bDelay + s2.interval);
+        } else {
+          t2 += s2.interval;
+        }
       }
     }
 
@@ -104,10 +134,77 @@ function simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOverride, 
   const winner = hp1 <= 0 && hp2 <= 0 ? 'tie'
     : hp2 <= 0 ? 'p1'
     : hp1 <= 0 ? 'p2'
-    : hp1 > hp2 ? 'p1' : hp2 > hp1 ? 'p2' : 'tie';
+    : hp1 > hp2 ? 'p1'
+    : hp2 > hp1 ? 'p2'
+    : 'tie';
 
   return { winner, time };
 }
+// function simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOverride, meleeAdv, fsa) {
+//   const s1 = getStats(p1w), s2 = getStats(p2w);
+//   const maxHP1 = CLASS_HP[p1w.class], maxHP2 = CLASS_HP[p2w.class];
+//   let hp1 = maxHP1, hp2 = maxHP2;
+
+//   const spd1 = Math.min(s1.classSpd, speedOverride || 99);
+//   const spd2 = Math.min(s2.classSpd, speedOverride || 99);
+
+//   let dist = startDist;
+//   let p1pos = 0, p2pos = startDist;
+//   let time = 0;
+//   let t1 = fsa === 'p2' ? s1.interval : 0;
+//   let t2 = fsa === 'p1' ? s2.interval : 0;
+//   let b1shots = 0, b2shots = 0;
+
+//   while (time < MAX_TIME && hp1 > 0 && hp2 > 0) {
+//     const advancing1 = s1.isMelee || meleeAdv;
+//     const advancing2 = s2.isMelee || meleeAdv;
+//     if (advancing1) p1pos = Math.min(p1pos + spd1 * DT, p2pos - MELEE_RANGE);
+//     if (advancing2) p2pos = Math.max(p2pos - spd2 * DT, p1pos + MELEE_RANGE);
+//     dist = Math.max(0, p2pos - p1pos);
+
+//     let pendingDmgToP1 = 0;
+//     let pendingDmgToP2 = 0;
+
+//     if (time >= t1) {
+//       if (Math.random() < p1acc) {
+//         const isHS = (s1.headDmg > s1.bodyDmg) && Math.random() < p1hs;
+//         pendingDmgToP2 += (isHS ? s1.headDmg : s1.bodyDmg) * dropMult(dist, s1);
+//       }
+//       if (s1.isBurst) {
+//         b1shots++;
+//         t1 += b1shots < s1.bSize ? s1.interval : (b1shots = 0, s1.bDelay + s1.interval);
+//       } else {
+//         t1 += s1.interval;
+//       }
+//     }
+
+//     if (time >= t2) {
+//       if (Math.random() < p2acc) {
+//         const isHS = (s2.headDmg > s2.bodyDmg) && Math.random() < p2hs;
+//         pendingDmgToP1 += (isHS ? s2.headDmg : s2.bodyDmg) * dropMult(dist, s2);
+//       }
+//       if (s2.isBurst) {
+//         b2shots++;
+//         t2 += b2shots < s2.bSize ? s2.interval : (b2shots = 0, s2.bDelay + s2.interval);
+//       } else {
+//         t2 += s2.interval;
+//       }
+//     }
+
+//     hp2 = Math.max(0, hp2 - pendingDmgToP2);
+//     hp1 = Math.max(0, hp1 - pendingDmgToP1);
+
+//     if (hp1 <= 0 || hp2 <= 0) break;
+//     time += DT;
+//   }
+
+//   const winner = hp1 <= 0 && hp2 <= 0 ? 'tie'
+//     : hp2 <= 0 ? 'p1'
+//     : hp1 <= 0 ? 'p2'
+//     : hp1 > hp2 ? 'p1' : hp2 > hp1 ? 'p2' : 'tie';
+
+//   return { winner, time };
+// }
 
 // ── Per-job execution ──
 // A job = one (attacker vs defender, distance, profile) combo.

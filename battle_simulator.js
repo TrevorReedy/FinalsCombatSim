@@ -5,7 +5,7 @@ let WEAPONS = [];
 
 async function loadWeapons() {
   try {
-    const response = await fetch('./weapons_s10_cleaned.json');
+    const response = await fetch('./weapons_s10_cleaned2.json');
     if (!response.ok) {
       throw new Error(`Failed to load weapons JSON: ${response.status}`);
     }
@@ -291,21 +291,44 @@ function parseNum(s) {
   const m = String(s).match(/[\d.]+/);
   return m ? parseFloat(m[0]) : null;
 }
-
 function getStats(w) {
-  const bodyDmg  = parseNum(w.body_dmg) || 0;
-  const headDmg  = parseNum(w.head_damage) || bodyDmg * 1.5;
-  const rpm      = parseNum(w.rpm) || 60;
-  const isMelee  = w.type === 'Melee';
-  const isBurst  = w.shots_per_burst != null;
-  const bSize    = isBurst ? parseInt(w.shots_per_burst) : 1;
-  const bDelay   = isBurst ? parseFloat(w.delay_in_bursts) : 0;
-  const dropMin  = parseNum(w.damage_dropoff_min_range);
-  const dropMax  = parseNum(w.damage_dropoff_max_range);
-  const dropR    = w.damage_reduction_at_max ? parseFloat(w.damage_reduction_at_max.replace(/[~%]/g,'')) / 100 : 0;
+  const bodyDmg = parseNum(w.body_dmg) || 0;
+  const headDmg = parseNum(w.head_damage) || bodyDmg * 1.5;
+  const rpm = parseNum(w.rpm) || 60;
+  const isMelee = w.type === 'Melee';
+  const isBurst = w.shots_per_burst != null;
+  const bSize = isBurst ? parseInt(w.shots_per_burst) : 1;
+  const bDelay = isBurst ? parseFloat(w.delay_in_bursts) : 0;
+  const dropMin = parseNum(w.damage_dropoff_min_range);
+  const dropMax = parseNum(w.damage_dropoff_max_range);
+  const dropR = w.damage_reduction_at_max
+    ? parseFloat(String(w.damage_reduction_at_max).replace(/[~%]/g, '')) / 100
+    : 0;
+
+  const magSize = parseInt(w.magazine_size) || Infinity;
+  const tacticalReload = parseNum(w.tactical_reload_time) || 0;
+  const emptyReload = parseNum(w.empty_reload_time) || tacticalReload || 0;
+
   const interval = 60 / rpm;
   const classSpd = CLASS_SPEED[w.class];
-  return { bodyDmg, headDmg, rpm, interval, isMelee, isBurst, bSize, bDelay, dropMin, dropMax, dropR, classSpd };
+
+  return {
+    bodyDmg,
+    headDmg,
+    rpm,
+    interval,
+    isMelee,
+    isBurst,
+    bSize,
+    bDelay,
+    dropMin,
+    dropMax,
+    dropR,
+    classSpd,
+    magSize,
+    tacticalReload,
+    emptyReload
+  };
 }
 
 function dropMult(dist, s) {
@@ -359,6 +382,12 @@ while (time < MAX_TIME && hp1 > 0 && hp2 > 0) {
   let pendingDmgToP2 = 0;
 
   if (time >= t1) {
+    if (log) {
+      log.push({
+        type: 'reload',
+        text: `[${time.toFixed(2)}s] P1 🔄 RELOAD (${(s1.emptyReload || s1.tacticalReload || 0).toFixed(2)}s)`
+      })
+    }
     shots1++;
     p1fired = true;
     const hit = Math.random() < p1acc;
@@ -390,6 +419,12 @@ while (time < MAX_TIME && hp1 > 0 && hp2 > 0) {
 
   if (time >= t2) {
     shots2++;
+        if (log) {
+      log.push({
+        type: 'reload',
+        text: `[${time.toFixed(2)}s] P2 🔄 RELOAD (${(s2.emptyReload || s2.tacticalReload || 0).toFixed(2)}s)`
+      })
+    }
     p2fired = true;
     const hit = Math.random() < p2acc;
 
