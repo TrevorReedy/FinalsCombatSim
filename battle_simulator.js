@@ -5,7 +5,7 @@ let WEAPONS = [];
 
 async function loadWeapons() {
   try {
-    const response = await fetch('./weapons_s10_cleaned2.json');
+    const response = await fetch('./weapons_s10_cleaned.json');
     if (!response.ok) {
       throw new Error(`Failed to load weapons JSON: ${response.status}`);
     }
