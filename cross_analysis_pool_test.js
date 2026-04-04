@@ -39,12 +39,39 @@ function getAimProfiles() {
 // ── Job builder ──
 // Produces the full cartesian product: every defender × distance × profile.
 // Each job is a self-contained description; workers need no shared state.
-function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeAdv) {
+// function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeAdv) {
+//   const jobs = [];
+//   let jobId  = 0;
+
+//   weapons.forEach(defender => {
+//     if (defender.name === attacker.name) return;
+//     distances.forEach(distance => {
+//       profiles.forEach(profile => {
+//         jobs.push({
+//           jobId: jobId++,
+//           attacker,
+//           defender,
+//           distance,
+//           profile,
+//           runs: RUNS,
+//           speedOverride,
+//           meleeAdv,
+//           acc: profile.acc,
+//           hs: profile.hs
+//         });
+//       });
+//     });
+//   });
+
+//   return jobs;
+// }
+function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeAdv, attackerAcc, attackerHs) {
   const jobs = [];
   let jobId  = 0;
 
   weapons.forEach(defender => {
     if (defender.name === attacker.name) return;
+
     distances.forEach(distance => {
       profiles.forEach(profile => {
         jobs.push({
@@ -56,8 +83,14 @@ function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeA
           runs: RUNS,
           speedOverride,
           meleeAdv,
-          acc: profile.acc,
-          hs: profile.hs
+
+          // USER / ATTACKER SETTINGS
+          attackerAcc,
+          attackerHs,
+
+          // OPPONENT / DEFENDER SETTINGS
+          defenderAcc: profile.acc,
+          defenderHs: profile.hs
         });
       });
     });
@@ -65,7 +98,6 @@ function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeA
 
   return jobs;
 }
-
 // ── Initial job distribution ──
 // Slice the full queue into POOL_SIZE roughly-equal chunks.
 // Any remainder drips into the first worker's chunk.
@@ -86,8 +118,20 @@ function runCrossAnalysis() {
   const speedOverride = parseFloat(document.getElementById('speed').value);
   const meleeAdv      = document.getElementById('melee-advance').checked;
 
-  const allJobs   = buildJobs(attacker, WEAPONS, distances, profiles, speedOverride, meleeAdv);
-  const totalJobs = allJobs.length;
+  const attackerAcc   = parseFloat(document.getElementById('p1-acc').value) / 100;
+const attackerHs    = parseFloat(document.getElementById('p1-hs').value) / 100;
+
+const allJobs = buildJobs(
+  attacker,
+  WEAPONS,
+  distances,
+  profiles,
+  speedOverride,
+  meleeAdv,
+  attackerAcc,
+  attackerHs
+);
+const totalJobs = allJobs.length;
 
   if (totalJobs === 0) return;
 
@@ -376,7 +420,9 @@ function renderCrossAnalysis(results) {
             <td style="padding:5px 12px 5px 32px;color:var(--muted);font-size:10px;"></td>
             <td style="padding:5px 12px;"></td>
             <td style="padding:5px 12px;color:var(--muted);font-size:10px;"></td>
-            <td style="padding:5px 12px;font-size:10px;letter-spacing:1px;color:var(--white);">${r.profile} | Accuracy % ${(r.acc * 100).toFixed(0)}% | Headshot % ${(r.hs * 100).toFixed(0)}%</td>
+            <td style="padding:5px 12px;font-size:10px;letter-spacing:1px;color:var(--white);">You ${(r.attackerAcc * 100).toFixed(0)}% / ${(r.attackerHs * 100).toFixed(0)}% HS
+              vs ${r.profile}
+              | Opp ${(r.defenderAcc * 100).toFixed(0)}% / ${(r.defenderHs * 100).toFixed(0)}% HS</td>
             <td style="padding:5px 12px;text-align:right;font-family:'Barlow Condensed',sans-serif;
                        font-size:15px;font-weight:700;color:${rowColor};">
               ${(r.winRate * 100).toFixed(1)}%

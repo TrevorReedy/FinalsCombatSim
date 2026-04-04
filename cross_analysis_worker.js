@@ -113,24 +113,48 @@ function simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOverride, 
 // A job = one (attacker vs defender, distance, profile) combo.
 // The worker runs RUNS iterations and returns aggregated stats.
 function runJob(job) {
-  const { attacker, defender, distance, profile, runs, speedOverride, meleeAdv } = job;
+  const {
+  attacker,
+  defender,
+  distance,
+  profile,
+  runs,
+  speedOverride,
+  meleeAdv,
+  attackerAcc,
+  attackerHs,
+  defenderAcc,
+  defenderHs
+} = job;
 
   let wins = 0, losses = 0, ties = 0;
   let attackerTTKSum = 0, defenderTTKSum = 0;
 
   for (let i = 0; i < runs; i++) {
-    const r = simulate(
-      attacker,
-      defender,
-      job.acc,        // ← Player 1 (YOUR slider)
-      job.hs,
-      profile.acc,    // ← Player 2 (profile)
-      profile.hs,
-      distance,
-      speedOverride,
-      meleeAdv,
-      'both'
-    );
+    // const r = simulate(
+    //   attacker,
+    //   defender,
+    //   job.acc,        // ← Player 1 (YOUR slider)
+    //   job.hs,
+    //   profile.acc,    // ← Player 2 (profile)
+    //   profile.hs,
+    //   distance,
+    //   speedOverride,
+    //   meleeAdv,
+    //   'both'
+    // );
+  const r = simulate(
+  attacker,
+  defender,
+  attackerAcc,
+  attackerHs,
+  defenderAcc,
+  defenderHs,
+  distance,
+  speedOverride,
+  meleeAdv,
+  'both'
+);
 
     if (r.winner === 'p1')       { wins++;   attackerTTKSum += r.time; }
     else if (r.winner === 'p2')  { losses++; defenderTTKSum += r.time; }
@@ -141,15 +165,18 @@ function runJob(job) {
   const winRate     = total > 0 ? wins / total : 0;
   const avgAttackerTTK = wins   > 0 ? attackerTTKSum / wins   : null;
   const avgDefenderTTK = losses > 0 ? defenderTTKSum / losses : null;
-
-  return {
+return {
   jobId: job.jobId,
   defender: defender.name,
   class: defender.class,
   distance: job.distance,
   profile: profile.name,
-  acc: profile.acc,
-  hs: profile.hs,
+
+  attackerAcc,
+  attackerHs,
+  defenderAcc,
+  defenderHs,
+
   wins,
   losses,
   ties,
