@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>THE FINALS — Battle Simulator</title>
 <script src="./battle_simulator.js" defer></script>
+<script src="./cross_analysis_pool_test.js" defer></script>
 <link rel="stylesheet" href="battle_simulation.css">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,10 +21,13 @@
   </div>
 </header>
 
-<div class="app">
+<div class="app" style="grid-template-columns: 420px 1fr;">
   <!-- ══ SIDEBAR ══ -->
   <div class="sidebar">
-
+<label class="check-row" style="padding: 12px 18px;">
+  <input type="checkbox" id="ospuze-toggle">
+  <span>OSPUZE Mode</span>
+</label>
     <!-- Fighter tabs -->
     <div class="fighter-tabs">
       <div class="ftab active p1" onclick="switchFighterTab(1,this)">◈ Player 1</div>
@@ -125,7 +129,11 @@
 
     <div class="run-row">
       <button class="btn-run" id="run-btn" onclick="runSim()">▶ SIMULATE</button>
+    <button id="cross-btn" class="btn-run" onclick="runCrossAnalysis()">📊 CROSS ANALYSIS</button>
+    </button>
+      
     </div>
+
 
   </div>
 
@@ -154,62 +162,79 @@
     </div>
 
     <!-- Results -->
-    <div class="results-area" id="results-area">
-      <div class="tab-bar">
-        <div class="tab active" onclick="switchTab('result',this)">Result</div>
-        <div class="tab" onclick="switchTab('log',this)">Combat Log</div>
-        <div class="tab" id="multi-tab" onclick="switchTab('multi',this)" style="display:none;">Multi Stats</div>
-      </div>
+    <!-- Results -->
+<div class="results-area" id="results-area">
+  <div class="tab-bar">
+    <div class="tab active" onclick="switchTab('result',this)">Result</div>
+    <div class="tab" onclick="switchTab('log',this)">Combat Log</div>
+    <div class="tab" id="multi-tab" onclick="switchTab('multi',this)" style="display:none;">Multi Stats</div>
+    <div class="tab" onclick="switchTab('cross',this)">Cross Analysis</div>
+  </div>
 
-      <div class="tab-content active" id="tab-result">
-        <div class="winner-banner" id="winner-banner" style="display:none;">
-          <div class="winner-icon" id="winner-icon">🏆</div>
-          <div>
-            <div class="winner-name" id="winner-name">—</div>
-            <div class="winner-sub" id="winner-sub"></div>
-          </div>
-        </div>
-        <div class="stats-grid" id="stats-grid" style="display:none;">
-          <div class="stat-cell"><div class="stat-label">P1 Damage</div><div class="stat-val p1" id="s-p1-dmg">—</div></div>
-          <div class="stat-cell"><div class="stat-label">P1 Shots/Hit/HS</div><div class="stat-val p1" id="s-p1-shs">—</div></div>
-          <div class="stat-cell"><div class="stat-label">P2 Damage</div><div class="stat-val p2" id="s-p2-dmg">—</div></div>
-          <div class="stat-cell"><div class="stat-label">P2 Shots/Hit/HS</div><div class="stat-val p2" id="s-p2-shs">—</div></div>
-          <div class="stat-cell"><div class="stat-label">Time to Kill</div><div class="stat-val neutral" id="s-ttk">—</div></div>
-          <div class="stat-cell"><div class="stat-label">Final Range</div><div class="stat-val neutral" id="s-range">—</div></div>
-          <div class="stat-cell"><div class="stat-label">P1 HP Left</div><div class="stat-val p1" id="s-p1-hp">—</div></div>
-          <div class="stat-cell"><div class="stat-label">P2 HP Left</div><div class="stat-val p2" id="s-p2-hp">—</div></div>
-        </div>
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;letter-spacing:2px;" id="pre-run-msg">RUN A SIMULATION TO SEE RESULTS</div>
-      </div>
-
-      <div class="tab-content" id="tab-log">
-        <div id="combat-log" style="font-size:11px;line-height:1.9;padding:10px 14px;"></div>
-      </div>
-
-      <div class="tab-content" id="tab-multi">
-        <div class="winrate-section">
-          <div class="winrate-labels">
-            <span id="wr-p1-lbl" style="color:var(--blue)">P1: —</span>
-            <span id="wr-tie-lbl" style="color:var(--accent)">TIE: —</span>
-            <span id="wr-p2-lbl" style="color:var(--red)">P2: —</span>
-          </div>
-          <div class="winrate-bar">
-            <div class="wr-p1" id="wr-p1-bar" style="width:0%;transition:width .5s ease;"></div>
-            <div class="wr-tie" id="wr-tie-bar" style="width:0%;transition:width .5s ease;"></div>
-            <div class="wr-p2" id="wr-p2-bar" style="width:0%;transition:width .5s ease;"></div>
-          </div>
-        </div>
-        <div class="multi-grid">
-          <div class="multi-cell"><div class="stat-label">P1 Wins</div><div class="stat-val p1" id="ms-w1">—</div></div>
-          <div class="multi-cell"><div class="stat-label">Ties</div><div class="stat-val neutral" id="ms-tie">—</div></div>
-          <div class="multi-cell"><div class="stat-label">P2 Wins</div><div class="stat-val p2" id="ms-w2">—</div></div>
-          <div class="multi-cell"><div class="stat-label">Avg TTK (P1 win)</div><div class="stat-val p1" id="ms-ttk1">—</div></div>
-          <div class="multi-cell"><div class="stat-label">Avg HP Left P1</div><div class="stat-val p1" id="ms-hp1">—</div></div>
-          <div class="multi-cell"><div class="stat-label">Avg HP Left P2</div><div class="stat-val p2" id="ms-hp2">—</div></div>
-        </div>
+  <div class="tab-content active" id="tab-result">
+    <div class="winner-banner" id="winner-banner" style="display:none;">
+      <div class="winner-icon" id="winner-icon">🏆</div>
+      <div>
+        <div class="winner-name" id="winner-name">—</div>
+        <div class="winner-sub" id="winner-sub"></div>
       </div>
     </div>
+    <div class="stats-grid" id="stats-grid" style="display:none;">
+      <div class="stat-cell"><div class="stat-label">P1 Damage</div><div class="stat-val p1" id="s-p1-dmg">—</div></div>
+      <div class="stat-cell"><div class="stat-label">P1 Shots/Hit/HS</div><div class="stat-val p1" id="s-p1-shs">—</div></div>
+      <div class="stat-cell"><div class="stat-label">P2 Damage</div><div class="stat-val p2" id="s-p2-dmg">—</div></div>
+      <div class="stat-cell"><div class="stat-label">P2 Shots/Hit/HS</div><div class="stat-val p2" id="s-p2-shs">—</div></div>
+      <div class="stat-cell"><div class="stat-label">Time to Kill</div><div class="stat-val neutral" id="s-ttk">—</div></div>
+      <div class="stat-cell"><div class="stat-label">Final Range</div><div class="stat-val neutral" id="s-range">—</div></div>
+      <div class="stat-cell"><div class="stat-label">P1 HP Left</div><div class="stat-val p1" id="s-p1-hp">—</div></div>
+      <div class="stat-cell"><div class="stat-label">P2 HP Left</div><div class="stat-val p2" id="s-p2-hp">—</div></div>
+    </div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;letter-spacing:2px;" id="pre-run-msg">RUN A SIMULATION TO SEE RESULTS</div>
+  </div>
+
+  <div class="tab-content" id="tab-log">
+    <div id="combat-log" style="font-size:11px;line-height:1.9;padding:10px 14px;"></div>
+  </div>
+
+  <div class="tab-content" id="tab-multi">
+    <div class="winrate-section">
+      <div class="winrate-labels">
+        <span id="wr-p1-lbl" style="color:var(--blue)">P1: —</span>
+        <span id="wr-tie-lbl" style="color:var(--accent)">TIE: —</span>
+        <span id="wr-p2-lbl" style="color:var(--red)">P2: —</span>
+      </div>
+      <div class="winrate-bar">
+        <div class="wr-p1" id="wr-p1-bar" style="width:0%;transition:width .5s ease;"></div>
+        <div class="wr-tie" id="wr-tie-bar" style="width:0%;transition:width .5s ease;"></div>
+        <div class="wr-p2" id="wr-p2-bar" style="width:0%;transition:width .5s ease;"></div>
+      </div>
+    </div>
+    <div class="multi-grid">
+      <div class="multi-cell"><div class="stat-label">P1 Wins</div><div class="stat-val p1" id="ms-w1">—</div></div>
+      <div class="multi-cell"><div class="stat-label">Ties</div><div class="stat-val neutral" id="ms-tie">—</div></div>
+      <div class="multi-cell"><div class="stat-label">P2 Wins</div><div class="stat-val p2" id="ms-w2">—</div></div>
+      <div class="multi-cell"><div class="stat-label">Avg TTK (P1 win)</div><div class="stat-val p1" id="ms-ttk1">—</div></div>
+      <div class="multi-cell"><div class="stat-label">Avg HP Left P1</div><div class="stat-val p1" id="ms-hp1">—</div></div>
+      <div class="multi-cell"><div class="stat-label">Avg HP Left P2</div><div class="stat-val p2" id="ms-hp2">—</div></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-cross">
+    <div id="cross-table" style="padding:10px;" textcontent="AK47"></div>
   </div>
 </div>
+<script>
+  const ospuzeToggle = document.getElementById('ospuze-toggle');
+
+  ospuzeToggle?.addEventListener('change', function () {
+    document.body.classList.toggle('ospuze-mode', this.checked);
+    localStorage.setItem('ospuzeMode', this.checked ? 'on' : 'off');
+  });
+
+  if (localStorage.getItem('ospuzeMode') === 'on') {
+    document.body.classList.add('ospuze-mode');
+    if (ospuzeToggle) ospuzeToggle.checked = true;
+  }
+</script>
 </body>
 </html>

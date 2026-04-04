@@ -1,8 +1,75 @@
+
 :root {
-  --bg:#08090b; --surface:#0f1115; --card:#14171f; --border:#1e232e;
-  --accent:#f0b429; --red:#e84040; --green:#39d974; --blue:#4a9eff;
-  --purple:#9d7fff; --text:#dde2ec; --muted:#5a6378;
-  --light-cl:#4a9eff; --med-cl:#39d974; --heavy-cl:#f0b429;
+  --bg: #08090b;
+  --surface: #0f1115;
+  --card: #14171f;
+  --border: #1e232e;
+
+  --accent: #e84040;      /* THE FINALS red */
+  --red: #e84040;
+  --green: #39d974;
+  --blue: #4a9eff;
+  --purple: #9d7fff;
+
+  --text: #f3f3f0;
+  --muted: #8b93a7;
+
+  --light-cl: #4a9eff;
+  --med-cl: #39d974;
+  --heavy-cl: #f2d13d;
+}
+
+/* OSPUZE MODE */
+body.ospuze-mode {
+  --bg: #0d0d0a;
+  --surface: #17150d;
+  --card: #201c10;
+  --border: #3a3218;
+
+  --accent: #e0b81d;      /* OSPUZE yellow */
+  --red: #e84040;         /* keep Finals red available */
+  --green: #8ddc57;
+  --blue: #f2d13d;        /* shift emphasis toward yellow */
+  --purple: #c89b2b;
+
+  --text: #f7f1d0;
+  --muted: #b7ab72;
+
+  --light-cl: #f2d13d;
+  --med-cl: #d7c04b;
+  --heavy-cl: #e0b81d;
+}
+
+body.ospuze-mode header {
+  background: linear-gradient(135deg, #18150c 0%, #2a2412 100%);
+  border-bottom-color: var(--accent);
+}
+
+body.ospuze-mode .logo {
+  color: var(--accent);
+  text-shadow: 0 0 24px rgba(224, 184, 29, 0.45);
+}
+
+body.ospuze-mode .btn-run {
+  background: var(--accent);
+  color: #111;
+}
+
+body.ospuze-mode .btn-run:hover {
+  background: #f2d13d;
+}
+
+body.ospuze-mode .tab.active,
+body.ospuze-mode .tbtn.active,
+body.ospuze-mode .range-val,
+body.ospuze-mode .dist-big {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+body.ospuze-mode .tbtn.active {
+  background: var(--accent);
+  color: #111;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
@@ -141,3 +208,67 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 .speed-chip.fast{color:var(--light-cl);border-color:var(--light-cl);}
 .speed-chip.med{color:var(--med-cl);border-color:var(--med-cl);}
 .speed-chip.slow{color:var(--heavy-cl);border-color:var(--heavy-cl);}
+
+/* ───────── GLOBAL TEXT SCALE ───────── */
+body {
+  font-size: 16px; /* was 13px */
+}
+
+/* Labels / small UI text */
+label,
+.section-title,
+.stat-label,
+.tab,
+.weapon-note,
+.check-row span {
+  font-size: 13px !important;
+}
+
+/* Dropdowns / inputs */
+select,
+input[type=number] {
+  font-size: 14px !important;
+}
+
+/* Range values */
+.range-val {
+  font-size: 20px !important;
+}
+
+/* HUD text */
+.hud-name {
+  font-size: 20px !important;
+}
+.hud-hp-val {
+  font-size: 14px !important;
+}
+.dist-big {
+  font-size: 28px !important;
+}
+.time-small {
+  font-size: 13px !important;
+}
+
+/* Winner + stats */
+.winner-name {
+  font-size: 42px !important;
+}
+.stat-val {
+  font-size: 30px !important;
+}
+
+/* Table text (CROSS ANALYSIS) */
+table {
+  font-size: 14px !important;
+}
+th {
+  font-size: 12px !important;
+}
+td {
+  font-size: 13px !important;
+}
+
+/* Buttons */
+.btn-run {
+  font-size: 22px !important;
+}

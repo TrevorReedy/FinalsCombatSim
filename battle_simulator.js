@@ -5,7 +5,7 @@ let WEAPONS = [];
 
 async function loadWeapons() {
   try {
-    const response = await fetch('./weapons_s10_test.json');
+    const response = await fetch('./weapons_s10_cleaned.json');
     if (!response.ok) {
       throw new Error(`Failed to load weapons JSON: ${response.status}`);
     }
@@ -32,7 +32,7 @@ async function loadWeapons() {
     drawIdle();
   } catch (err) {
     console.error(err);
-    alert('Could not load weapons_s10_test.json');
+    alert('Could not load weapons_s10_cleaned.json');
   }
 }
 
@@ -721,4 +721,190 @@ syncRange(document.getElementById('speed'), 'sp-v', '');
   document.getElementById(id).addEventListener('input', drawIdle);
 });
 drawIdle();
+// v1.2.0 - added cross analysis engine (commented out for now to focus on core sim and UI)
+// ═══════════════════════════════════════
+// CROSS ANALYSIS ENGINE
+// ═══════════════════════════════════════
+
+// function getAimProfiles() {
+//   return [
+//     { name: 'Poor', acc: 0.5, hs: 0.2 },
+//     { name: 'Average', acc: 0.75, hs: 0.35 },
+//     { name: 'Strong', acc: 0.9, hs: 0.55 },
+//     { name: 'Elite', acc: 0.99, hs: 0.8 }
+//   ];
+// }
+
+// function getDistances() {
+//   return [0, 15, 25, 30, 50, 75, 100];
+// }
+
+// function classifyMatchup(winRate) {
+//   if (winRate >= 0.6) return 'favorable';
+//   if (winRate >= 0.4) return 'even';
+//   return 'unfavorable';
+// }
+// function runCrossAnalysis() {
+//     start = performance.now();
+//   const attacker = WEAPONS[parseInt(document.getElementById('p1-weapon').value)];
+//   const distances = getDistances();
+//   const profiles = getAimProfiles();
+
+//   const speedOv = parseFloat(document.getElementById('speed').value);
+//   const meleeAdv = document.getElementById('melee-advance').checked;
+
+//   console.log("=== CROSS ANALYSIS START ===");
+//   console.log("Attacker:", attacker?.name);
+//   console.log("Distances:", distances);
+//   console.log("Profiles:", profiles);
+//   console.log("Speed Override:", speedOv);
+//   console.log("Melee Advance:", meleeAdv);
+
+//   const results = [];
+
+//   WEAPONS.forEach(defender => {
+//     if (defender.name === attacker.name) return;
+
+//     console.log(`\n--- Defender: ${defender.name} (${defender.class}) ---`);
+
+//     distances.forEach(dist => {
+//       profiles.forEach(profile => {
+
+//         console.log(`\n[SCENARIO] Dist=${dist} | Profile=${profile.name}`);
+
+//         let wins = 0;
+//         let losses = 0;
+//         let ttkSum = 0;
+
+//         const RUNS = 10000;
+
+//         for (let i = 0; i < RUNS; i++) {
+//           const r = simulate(
+//             attacker,
+//             defender,
+//             profile.acc,
+//             profile.hs,
+//             profile.acc,
+//             profile.hs,
+//             dist,
+//             speedOv,
+//             meleeAdv,
+//             'both',
+//             false
+//           );
+
+//           console.log(`Run ${i + 1}: Winner=${r.winner}, Time=${r.time}`);
+
+//           if (r.winner === 'p1') {
+//             wins++;
+//             ttkSum += r.time;
+//           } else if (r.winner === 'p2') {
+//             losses++;
+//           }
+//         }
+
+//         const total = wins + losses;
+//         const winRate = total > 0 ? wins / total : 0;
+//         const avgTTK = wins > 0 ? (ttkSum / wins) : null;
+
+//         console.log("RESULT SUMMARY:", {
+//           wins,
+//           losses,
+//           total,
+//           winRate,
+//           avgTTK
+//         });
+
+//         const row = {
+//           attacker: attacker.name,
+//           defender: defender.name,
+//           class: defender.class,
+//           distance: dist,
+//           profile: profile.name,
+//           ttk: avgTTK,
+//           winRate,
+//           result: classifyMatchup(winRate)
+//         };
+
+//         console.log("PUSH ROW:", row);
+
+//         results.push(row);
+
+//       });
+//     });
+//   });
+
+//   console.log("\n=== FINAL RESULTS COUNT ===", results.length);
+//   console.log("Sample Results:", results.slice(0, 5));
+//   end = performance.now();
+//   console.log(`Cross analysis (${RUNS} Battles) completed in ${(end - start) / 1000} seconds`);
+//   renderCrossAnalysis(results);
+//   rendered = performance.now();
+//   console.log(`Rendering (${RUNS} battles) completed in ${(rendered - end) / 1000} seconds`);
+// }
+
+// function renderCrossAnalysis(results) {
+//   console.log("\n=== RENDER START ===");
+//   console.log("Incoming results length:", results.length);
+
+//   const container = document.getElementById('cross-table');
+
+//   if (!container) {
+//     console.error("❌ cross-table NOT FOUND");
+//     return;
+//   }
+
+//   console.log("✅ cross-table found");
+
+//   let html = `
+//     <table style="width:100%; font-size:11px;">
+//       <tr>
+//         <th>Defender</th>
+//         <th>Class</th>
+//         <th>Dist</th>
+//         <th>Profile</th>
+//         <th>TTK</th>
+//         <th>Win%</th>
+//         <th>Result</th>
+//       </tr>
+//   `;
+
+//   results.forEach((r, i) => {
+//     if (i < 5) console.log("Rendering row:", r); // only first 5 to avoid spam
+
+//     const color =
+//       r.result === 'favorable' ? '#39d974' :
+//       r.result === 'unfavorable' ? '#e84040' :
+//       '#f0b429';
+
+//     html += `
+//       <tr>
+//         <td>${r.defender}</td>
+//         <td>${r.class}</td>
+//         <td>${r.distance}</td>
+//         <td>${r.profile}</td>
+//         <td>${r.ttk ? r.ttk.toFixed(2) : '-'}</td>
+//         <td>${(r.winRate * 100).toFixed(1)}%</td>
+//         <td style="color:${color}">${r.result}</td>
+//       </tr>
+//     `;
+//   });
+
+//   html += `</table>`;
+
+//   container.innerHTML = html;
+
+//   console.log("✅ HTML injected into DOM");
+
+//   const tabBtn = document.querySelector('[onclick*="cross"]');
+
+//   if (!tabBtn) {
+//     console.error("❌ Cross tab button NOT FOUND");
+//   } else {
+//     console.log("✅ Cross tab button found, switching tab");
+//   }
+
+//   switchTab('cross', tabBtn);
+// }
+
 
