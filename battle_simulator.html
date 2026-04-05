@@ -193,14 +193,14 @@
   </div>
 
   <div class="tab-content" id="tab-log">
-    <div id="combat-log" style="font-size:11px;line-height:1.9;padding:10px 14px;"></div>
+    <div id="combat-log" style="font-size:11px;line-height:1.9;padding:10px 14px; font-size: 20px;"></div>
   </div>
 
   <div class="tab-content" id="tab-multi">
     <div class="winrate-section">
       <div class="winrate-labels">
         <span id="wr-p1-lbl" style="color:var(--blue)">P1: —</span>
-        <span id="wr-tie-lbl" style="color:var(--accent)">TIE: —</span>
+        <span id="wr-tie-lbl" style="color:var(--tie)">TIE: —</span>
         <span id="wr-p2-lbl" style="color:var(--red)">P2: —</span>
       </div>
       <div class="winrate-bar">
@@ -209,13 +209,35 @@
         <div class="wr-p2" id="wr-p2-bar" style="width:0%;transition:width .5s ease;"></div>
       </div>
     </div>
-    <div class="multi-grid">
-      <div class="multi-cell"><div class="stat-label">P1 Wins</div><div class="stat-val p1" id="ms-w1">—</div></div>
-      <div class="multi-cell"><div class="stat-label">Ties</div><div class="stat-val neutral" id="ms-tie">—</div></div>
-      <div class="multi-cell"><div class="stat-label">P2 Wins</div><div class="stat-val p2" id="ms-w2">—</div></div>
-      <div class="multi-cell"><div class="stat-label">Avg TTK (P1 win)</div><div class="stat-val p1" id="ms-ttk1">—</div></div>
-      <div class="multi-cell"><div class="stat-label">Avg HP Left P1</div><div class="stat-val p1" id="ms-hp1">—</div></div>
-      <div class="multi-cell"><div class="stat-label">Avg HP Left P2</div><div class="stat-val p2" id="ms-hp2">—</div></div>
+   
+
+
+      
+       <div class="multi-grid display:flex; flex-direction:row; flex-wrap:wrap;">
+
+      <div class="left-mult-=grid">
+              <div class="multi-cell"><div class="stat-label">P1 Wins</div><div class="stat-val p1" id="ms-w1">—</div></div>
+              <div class="multi-cell"><div class="stat-label">P1 Looses</div><div class="stat-val p1" id="ms-l1">—</div></div>
+              <div class="multi-cell"><div class="stat-label">Avg TTK P1 </div><div class="stat-val p1" id="ms-ttk1">—</div></div>
+              <div class="multi-cell"><div class="stat-label">Avg HP Left P1</div><div class="stat-val p1" id="ms-hp1">—</div></div>
+              <div class="multi-cell"><div class="stat-label">Avg Bullets To Kill P2</div><div class="stat-val p2" id="ms-bulletsToKill1">—</div></div>
+      </div>       
+      <div class="middle-multi-grid">
+        <div class="multi-cell"><div class="stat-label">Ties</div><div class="stat-val neutral" id="ms-tie">—</div></div>
+      </div>
+
+      <div class="right-multi-grid">
+              <div class="left-mult-=grid">
+              <div class="multi-cell"><div class="stat-label">P2 Wins</div><div class="stat-val p2" id="ms-w2">—</div></div>
+              <div class="multi-cell"><div class="stat-label">P2 Looses</div><div class="stat-val p2" id="ms-l2">—</div></div>
+              <div class="multi-cell"><div class="stat-label">Avg TTK P2</div><div class="stat-val p2" id="ms-ttk2">—</div></div>
+              <div class="multi-cell"><div class="stat-label">Avg HP Left P2</div><div class="stat-val p2" id="ms-hp2">—</div></div>
+              <div class="multi-cell"><div class="stat-label">Avg Bullets To Kill P1</div><div class="stat-val p1" id="ms-bulletsToKill2">—</div></div>
+
+      </div>
+    </div>
+
+
     </div>
   </div>
 

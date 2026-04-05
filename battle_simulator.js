@@ -103,8 +103,8 @@ function drawFrame(frame) {
   function toX(pos) { return margin + (pos / maxDist) * trackW; }
 
   // P1 is at position 0, P2 at position frame.dist
-  const p1x = toX(frame.p1pos);
-  const p2x = toX(frame.p2pos);
+  const p1x = toX(frame.p1_position);
+  const p2x = toX(frame.p2_position);
 
   // Draw bullets/projectiles
   frame.projectiles.forEach(p => {
@@ -305,7 +305,9 @@ function getStats(w) {
     ? parseFloat(String(w.damage_reduction_at_max).replace(/[~%]/g, '')) / 100
     : 0;
 
-  const magSize = parseInt(w.magazine_size) || Infinity;
+ const magSize = Number.isFinite(parseInt(w.magazine_size))
+  ? parseInt(w.magazine_size)
+  : Infinity;
   const tacticalReload = parseNum(w.tactical_reload_time) || 0;
   const emptyReload = parseNum(w.empty_reload_time) || tacticalReload || 0;
 
@@ -349,7 +351,7 @@ function simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOverride, 
 
   let dist = startDist;
   // P1 is at 0, P2 at startDist
-  let p1pos = 0, p2pos = startDist;
+  let p1_position = 0, p2_position = startDist;
 
   let time = 0;
   let t1 = fsa === 'p2' ? s1.interval : 0;
@@ -373,85 +375,26 @@ while (time < MAX_TIME && hp1 > 0 && hp2 > 0) {
   // Movement
   const advancing1 = s1.isMelee || meleeAdv;
   const advancing2 = s2.isMelee || meleeAdv;
-  if (advancing1) p1pos = Math.min(p1pos + spd1 * DT, p2pos - MELEE_RANGE);
-  if (advancing2) p2pos = Math.max(p2pos - spd2 * DT, p1pos + MELEE_RANGE);
-  dist = Math.max(0, p2pos - p1pos);
+  if (advancing1) p1_position = Math.min(p1_position + spd1 * DT, p2_position - MELEE_RANGE);
+  if (advancing2) p2_position = Math.max(p2_position - spd2 * DT, p1_position + MELEE_RANGE);
+  dist = Math.max(0, p2_position - p1_position);
 
   // Simultaneous firing
   let pendingDmgToP1 = 0;
   let pendingDmgToP2 = 0;
 
-  if (time >= t1) {
-    if (log) {
-      log.push({
-        type: 'reload',
-        text: `[${time.toFixed(2)}s] P1 🔄 RELOAD (${(s1.emptyReload || s1.tacticalReload || 0).toFixed(2)}s)`
-      })
-    }
-    shots1++;
-    p1fired = true;
-    const hit = Math.random() < p1acc;
+const p1State = { id: 'P1', nextT: t1, shots: shots1, hits: hits1, hsCount: hs1count, dmg: dmg1, magShots: 0, bShots: b1shots, fired: false, hit: false, isHS: false };
+const p2State = { id: 'P2', nextT: t2, shots: shots2, hits: hits2, hsCount: hs2count, dmg: dmg2, magShots: 0, bShots: b2shots, fired: false, hit: false, isHS: false };
 
-    if (hit) {
-      const isHS = (s1.headDmg > s1.bodyDmg) && Math.random() < p1hs;
-      const dmg = (isHS ? s1.headDmg : s1.bodyDmg) * dropMult(dist, s1);
+// inside the loop, replacing both blocks:
+if (time >= p1State.nextT) pendingDmgToP2 += fireShot({ id: 'P1' }, s1, p1acc, p1hs, dist, time, p1State, log, frames, projectiles, p1_position, p2_position);
+if (time >= p2State.nextT) pendingDmgToP1 += fireShot({ id: 'P2' }, s2, p2acc, p2hs, dist, time, p2State, log, frames, projectiles, p1_position, p2_position);
+// then sync back out after the loop
+t1 = p1State.nextT; shots1 = p1State.shots; hits1 = p1State.hits; hs1count = p1State.hsCount; dmg1 = p1State.dmg;
+t2 = p2State.nextT; shots2 = p2State.shots; hits2 = p2State.hits; hs2count = p2State.hsCount; dmg2 = p2State.dmg;
+p1fired = p1State.fired; p1hit = p1State.hit; p1isHS = p1State.isHS;
+p2fired = p2State.fired; p2hit = p2State.hit; p2isHS = p2State.isHS;
 
-      pendingDmgToP2 += dmg;
-      dmg1 += dmg;
-      hits1++;
-      if (isHS) hs1count++;
-      p1hit = true;
-      p1isHS = isHS;
-
-      if (log) log.push({ type: isHS ? 'hs' : 'hp1', text: `[${time.toFixed(2)}s] P1 ${isHS ? '🎯 HEADSHOT' : '→ HIT'} for ${dmg.toFixed(1)}` });
-      if (frames) projectiles.push({ x: (p1pos + p2pos) / 2, owner: 1, isHS, age: 0 });
-    } else {
-      if (log) log.push({ type: 'info', text: `[${time.toFixed(2)}s] P1 → MISS` });
-    }
-
-    if (s1.isBurst) {
-      b1shots++;
-      t1 += b1shots < s1.bSize ? s1.interval : (b1shots = 0, s1.bDelay + s1.interval);
-    } else {
-      t1 += s1.interval;
-    }
-  }
-
-  if (time >= t2) {
-    shots2++;
-        if (log) {
-      log.push({
-        type: 'reload',
-        text: `[${time.toFixed(2)}s] P2 🔄 RELOAD (${(s2.emptyReload || s2.tacticalReload || 0).toFixed(2)}s)`
-      })
-    }
-    p2fired = true;
-    const hit = Math.random() < p2acc;
-
-    if (hit) {
-      const isHS = (s2.headDmg > s2.bodyDmg) && Math.random() < p2hs;
-      const dmg = (isHS ? s2.headDmg : s2.bodyDmg) * dropMult(dist, s2);
-
-      pendingDmgToP1 += dmg;
-      dmg2 += dmg;
-      hits2++;
-      if (isHS) hs2count++;
-      p2hit = true;
-      p2isHS = isHS;
-
-      if (log) log.push({ type: isHS ? 'hs' : 'hp2', text: `[${time.toFixed(2)}s] P2 ${isHS ? '🎯 HEADSHOT' : '→ HIT'} for ${dmg.toFixed(1)}` });
-      if (frames) projectiles.push({ x: (p1pos + p2pos) / 2, owner: 2, isHS, age: 0 });
-    } else {
-      if (log) log.push({ type: 'info', text: `[${time.toFixed(2)}s] P2 → MISS` });
-    }
-
-    if (s2.isBurst) {
-      b2shots++;
-      t2 += b2shots < s2.bSize ? s2.interval : (b2shots = 0, s2.bDelay + s2.interval);
-    } else {
-      t2 += s2.interval;
-    }
-  }
 
   // Apply both at once
   hp2 = Math.max(0, hp2 - pendingDmgToP2);
@@ -465,8 +408,8 @@ while (time < MAX_TIME && hp1 > 0 && hp2 > 0) {
     frames.push({
       time,
       dist,
-      p1pos: p1pos,
-      p2pos: p2pos,
+      p1_position: p1_position,
+      p2_position: p2_position,
       hp1,
       hp2,
       maxHP1,
@@ -493,7 +436,7 @@ while (time < MAX_TIME && hp1 > 0 && hp2 > 0) {
   // Final frame
   if (frames) {
     const winner = hp1 <= 0 && hp2 <= 0 ? 'tie' : hp2 <= 0 ? 'p1' : hp1 <= 0 ? 'p2' : (hp1 > hp2 ? 'p1' : hp2 > hp1 ? 'p2' : 'tie');
-    frames.push({ time, dist, p1pos: p1pos/startDist*100, p2pos: p2pos/startDist*100, hp1: Math.max(0,hp1), hp2: Math.max(0,hp2), maxHP1, maxHP2, p1class: p1w.class, p2class: p2w.class, p1flash:false, p2flash:false, p1hit:false, p2hit:false, p1hs:false, p2hs:false, initDist: startDist, projectiles: [], winner });
+    frames.push({ time, dist, p1_position: p1_position/startDist*100, p2_position: p2_position/startDist*100, hp1: Math.max(0,hp1), hp2: Math.max(0,hp2), maxHP1, maxHP2, p1class: p1w.class, p2class: p2w.class, p1flash:false, p2flash:false, p1hit:false, p2hit:false, p1hs:false, p2hs:false, initDist: startDist, projectiles: [], winner });
     log.push({ type: 'kill', text: winner==='tie' ? '⚡ TIE — BOTH ELIMINATED' : winner==='p1' ? '🏆 PLAYER 1 WINS' : '🏆 PLAYER 2 WINS' });
   }
 
@@ -531,6 +474,58 @@ function playback(rafTime) {
     showResults(lastResult);
     document.getElementById('run-btn').disabled = false;
   }
+}
+
+function fireShot(player, s, acc, hs, dist, time, state, log, frames, projectiles, p1_position, p2_position) {
+  const { id } = player; // 'P1' or 'P2'
+  state.shots++;
+  state.fired = true;
+
+  const hit = Math.random() < acc;
+  let dmg = 0, isHS = false;
+
+  if (hit) {
+    isHS = (s.headDmg > s.bodyDmg) && Math.random() < hs;
+    dmg  = (isHS ? s.headDmg : s.bodyDmg) * dropMult(dist, s);
+    state.dmg     += dmg;
+    state.hits++;
+    if (isHS) state.hsCount++;
+    state.hit  = true;
+    state.isHS = isHS;
+    if (log) log.push({ type: isHS ? 'hs' : (id === 'P1' ? 'hp1' : 'hp2'), text: `[${time.toFixed(2)}s] ${id} ${isHS ? '🎯 HEADSHOT' : '→ HIT'} for ${dmg.toFixed(1)} hit count: ${typeof state === 'object' ? state.hits : 'N/A'}` });
+    if (frames) projectiles.push({ x: (p1_position + p2_position) / 2, owner: id === 'P1' ? 1 : 2, isHS, age: 0 });
+  } else {
+    if (log) log.push({ type: 'info', text: `[${time.toFixed(2)}s] ${id} → MISS` });
+  }
+
+  // Advance next fire time, handling burst and reload
+  if (s.isBurst) {
+    state.bShots++;
+    if (state.bShots < s.bSize) {
+      state.nextT += s.interval;
+    } else {
+      state.bShots = 0;
+      state.magShots++;
+      if (s.magSize !== null && state.magShots >= s.magSize) {
+        state.magShots = 0;
+        state.nextT   += s.emptyReload;
+        if (log) log.push({ type: 'reload', text: `[${time.toFixed(2)}s] ${id} 🔄 RELOAD (${s.emptyReload.toFixed(2)}s)` });
+      } else {
+        state.nextT += s.bDelay + s.interval;
+      }
+    }
+  } else {
+    state.magShots++;
+    if (s.magSize !== null && state.magShots >= s.magSize) {
+      state.magShots = 0;
+      state.nextT   += s.emptyReload;
+      if (log) log.push({ type: 'reload', text: `[${time.toFixed(2)}s] ${id} 🔄 RELOAD (${s.emptyReload.toFixed(2)}s)` });
+    } else {
+      state.nextT += s.interval;
+    }
+  }
+
+  return dmg;
 }
 
 // ═══════════════════════════════════════
@@ -575,11 +570,17 @@ function runSim() {
 
   // Multi sim
   if (simMode === 'multi' && simN > 1) {
-    let w1=0, w2=0, ties=0, ttkArr=[], hp1Arr=[], hp2Arr=[];
+    let w1=0, w2=0, ties=0, ttkArr1=[], ttkArr2=[], hp1Arr=[], hp2Arr=[]; bulletsToKill1=[], bulletsToKill2=[];
     for (let i = 0; i < simN; i++) {
       const r = simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOv, meleeAdv, firstShot, false);
-      if (r.winner==='p1') { w1++; ttkArr.push(r.time); }
-      else if (r.winner==='p2') { w2++; }
+      if (r.winner==='p1') { 
+      w1++; ttkArr1.push(r.time);
+        bulletsToKill1.push(r.hits1);
+      }
+      else if (r.winner==='p2') { 
+        w2++; ttkArr2.push(r.time);
+       bulletsToKill2.push(r.hits2);
+       }
       else ties++;
       hp1Arr.push(r.hp1); hp2Arr.push(r.hp2);
     }
@@ -593,10 +594,23 @@ function runSim() {
     document.getElementById('wr-p2-lbl').textContent = `P2: ${pct(w2)}%`;
     document.getElementById('ms-w1').textContent = w1;
     document.getElementById('ms-w2').textContent = w2;
+
+    document.getElementById('ms-l1').textContent = w2;
+    document.getElementById('ms-l2').textContent = w1;
+
+
     document.getElementById('ms-tie').textContent = ties;
-    document.getElementById('ms-ttk1').textContent = ttkArr.length ? avg(ttkArr)+'s' : '—';
+    document.getElementById('ms-ttk1').textContent = ttkArr1.length ? avg(ttkArr1)+'s' : '—';
+    document.getElementById('ms-ttk2').textContent = ttkArr2.length ? avg(ttkArr2)+'s' : '—';
+
     document.getElementById('ms-hp1').textContent = avg(hp1Arr);
     document.getElementById('ms-hp2').textContent = avg(hp2Arr);
+
+    console.log('Bullets to kill P1:', bulletsToKill1);
+    console.log('Bullets to kill P2:', bulletsToKill2);
+    document.getElementById('ms-bulletsToKill1').textContent = Math.ceil(avg(bulletsToKill1));
+    document.getElementById('ms-bulletsToKill2').textContent = Math.ceil(avg(bulletsToKill2));
+
     document.getElementById('multi-tab').style.display = '';
   } else {
     document.getElementById('multi-tab').style.display = 'none';

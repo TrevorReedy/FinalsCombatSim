@@ -6,6 +6,7 @@
   --border: #1e232e;
 
   --accent: #e84040;      /* THE FINALS red */
+  --tie: #fcfcfc;         /* new yellow for ties */
   --red: #e84040;
   --green: #39d974;
   --blue: #4a9eff;
@@ -16,7 +17,7 @@
 
   --light-cl: #4a9eff;
   --med-cl: #39d974;
-  --heavy-cl: #f2d13d;
+  --heavy-cl: #000000;
 }
 
 /* OSPUZE MODE */
@@ -27,9 +28,10 @@ body.ospuze-mode {
   --border: #3a3218;
 
   --accent: #e0b81d;      /* OSPUZE yellow */
+   --tie: rgb(251, 255, 0);  
   --red: #e84040;         /* keep Finals red available */
   --green: #8ddc57;
-  --blue: #f2d13d;        /* shift emphasis toward yellow */
+  --blue: #4a9eff;        /* shift emphasis toward yellow */
   --purple: #c89b2b;
 
   --text: #f7f1d0;
@@ -37,7 +39,7 @@ body.ospuze-mode {
 
   --light-cl: #f2d13d;
   --med-cl: #d7c04b;
-  --heavy-cl: #e0b81d;
+  --heavy-cl: #61510f;
 }
 
 body.ospuze-mode header {
@@ -109,15 +111,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 .fighter-panel{display:none;padding:14px 18px;}
 .fighter-panel.active{display:block;}
 
-.weapon-badge{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
-.badge{padding:2px 7px;background:var(--bg);border:1px solid var(--border);font-size:9px;letter-spacing:1px;text-transform:uppercase;}
+.weapon-badge{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;font-size: 20px;}
+.badge{padding:2px 7px;background:var(--bg);border:1px solid var(--border);font-size:18px;letter-spacing:1px;text-transform:uppercase;}
 .badge.light{color:var(--light-cl);border-color:var(--light-cl);}
 .badge.medium{color:var(--med-cl);border-color:var(--med-cl);}
 .badge.heavy{color:var(--heavy-cl);border-color:var(--heavy-cl);}
-.weapon-note{margin-top:8px;padding:7px 9px;background:var(--bg);border-left:2px solid var(--purple);font-size:10px;color:var(--muted);line-height:1.7;}
+.weapon-note{margin-top:8px;padding:7px 9px;background:var(--bg);border-left:2px solid var(--purple);font-size:18px;color:var(--muted);line-height:1.7;}
 
 .toggle-group{display:flex;gap:0;margin-top:4px;}
-.tbtn{flex:1;padding:7px 4px;background:var(--bg);border:1px solid var(--border);color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .15s;text-align:center;}
+.tbtn{flex:1;padding:7px 4px;background:var(--bg);border:1px solid var(--border);color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:18px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .15s;text-align:center;}
 .tbtn:not(:first-child){border-left:none;}
 .tbtn.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:700;}
 
@@ -160,7 +162,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 .tab-content.active{display:flex;flex-direction:column;}
 
 /* Winner */
-.winner-banner{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:20px;}
+.winner-banner{padding:20px 24px;border-bottom:1px solid var(--border);color:var(--muted);align-items:center;gap:20px;}
 .winner-icon{font-size:36px;}
 .winner-name{font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;letter-spacing:3px;text-transform:uppercase;}
 .winner-name.p1{color:var(--blue);text-shadow:0 0 20px rgba(74,158,255,.4);}
@@ -174,20 +176,20 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 .stat-val{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;}
 .stat-val.p1{color:var(--blue);}
 .stat-val.p2{color:var(--red);}
-.stat-val.neutral{color:var(--accent);}
+.stat-val.neutral{color:var(--tie);}
 
 /* Multi results */
 .winrate-section{padding:16px 20px;border-bottom:1px solid var(--border);}
 .winrate-labels{display:flex;justify-content:space-between;font-size:10px;margin-bottom:6px;}
 .winrate-bar{height:14px;background:var(--border);display:flex;overflow:hidden;}
 .wr-p1{background:var(--blue);}
-.wr-tie{background:var(--accent);}
+.wr-tie{background:var(--tie);}
 .wr-p2{background:var(--red);}
 .multi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);}
 .multi-cell{background:var(--card);padding:12px 14px;}
 
 /* Combat log */
-#combat-log{flex:1;overflow-y:auto;padding:10px 14px;background:var(--bg);font-size:11px;line-height:1.9;}
+#combat-log{flex:1;overflow-y:auto;padding:10px 14px;background:var(--bg);font-size:20px;line-height:1.9;}
 .ll{padding:0;}
 .ll.hp1{color:#7ab8ff;}
 .ll.hp2{color:#ff8080;}
@@ -221,13 +223,13 @@ label,
 .tab,
 .weapon-note,
 .check-row span {
-  font-size: 13px !important;
+  font-size: 28px !important;
 }
 
 /* Dropdowns / inputs */
 select,
 input[type=number] {
-  font-size: 14px !important;
+  font-size: 20px !important;
 }
 
 /* Range values */

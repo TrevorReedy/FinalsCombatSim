@@ -151,7 +151,7 @@ const totalJobs = allJobs.length;
 
   container.innerHTML = `
     <div style="padding:20px;">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:2px;
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;letter-spacing:2px;
                   text-transform:uppercase;color:var(--muted);margin-bottom:10px;">
         RUNNING CROSS ANALYSIS — ${POOL_SIZE} WORKERS · ${totalJobs.toLocaleString()} SCENARIOS · ${RUNS.toLocaleString()} RUNS EACH
       </div>
@@ -160,7 +160,7 @@ const totalJobs = allJobs.length;
              style="height:100%;width:0%;background:var(--accent);transition:width .1s linear;"></div>
       </div>
       <div id="ca-progress-label"
-           style="font-size:10px;color:var(--muted);letter-spacing:1px;">
+           style="font-size:20px;color:var(--muted);letter-spacing:1px;">
         0 / ${totalJobs.toLocaleString()} scenarios complete
         · <span id="ca-worker-label">${POOL_SIZE} workers active</span>
       </div>
@@ -314,7 +314,7 @@ function renderCrossAnalysis(results) {
 
   let html = `
     <div style="padding:12px 14px;border-bottom:1px solid var(--border);
-                font-family:'Barlow Condensed',sans-serif;font-size:11px;
+                font-family:'Barlow Condensed',sans-serif;font-size:18px;
                 letter-spacing:2px;text-transform:uppercase;color:var(--muted);">
       CROSS ANALYSIS COMPLETE ·
       <span style="color:var(--green)">${results.filter(r=>r.result==='favorable').length} FAVORABLE</span> ·
@@ -326,14 +326,14 @@ function renderCrossAnalysis(results) {
     <table style="width:100%;border-collapse:collapse;font-size:11px;">
       <thead>
         <tr style="background:var(--card);border-bottom:2px solid var(--border);">
-          <th style="padding:8px 12px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);">DEFENDER</th>
-          <th style="padding:8px 12px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);">CLASS</th>
-          <th style="padding:8px 12px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);">DIST</th>
-          <th style="padding:8px 12px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);">PROFILE</th>
-          <th style="padding:8px 12px;text-align:right;font-size:9px;letter-spacing:2px;color:var(--muted);">WIN%</th>
-          <th style="padding:8px 12px;text-align:right;font-size:9px;letter-spacing:2px;color:var(--blue);">ATK TTK</th>
-          <th style="padding:8px 12px;text-align:right;font-size:9px;letter-spacing:2px;color:var(--red);">DEF TTK</th>
-          <th style="padding:8px 12px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);">RESULT</th>
+          <th style="padding:8px 12px;text-align:left;font-size:15px;letter-spacing:2px;color:var(--muted);">DEFENDER</th>
+          <th style="padding:8px 12px;text-align:left;font-size:15px;letter-spacing:2px;color:var(--muted);">CLASS</th>
+          <th style="padding:8px 12px;text-align:left;font-size:15px;letter-spacing:2px;color:var(--muted);">DIST</th>
+          <th style="padding:8px 12px;text-align:left;font-size:15px;letter-spacing:2px;color:var(--muted);">PROFILE</th>
+          <th style="padding:8px 12px;text-align:right;font-size:15px;letter-spacing:2px;color:var(--muted);">WIN%</th>
+          <th style="padding:8px 12px;text-align:right;font-size:15px;letter-spacing:2px;color:var(--blue);">ATK TTK</th>
+          <th style="padding:8px 12px;text-align:right;font-size:15px;letter-spacing:2px;color:var(--red);">DEF TTK</th>
+          <th style="padding:8px 12px;text-align:left;font-size:15px;letter-spacing:2px;color:var(--muted);">RESULT</th>
         </tr>
       </thead>
       <tbody>
@@ -356,11 +356,11 @@ function renderCrossAnalysis(results) {
         </td>
         <td style="padding:10px 12px;font-size:9px;letter-spacing:1px;color:var(--muted);">
           <span style="padding:1px 6px;border:1px solid ${clsColor[defData.class]};
-                       color:${clsColor[defData.class]};font-size:9px;">
+                       color:${clsColor[defData.class]};font-size:15px;">
             ${defData.class.toUpperCase()}
           </span>
         </td>
-        <td style="padding:10px 12px;font-size:9px;color:var(--muted);">
+        <td style="padding:10px 12px;font-size:15px;color:var(--muted);">
           BEST ${summary.bestDist}m · WORST ${summary.worstDist}m
         </td>
         <td style="padding:10px 12px;text-align:right;font-family:'Barlow Condensed',sans-serif;
@@ -371,7 +371,7 @@ function renderCrossAnalysis(results) {
           ${summary.avgTTK != null ? summary.avgTTK.toFixed(2) + 's' : '—'}
         </td>
         <td colspan="2" style="padding:10px 12px;text-align:right;font-family:'Barlow Condensed',sans-serif;
-                                font-size:13px;font-weight:700;letter-spacing:2px;color:${sumColor};">
+                                font-size:15px;font-weight:700;letter-spacing:2px;color:${sumColor};">
           ${summary.result.toUpperCase()} ▼
         </td>
       </tr>
@@ -381,15 +381,15 @@ function renderCrossAnalysis(results) {
     html += `
       <tr style="display:none;">
         <td colspan="8" style="padding:0;">
-          <table style="width:100%;border-collapse:collapse;">
+          <table style="width:100%;border-collapse:collapse;font-size:20px;">
             <tr style="background:var(--card);border-bottom:1px solid var(--border);">
-              <td style="padding:5px 12px 5px 32px;font-size:9px;letter-spacing:2px;color:var(--muted);width:90px;">DIST</td>
+              <td style="padding:5px 12px 5px 32px;font-size:15px;letter-spacing:2px;color:var(--muted);width:90px;">DIST</td>
               <td colspan="2"></td>
-              <td style="padding:5px 12px;font-size:9px;letter-spacing:2px;color:var(--muted);">PROFILE</td>
-              <td style="padding:5px 12px;text-align:right;font-size:9px;letter-spacing:2px;color:var(--muted);">WIN%</td>
-              <td style="padding:5px 12px;text-align:right;font-size:9px;letter-spacing:2px;color:var(--blue);">ATK TTK</td>
-              <td style="padding:5px 12px;text-align:right;font-size:9px;letter-spacing:2px;color:var(--red);">DEF TTK</td>
-              <td style="padding:5px 12px;font-size:9px;letter-spacing:2px;color:var(--muted);">RESULT</td>
+              <td style="padding:5px 12px;font-size:15px;letter-spacing:2px;color:var(--muted);">PROFILE</td>
+              <td style="padding:5px 12px;text-align:right;font-size:15px;letter-spacing:2px;color:var(--muted);">WIN%</td>
+              <td style="padding:5px 12px;text-align:right;font-size:15px;letter-spacing:2px;color:var(--blue);">ATK TTK</td>
+              <td style="padding:5px 12px;text-align:right;font-size:15px;letter-spacing:2px;color:var(--red);">DEF TTK</td>
+              <td style="padding:5px 12px;font-size:15px;letter-spacing:2px;color:var(--muted);">RESULT</td>
             </tr>
     `;
 
@@ -417,23 +417,23 @@ function renderCrossAnalysis(results) {
 
         html += `
           <tr style="border-top:1px solid var(--border);opacity:0.85;">
-            <td style="padding:5px 12px 5px 32px;color:var(--muted);font-size:10px;"></td>
+            <td style="padding:5px 12px 5px 32px;color:var(--muted);font-size:20px;"></td>
             <td style="padding:5px 12px;"></td>
-            <td style="padding:5px 12px;color:var(--muted);font-size:10px;"></td>
-            <td style="padding:5px 12px;font-size:10px;letter-spacing:1px;color:var(--white);">You ${(r.attackerAcc * 100).toFixed(0)}% / ${(r.attackerHs * 100).toFixed(0)}% HS
+            <td style="padding:5px 12px;color:var(--muted);font-size:20px;"></td>
+            <td style="padding:5px 12px;font-size:20px;letter-spacing:1px;color:var(--white);">You ${(r.attackerAcc * 100).toFixed(0)}% / ${(r.attackerHs * 100).toFixed(0)}% HS
               vs ${r.profile}
               | Opp ${(r.defenderAcc * 100).toFixed(0)}% / ${(r.defenderHs * 100).toFixed(0)}% HS</td>
             <td style="padding:5px 12px;text-align:right;font-family:'Barlow Condensed',sans-serif;
                        font-size:15px;font-weight:700;color:${rowColor};">
               ${(r.winRate * 100).toFixed(1)}%
             </td>
-            <td style="padding:5px 12px;text-align:right;color:var(--blue);font-size:10px;">
+            <td style="padding:5px 12px;text-align:right;color:var(--blue);font-size:20px;">
               ${r.avgAttackerTTK != null ? r.avgAttackerTTK.toFixed(2) + 's' : '—'}
             </td>
-            <td style="padding:5px 12px;text-align:right;color:var(--red);font-size:10px;">
+            <td style="padding:5px 12px;text-align:right;color:var(--red);font-size:20px;">
               ${r.avgDefenderTTK != null ? r.avgDefenderTTK.toFixed(2) + 's' : '—'}
             </td>
-            <td style="padding:5px 12px;font-size:9px;letter-spacing:1px;color:${rowColor};">
+            <td style="padding:5px 12px;font-size:15px;letter-spacing:1px;color:${rowColor};">
               ${r.result.toUpperCase()}
             </td>
           </tr>
