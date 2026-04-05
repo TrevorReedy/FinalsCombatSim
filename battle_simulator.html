@@ -1,262 +1,274 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>THE FINALS — Battle Simulator</title>
-<script src="./battle_simulator.js" defer></script>
-<script src="./cross_analysis_pool_test.js" defer></script>
-<link rel="stylesheet" href="battle_simulation.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>THE FINALS — Battle Simulator</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,900;1,700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <script src="./battle_simulator.js" defer></script>
+  <script src="./cross_analysis_pool.js" defer></script>
+  <link rel="stylesheet" href="battle_simulation.css">
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,900;1,700&family=Share+Tech+Mono&display=swap"
+    rel="stylesheet"
+  >
 </head>
 <body>
-
-<header>
-  <div>
-    <div class="logo">⚡ THE FINALS</div>
-    <div class="sub">Combat Simulation Engine v2.0 — Visual Mode</div>
-  </div>
-</header>
-
-<div class="app" style="grid-template-columns: 420px 1fr;">
-  <!-- ══ SIDEBAR ══ -->
-  <div class="sidebar">
-<label class="check-row" style="padding: 12px 18px;">
-  <input type="checkbox" id="ospuze-toggle">
-  <span>OSPUZE Mode</span>
-</label>
-    <!-- Fighter tabs -->
-    <div class="fighter-tabs">
-      <div class="ftab active p1" onclick="switchFighterTab(1,this)">◈ Player 1</div>
-      <div class="ftab p2" onclick="switchFighterTab(2,this)">◈ Player 2</div>
+  <header>
+    <div>
+      <div class="logo">⚡ THE FINALS</div>
+      <div class="sub">Finals Simulation Engine v2.0 — Visual Mode</div>
     </div>
+  </header>
 
-    <div class="fighter-panel active" id="fp1">
-      <label>Class Filter</label>
-      <select id="p1-class" onchange="filterWeapons(1)">
-        <option value="">All Classes</option>
-        <option value="light">Light — 150 HP</option>
-        <option value="medium">Medium — 250 HP</option>
-        <option value="heavy">Heavy — 350 HP</option>
-      </select>
-      <label>Weapon</label>
-      <select id="p1-weapon" onchange="updateWeaponInfo(1)"></select>
-      <div id="p1-badges" class="weapon-badge"></div>
-      <div id="p1-note" class="weapon-note"></div>
-      <label>Accuracy</label>
-      <div class="range-row">
-        <input type="range" id="p1-acc" min="1" max="100" value="75" oninput="syncRange(this,'p1-acc-v','%')">
-        <span class="range-val" id="p1-acc-v">75%</span>
-      </div>
-      <label>Headshot Chance</label>
-      <div class="range-row">
-        <input type="range" id="p1-hs" min="0" max="100" value="20" oninput="syncRange(this,'p1-hs-v','%')">
-        <span class="range-val" id="p1-hs-v">20%</span>
-      </div>
-    </div>
-
-    <div class="fighter-panel" id="fp2">
-      <label>Class Filter</label>
-      <select id="p2-class" onchange="filterWeapons(2)">
-        <option value="">All Classes</option>
-        <option value="light">Light — 150 HP</option>
-        <option value="medium">Medium — 250 HP</option>
-        <option value="heavy">Heavy — 350 HP</option>
-      </select>
-      <label>Weapon</label>
-      <select id="p2-weapon" onchange="updateWeaponInfo(2)"></select>
-      <div id="p2-badges" class="weapon-badge"></div>
-      <div id="p2-note" class="weapon-note"></div>
-      <label>Accuracy</label>
-      <div class="range-row">
-        <input type="range" id="p2-acc" min="1" max="100" value="75" oninput="syncRange(this,'p2-acc-v','%')">
-        <span class="range-val" id="p2-acc-v">75%</span>
-      </div>
-      <label>Headshot Chance</label>
-      <div class="range-row">
-        <input type="range" id="p2-hs" min="0" max="100" value="20" oninput="syncRange(this,'p2-hs-v','%')">
-        <span class="range-val" id="p2-hs-v">20%</span>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Battle Settings</div>
-
-      <label>Starting Distance (m)</label>
-      <div class="range-row">
-        <input type="range" id="start-dist" min="1" max="100" value="30" oninput="syncRange(this,'sd-v','m')">
-        <span class="range-val" id="sd-v">30m</span>
-      </div>
-
-      <label>Melee Advance Speed (m/s)</label>
-      <div class="range-row">
-        <input type="range" id="speed" min="0" max="12" value="3" step="0.5" oninput="syncRange(this,'sp-v','')">
-        <span class="range-val" id="sp-v">3.0</span>
-      </div>
-      <label class="check-row">
-        <input type="checkbox" id="melee-advance">
-        <span>Both players advance (melee mode)</span>
+  <div class="app" style="grid-template-columns: 420px 1fr;">
+    <div class="sidebar">
+      <label class="check-row" style="padding: 12px 18px;">
+        <input type="checkbox" id="ospuze-toggle">
+        <span>OSPUZE Mode</span>
       </label>
 
-      <label style="margin-top:12px;">First Shot</label>
-      <div class="toggle-group">
-        <div class="tbtn active" onclick="setFSA('p1',this)">P1 First</div>
-        <div class="tbtn" onclick="setFSA('both',this)">Both</div>
-        <div class="tbtn" onclick="setFSA('p2',this)">P2 First</div>
+      <div class="fighter-tabs">
+        <div class="ftab active p1" onclick="switchFighterTab(1,this)">◈ Player 1</div>
+        <div class="ftab p2" onclick="switchFighterTab(2,this)">◈ Player 2</div>
       </div>
 
-      <label style="margin-top:12px;">Simulation Mode</label>
-      <div class="toggle-group">
-        <div class="tbtn active" onclick="setSimMode('single',this)">Single</div>
-        <div class="tbtn" onclick="setSimMode('multi',this)">Multi</div>
-      </div>
-      <div id="multi-opts" style="display:none;">
-        <label>Runs</label>
-        <input type="number" id="sim-count" value="200" min="10" max="10000">
-      </div>
+      <div class="fighter-panel active" id="fp1">
+        <label>Class Filter</label>
+        <select id="p1-class" onchange="filterWeapons(1)">
+          <option value="">All Classes</option>
+          <option value="light">Light — 150 HP</option>
+          <option value="medium">Medium — 250 HP</option>
+          <option value="heavy">Heavy — 350 HP</option>
+        </select>
 
-      <label style="margin-top:12px;">Playback Speed</label>
-      <div class="toggle-group">
-        <div class="tbtn" onclick="setPlaySpeed(0.25,this)">0.25×</div>
-        <div class="tbtn active" onclick="setPlaySpeed(1,this)">1×</div>
-        <div class="tbtn" onclick="setPlaySpeed(3,this)">3×</div>
-        <div class="tbtn" onclick="setPlaySpeed(10,this)">10×</div>
-      </div>
-    </div>
+        <label>Weapon</label>
+        <select id="p1-weapon" onchange="updateWeaponInfo(1)"></select>
+        <div id="p1-badges" class="weapon-badge"></div>
+        <div id="p1-note" class="weapon-note"></div>
 
-    <div class="run-row">
-      <button class="btn-run" id="run-btn" onclick="runSim()">▶ SIMULATE</button>
-    <button id="cross-btn" class="btn-run" onclick="runCrossAnalysis()">📊 CROSS ANALYSIS</button>
-    </button>
-      
-    </div>
-
-
-  </div>
-
-  <!-- ══ MAIN AREA ══ -->
-  <div class="main-area">
-
-    <!-- Canvas Arena -->
-    <div class="arena-wrap">
-      <canvas id="arena" height="200"></canvas>
-      <div class="arena-overlay">
-        <div class="player-hud">
-          <div class="hud-name p1" id="hud-p1-name">—</div>
-          <div class="hud-hp-bar"><div class="hud-hp-fill p1" id="hud-p1-hp" style="width:100%"></div></div>
-          <div class="hud-hp-val" id="hud-p1-hpval">— HP</div>
+        <label>Accuracy</label>
+        <div class="range-row">
+          <input type="range" id="p1-acc" min="1" max="100" value="75" oninput="syncRange(this,'p1-acc-v','%')">
+          <span class="range-val" id="p1-acc-v">75%</span>
         </div>
-        <div class="arena-center-hud">
-          <div class="dist-big" id="hud-dist">—</div>
-          <div class="time-small" id="hud-time">READY</div>
-        </div>
-        <div class="player-hud" style="text-align:right;">
-          <div class="hud-name p2" id="hud-p2-name">—</div>
-          <div class="hud-hp-bar"><div class="hud-hp-fill p2" id="hud-p2-hp" style="width:100%"></div></div>
-          <div class="hud-hp-val p2" id="hud-p2-hpval">— HP</div>
+
+        <label>Headshot Chance</label>
+        <div class="range-row">
+          <input type="range" id="p1-hs" min="0" max="100" value="20" oninput="syncRange(this,'p1-hs-v','%')">
+          <span class="range-val" id="p1-hs-v">20%</span>
         </div>
       </div>
-    </div>
 
-    <!-- Results -->
-    <!-- Results -->
-<div class="results-area" id="results-area">
-  <div class="tab-bar">
-    <div class="tab active" onclick="switchTab('result',this)">Result</div>
-    <div class="tab" onclick="switchTab('log',this)">Combat Log</div>
-    <div class="tab" id="multi-tab" onclick="switchTab('multi',this)" style="display:none;">Multi Stats</div>
-    <div class="tab" onclick="switchTab('cross',this)">Cross Analysis</div>
-  </div>
+      <div class="fighter-panel" id="fp2">
+        <label>Class Filter</label>
+        <select id="p2-class" onchange="filterWeapons(2)">
+          <option value="">All Classes</option>
+          <option value="light">Light — 150 HP</option>
+          <option value="medium">Medium — 250 HP</option>
+          <option value="heavy">Heavy — 350 HP</option>
+        </select>
 
-  <div class="tab-content active" id="tab-result">
-    <div class="winner-banner" id="winner-banner" style="display:none;">
-      <div class="winner-icon" id="winner-icon">🏆</div>
-      <div>
-        <div class="winner-name" id="winner-name">—</div>
-        <div class="winner-sub" id="winner-sub"></div>
+        <label>Weapon</label>
+        <select id="p2-weapon"oninput ="drawIdle()" onchange="updateWeaponInfo(2)"></select>
+        <div id="p2-badges" class="weapon-badge"></div>
+        <div id="p2-note" class="weapon-note"></div>
+
+        <label>Accuracy</label>
+        <div class="range-row">
+          <input type="range" id="p2-acc" min="1" max="100" value="75" oninput="syncRange(this,'p2-acc-v','%')">
+          <span class="range-val" id="p2-acc-v">75%</span>
+        </div>
+
+        <label>Headshot Chance</label>
+        <div class="range-row">
+          <input type="range" id="p2-hs" min="0" max="100" value="20" oninput="syncRange(this,'p2-hs-v','%')">
+          <span class="range-val" id="p2-hs-v">20%</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Battle Settings</div>
+
+        <label>Starting Distance (m)</label>
+        <div class="range-row">
+          <input type="range" id="start-dist" min="1" max="100" value="30" oninput="syncRange(this,'sd-v','m')">
+          <span class="range-val" id="sd-v">30m</span>
+        </div>
+
+        <label>Melee Advance Speed (m/s)</label>
+        <div class="range-row">
+          <input type="range" id="speed" min="0" max="12" value="3" step="0.5" oninput="syncRange(this,'sp-v','')">
+          <span class="range-val" id="sp-v">3.0</span>
+        </div>
+
+        <label class="check-row">
+          <input type="checkbox" id="melee-advance">
+          <span>Both players advance (melee mode)</span>
+        </label>
+
+        <label style="margin-top:12px;">First Shot</label>
+        <div class="toggle-group">
+          <div class="tbtn active" onclick="setFSA('p1',this)">P1 First</div>
+          <div class="tbtn" onclick="setFSA('both',this)">Both</div>
+          <div class="tbtn" onclick="setFSA('p2',this)">P2 First</div>
+        </div>
+
+        <label style="margin-top:12px;">Simulation Mode</label>
+        <div class="toggle-group">
+          <div class="tbtn active" onclick="setSimMode('single',this)">Single</div>
+          <div class="tbtn" onclick="setSimMode('multi',this)">Multi</div>
+        </div>
+
+        <div id="multi-opts" style="display:none;">
+          <label>Runs</label>
+          <input type="number" id="sim-count" value="200" min="10" max="10000">
+        </div>
+
+        <label style="margin-top:12px;">Playback Speed</label>
+        <div class="toggle-group">
+          <div class="tbtn" onclick="setPlaySpeed(0.25,this)">0.25×</div>
+          <div class="tbtn active" onclick="setPlaySpeed(1,this)">1×</div>
+          <div class="tbtn" onclick="setPlaySpeed(3,this)">3×</div>
+          <div class="tbtn" onclick="setPlaySpeed(10,this)">10×</div>
+        </div>
+      </div>
+
+      <div class="run-row">
+        <button class="btn-run" id="run-btn" onclick="runSim()">▶ SIMULATE</button>
+        <button class="btn-run" id="cross-btn" onclick="runCrossAnalysis()">📊 CROSS ANALYSIS</button>
       </div>
     </div>
-    <div class="stats-grid" id="stats-grid" style="display:none;">
-      <div class="stat-cell"><div class="stat-label">P1 Damage</div><div class="stat-val p1" id="s-p1-dmg">—</div></div>
-      <div class="stat-cell"><div class="stat-label">P1 Shots/Hit/HS</div><div class="stat-val p1" id="s-p1-shs">—</div></div>
-      <div class="stat-cell"><div class="stat-label">P2 Damage</div><div class="stat-val p2" id="s-p2-dmg">—</div></div>
-      <div class="stat-cell"><div class="stat-label">P2 Shots/Hit/HS</div><div class="stat-val p2" id="s-p2-shs">—</div></div>
-      <div class="stat-cell"><div class="stat-label">Time to Kill</div><div class="stat-val neutral" id="s-ttk">—</div></div>
-      <div class="stat-cell"><div class="stat-label">Final Range</div><div class="stat-val neutral" id="s-range">—</div></div>
-      <div class="stat-cell"><div class="stat-label">P1 HP Left</div><div class="stat-val p1" id="s-p1-hp">—</div></div>
-      <div class="stat-cell"><div class="stat-label">P2 HP Left</div><div class="stat-val p2" id="s-p2-hp">—</div></div>
-    </div>
-    <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;letter-spacing:2px;" id="pre-run-msg">RUN A SIMULATION TO SEE RESULTS</div>
-  </div>
 
-  <div class="tab-content" id="tab-log">
-    <div id="combat-log" style="font-size:11px;line-height:1.9;padding:10px 14px; font-size: 20px;"></div>
-  </div>
+    <div class="main-area">
+      <div class="arena-wrap">
+        <canvas id="arena" height="400"></canvas>
 
-  <div class="tab-content" id="tab-multi">
-    <div class="winrate-section">
-      <div class="winrate-labels">
-        <span id="wr-p1-lbl" style="color:var(--blue)">P1: —</span>
-        <span id="wr-tie-lbl" style="color:var(--tie)">TIE: —</span>
-        <span id="wr-p2-lbl" style="color:var(--red)">P2: —</span>
+        <div class="arena-overlay">
+          <div class="player-hud">
+            <div class="hud-name p1" id="hud-p1-name">—</div>
+            <div class="hud-hp-bar">
+              <div class="hud-hp-fill p1" id="hud-p1-hp" style="width:100%"></div>
+            </div>
+            <div class="hud-hp-val" id="hud-p1-hpval">— HP</div>
+          </div>
+
+          <div class="arena-center-hud">
+            <div class="dist-big" id="hud-dist">—</div>
+            <div class="time-small" id="hud-time">READY</div>
+          </div>
+
+          <div class="player-hud" style="text-align:right;">
+            <div class="hud-name p2" id="hud-p2-name">—</div>
+            <div class="hud-hp-bar">
+              <div class="hud-hp-fill p2" id="hud-p2-hp" style="width:100%"></div>
+            </div>
+            <div class="hud-hp-val p2" id="hud-p2-hpval">— HP</div>
+          </div>
+        </div>
       </div>
-      <div class="winrate-bar">
-        <div class="wr-p1" id="wr-p1-bar" style="width:0%;transition:width .5s ease;"></div>
-        <div class="wr-tie" id="wr-tie-bar" style="width:0%;transition:width .5s ease;"></div>
-        <div class="wr-p2" id="wr-p2-bar" style="width:0%;transition:width .5s ease;"></div>
-      </div>
-    </div>
-   
 
+      <div class="results-area" id="results-area">
+        <div class="tab-bar">
+          <div class="tab active" onclick="switchTab('result',this)">Result</div>
+          <div class="tab" onclick="switchTab('log',this)">Combat Log</div>
+          <div class="tab" id="multi-tab" onclick="switchTab('multi',this)" style="display:none;">Multi Stats</div>
+          <div class="tab" onclick="switchTab('cross',this)">Cross Analysis</div>
+        </div>
 
-      
-       <div class="multi-grid display:flex; flex-direction:row; flex-wrap:wrap;">
+        <div class="tab-content active" id="tab-result">
+          <div class="winner-banner" id="winner-banner" style="display:none;">
+            <div class="winner-icon" id="winner-icon">🏆</div>
+            <div>
+              <div class="winner-name" id="winner-name">—</div>
+              <div class="winner-sub" id="winner-sub"></div>
+            </div>
+          </div>
 
-      <div class="left-mult-=grid">
+          <div class="stats-grid" id="stats-grid" style="display:none;">
+            <div class="stat-cell"><div class="stat-label">P1 Damage</div><div class="stat-val p1" id="s-p1-dmg">—</div></div>
+            <div class="stat-cell"><div class="stat-label">P1 Shots/Hit/HS</div><div class="stat-val p1" id="s-p1-shs">—</div></div>
+            <div class="stat-cell"><div class="stat-label">P2 Damage</div><div class="stat-val p2" id="s-p2-dmg">—</div></div>
+            <div class="stat-cell"><div class="stat-label">P2 Shots/Hit/HS</div><div class="stat-val p2" id="s-p2-shs">—</div></div>
+            <div class="stat-cell"><div class="stat-label">Time to Kill</div><div class="stat-val neutral" id="s-ttk">—</div></div>
+            <div class="stat-cell"><div class="stat-label">Final Range</div><div class="stat-val neutral" id="s-range">—</div></div>
+            <div class="stat-cell"><div class="stat-label">P1 HP Left</div><div class="stat-val p1" id="s-p1-hp">—</div></div>
+            <div class="stat-cell"><div class="stat-label">P2 HP Left</div><div class="stat-val p2" id="s-p2-hp">—</div></div>
+          </div>
+
+          <div
+            id="pre-run-msg"
+            style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;letter-spacing:2px;"
+          >
+            RUN A SIMULATION TO SEE RESULTS
+          </div>
+        </div>
+
+        <div class="tab-content" id="tab-log">
+          <div id="combat-log" style="font-size:11px;line-height:1.9;padding:10px 14px; font-size: 20px;"></div>
+        </div>
+
+        <div class="tab-content" id="tab-multi">
+          <div class="winrate-section">
+            <div class="winrate-labels">
+              <span id="wr-p1-lbl" style="color:var(--blue)">P1: —</span>
+              <span id="wr-tie-lbl" style="color:var(--tie)">TIE: —</span>
+              <span id="wr-p2-lbl" style="color:var(--red)">P2: —</span>
+            </div>
+
+            <div class="winrate-bar">
+              <div class="wr-p1" id="wr-p1-bar" style="width:0%;transition:width .5s ease;"></div>
+              <div class="wr-tie" id="wr-tie-bar" style="width:0%;transition:width .5s ease;"></div>
+              <div class="wr-p2" id="wr-p2-bar" style="width:0%;transition:width .5s ease;"></div>
+            </div>
+          </div>
+
+          <div class="multi-grid">
+            <div class="left-mult-=grid">
               <div class="multi-cell"><div class="stat-label">P1 Wins</div><div class="stat-val p1" id="ms-w1">—</div></div>
               <div class="multi-cell"><div class="stat-label">P1 Looses</div><div class="stat-val p1" id="ms-l1">—</div></div>
               <div class="multi-cell"><div class="stat-label">Avg TTK P1 </div><div class="stat-val p1" id="ms-ttk1">—</div></div>
               <div class="multi-cell"><div class="stat-label">Avg HP Left P1</div><div class="stat-val p1" id="ms-hp1">—</div></div>
               <div class="multi-cell"><div class="stat-label">Avg Bullets To Kill P2</div><div class="stat-val p2" id="ms-bulletsToKill1">—</div></div>
-      </div>       
-      <div class="middle-multi-grid">
-        <div class="multi-cell"><div class="stat-label">Ties</div><div class="stat-val neutral" id="ms-tie">—</div></div>
-      </div>
+            </div>
 
-      <div class="right-multi-grid">
+            <div class="middle-multi-grid">
+              <div class="multi-cell"><div class="stat-label">Ties</div><div class="stat-val neutral" id="ms-tie">—</div></div>
+            </div>
+
+            <div class="right-multi-grid">
               <div class="left-mult-=grid">
-              <div class="multi-cell"><div class="stat-label">P2 Wins</div><div class="stat-val p2" id="ms-w2">—</div></div>
-              <div class="multi-cell"><div class="stat-label">P2 Looses</div><div class="stat-val p2" id="ms-l2">—</div></div>
-              <div class="multi-cell"><div class="stat-label">Avg TTK P2</div><div class="stat-val p2" id="ms-ttk2">—</div></div>
-              <div class="multi-cell"><div class="stat-label">Avg HP Left P2</div><div class="stat-val p2" id="ms-hp2">—</div></div>
-              <div class="multi-cell"><div class="stat-label">Avg Bullets To Kill P1</div><div class="stat-val p1" id="ms-bulletsToKill2">—</div></div>
+                <div class="multi-cell"><div class="stat-label">P2 Wins</div><div class="stat-val p2" id="ms-w2">—</div></div>
+                <div class="multi-cell"><div class="stat-label">P2 Looses</div><div class="stat-val p2" id="ms-l2">—</div></div>
+                <div class="multi-cell"><div class="stat-label">Avg TTK P2</div><div class="stat-val p2" id="ms-ttk2">—</div></div>
+                <div class="multi-cell"><div class="stat-label">Avg HP Left P2</div><div class="stat-val p2" id="ms-hp2">—</div></div>
+                <div class="multi-cell"><div class="stat-label">Avg Bullets To Kill P1</div><div class="stat-val p1" id="ms-bulletsToKill2">—</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
 
+        <div class="tab-content" id="tab-cross">
+          <div id="cross-table" style="padding:10px;"></div>
+        </div>
       </div>
     </div>
-
-
-    </div>
   </div>
 
-  <div class="tab-content" id="tab-cross">
-    <div id="cross-table" style="padding:10px;" textcontent="AK47"></div>
-  </div>
-</div>
-<script>
-  const ospuzeToggle = document.getElementById('ospuze-toggle');
+  <script>
+    const ospuzeToggle = document.getElementById('ospuze-toggle');
 
-  ospuzeToggle?.addEventListener('change', function () {
-    document.body.classList.toggle('ospuze-mode', this.checked);
-    localStorage.setItem('ospuzeMode', this.checked ? 'on' : 'off');
-  });
+    ospuzeToggle?.addEventListener('change', function () {
+      document.body.classList.toggle('ospuze-mode', this.checked);
+      localStorage.setItem('ospuzeMode', this.checked ? 'on' : 'off');
+    });
 
-  if (localStorage.getItem('ospuzeMode') === 'on') {
-    document.body.classList.add('ospuze-mode');
-    if (ospuzeToggle) ospuzeToggle.checked = true;
-  }
-</script>
+    if (localStorage.getItem('ospuzeMode') === 'on') {
+      document.body.classList.add('ospuze-mode');
+      if (ospuzeToggle) ospuzeToggle.checked = true;
+    }
+  </script>
 </body>
 </html>

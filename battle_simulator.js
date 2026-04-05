@@ -1,7 +1,13 @@
 // ═══════════════════════════════════════
 // WEAPON DATA
 // ═══════════════════════════════════════
+const CLASS_SCALE = {
+  light: 1.0,
+  medium: 1.5,
+  heavy: 2
+};
 let WEAPONS = [];
+
 
 async function loadWeapons() {
   try {
@@ -128,10 +134,10 @@ function drawFrame(frame) {
   ctx.globalAlpha = 1;
 
   // Draw P1 character
-  drawCharacter(ctx, p1x, groundY, frame.p1class, '#4a9eff', false, frame.hp1 <= 0, frame.p1flash);
+  drawCharacter(ctx, p1x, groundY, frame.p1class, '#4a9eff', false, frame.hp1 <= 0, frame.p1flash, CLASS_SCALE[frame.p1class]);
 
   // Draw P2 character (flipped)
-  drawCharacter(ctx, p2x, groundY, frame.p2class, '#e84040', true, frame.hp2 <= 0, frame.p2flash);
+  drawCharacter(ctx, p2x, groundY, frame.p2class, '#e84040', true, frame.hp2 <= 0, frame.p2flash, CLASS_SCALE[frame.p2class]);
 
   // Muzzle flashes
   if (frame.p1flash) spawnMuzzleFlash(p1x + 18, groundY - 28, '#4a9eff');
@@ -151,94 +157,93 @@ function drawFrame(frame) {
 }
 
 
-function drawCharacter(ctx, x, groundY, cls, color, flip, dead, firing) {
+function drawCharacter(ctx, x, groundY, cls, color, flip, dead, firing, scale = 1) {
   ctx.save();
-  
-  // ✅ FIX: Handle flip without breaking position
-  if (flip) {
-    if (flip) {
+
+  // Anchor character at x, then optionally mirror around that anchor
   ctx.translate(x, 0);
-  ctx.scale(-1, 1);
-  x = 0;
-}
-  }
-  
-  const scale = cls === 'heavy' ? 1.35 : cls === 'light' ? 0.9 : 1.1;
-  const bh = 32 * scale;
-  const hw = 8 * scale;
-  const hy = groundY - bh;
-  
-  // Use absolute x position (don't modify it)
-  const finalX = flip ? -x : x;
+  if (flip) ctx.scale(-1, 1);
+
+  const bodyHeight = 32 * scale;
+  const halfWidth = 8 * scale;
+  const headRadius = 7 * scale;
+  const weaponLength = 22 * scale;
+  const bodyTopY = groundY - bodyHeight;
 
   ctx.globalAlpha = dead ? 0.35 : 1.0;
 
   // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.4)';
   ctx.beginPath();
-  ctx.ellipse(finalX, groundY, hw * 1.4, 4, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, groundY, halfWidth * 1.4, 4 * scale, 0, 0, Math.PI * 2);
   ctx.fill();
 
   if (dead) {
-    // Dead body on ground
     ctx.fillStyle = color + '99';
-    ctx.fillRect(finalX - hw * 2, groundY - 12, hw * 4, 8);
+    ctx.fillRect(-halfWidth * 2, groundY - 12 * scale, halfWidth * 4, 8 * scale);
+
     ctx.fillStyle = '#000';
     ctx.font = `${12 * scale}px monospace`;
     ctx.textAlign = 'center';
-    ctx.fillText('💀', finalX, groundY - 18);
+    ctx.textBaseline = 'middle';
+    ctx.fillText('💀', 0, groundY - 18 * scale);
+
     ctx.globalAlpha = 1;
     ctx.restore();
     return;
   }
 
-  // Body gradient - FIX: use finalX for gradient coordinates
-  const bodyGrad = ctx.createLinearGradient(finalX - hw, hy, finalX + hw, hy + bh);
+  // Body
+  const bodyGrad = ctx.createLinearGradient(-halfWidth, bodyTopY, halfWidth, bodyTopY + bodyHeight);
   bodyGrad.addColorStop(0, color + 'dd');
   bodyGrad.addColorStop(1, color + '66');
   ctx.fillStyle = bodyGrad;
-  ctx.fillRect(finalX - hw, hy, hw * 2, bh);
+  ctx.fillRect(-halfWidth, bodyTopY, halfWidth * 2, bodyHeight);
 
   // Firing flash
   if (firing) {
     ctx.fillStyle = color + 'aa';
-    ctx.fillRect(finalX - hw - 4, hy + bh * 0.3, hw * 2 + 8, bh * 0.4);
+    ctx.fillRect(
+      -halfWidth - 4 * scale,
+      bodyTopY + bodyHeight * 0.3,
+      halfWidth * 2 + 8 * scale,
+      bodyHeight * 0.4
+    );
   }
 
   // Head
-  const headR = 7 * scale;
   ctx.beginPath();
-  ctx.arc(finalX, hy - headR, headR, 0, Math.PI * 2);
+  ctx.arc(0, bodyTopY - headRadius, headRadius, 0, Math.PI * 2);
   ctx.fillStyle = color + 'cc';
   ctx.fill();
   ctx.strokeStyle = color;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.5 * scale;
   ctx.stroke();
 
   // Class icon
   ctx.fillStyle = '#fff';
-  ctx.font = `${8 * scale}px Share Tech Mono`;
+  ctx.font = `${8 * scale}px "Share Tech Mono", monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(cls[0].toUpperCase(), finalX, hy - headR);
+  ctx.fillText(cls[0].toUpperCase(), 0, bodyTopY - headRadius);
 
   // Weapon barrel
   ctx.strokeStyle = color;
   ctx.lineWidth = 2.5 * scale;
   ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(finalX + hw, hy + bh * 0.35);
-  ctx.lineTo(finalX + hw + 22 * scale, hy + bh * 0.35);
+  ctx.moveTo(halfWidth, bodyTopY + bodyHeight * 0.35);
+  ctx.lineTo(halfWidth + weaponLength, bodyTopY + bodyHeight * 0.35);
   ctx.stroke();
 
   // Legs
   ctx.strokeStyle = color + 'cc';
   ctx.lineWidth = 3 * scale;
   ctx.beginPath();
-  ctx.moveTo(finalX - hw * 0.4, groundY - 3);
-  ctx.lineTo(finalX - hw * 0.4, groundY);
-  ctx.moveTo(finalX + hw * 0.4, groundY - 3);
-  ctx.lineTo(finalX + hw * 0.4, groundY);
+  ctx.moveTo(-halfWidth * 0.4, groundY - 3 * scale);
+  ctx.lineTo(-halfWidth * 0.4, groundY);
+  ctx.moveTo(halfWidth * 0.4, groundY - 3 * scale);
+  ctx.lineTo(halfWidth * 0.4, groundY);
   ctx.stroke();
 
   ctx.globalAlpha = 1;
@@ -698,10 +703,11 @@ function filterWeapons(p) {
     opt.textContent = `[${w.class.toUpperCase()[0]}] ${w.name} — ${w.type}`;
     sel.appendChild(opt);
   });
-  updateWeaponInfo(p);
+  
 }
 
 function updateWeaponInfo(p) {
+  
   const w = WEAPONS[parseInt(document.getElementById(`p${p}-weapon`).value)];
   if (!w) return;
   const badges = document.getElementById(`p${p}-badges`);
@@ -720,6 +726,7 @@ function updateWeaponInfo(p) {
   `;
   const ddInfo = w.damage_dropoff_min_range ? `DROP: ${w.damage_dropoff_min_range}–${w.damage_dropoff_max_range} (${w.damage_reduction_at_max})` : 'No dropoff data';
   note.innerHTML = ddInfo + (w.notes ? ` &nbsp;|&nbsp; ${w.notes}` : '');
+  drawIdle();
 }
 
 // Draw idle state on canvas
@@ -742,8 +749,8 @@ function drawIdle() {
     const margin = 60, trackW = W - margin * 2;
     const p1x = margin;
     const p2x = margin + trackW;
-    drawCharacter(ctx, p1x, groundY, p1w.class, '#4a9eff', false, false, false);
-    drawCharacter(ctx, p2x, groundY, p2w.class, '#e84040', true, false, false);
+  drawCharacter(ctx, p1x, groundY, p1w.class, '#4a9eff', false, false, false, CLASS_SCALE[p1w.class]);
+  drawCharacter(ctx, p2x, groundY, p2w.class, '#e84040', true, false, false, CLASS_SCALE[p2w.class]);
     document.getElementById('hud-p1-name').textContent = p1w.name;
     document.getElementById('hud-p2-name').textContent = p2w.name;
     document.getElementById('hud-dist').textContent = startDist + 'm';
@@ -770,190 +777,6 @@ syncRange(document.getElementById('speed'), 'sp-v', '');
   document.getElementById(id).addEventListener('input', drawIdle);
 });
 drawIdle();
-// v1.2.0 - added cross analysis engine (commented out for now to focus on core sim and UI)
-// ═══════════════════════════════════════
-// CROSS ANALYSIS ENGINE
-// ═══════════════════════════════════════
 
-// function getAimProfiles() {
-//   return [
-//     { name: 'Poor', acc: 0.5, hs: 0.2 },
-//     { name: 'Average', acc: 0.75, hs: 0.35 },
-//     { name: 'Strong', acc: 0.9, hs: 0.55 },
-//     { name: 'Elite', acc: 0.99, hs: 0.8 }
-//   ];
-// }
-
-// function getDistances() {
-//   return [0, 15, 25, 30, 50, 75, 100];
-// }
-
-// function classifyMatchup(winRate) {
-//   if (winRate >= 0.6) return 'favorable';
-//   if (winRate >= 0.4) return 'even';
-//   return 'unfavorable';
-// }
-// function runCrossAnalysis() {
-//     start = performance.now();
-//   const attacker = WEAPONS[parseInt(document.getElementById('p1-weapon').value)];
-//   const distances = getDistances();
-//   const profiles = getAimProfiles();
-
-//   const speedOv = parseFloat(document.getElementById('speed').value);
-//   const meleeAdv = document.getElementById('melee-advance').checked;
-
-//   console.log("=== CROSS ANALYSIS START ===");
-//   console.log("Attacker:", attacker?.name);
-//   console.log("Distances:", distances);
-//   console.log("Profiles:", profiles);
-//   console.log("Speed Override:", speedOv);
-//   console.log("Melee Advance:", meleeAdv);
-
-//   const results = [];
-
-//   WEAPONS.forEach(defender => {
-//     if (defender.name === attacker.name) return;
-
-//     console.log(`\n--- Defender: ${defender.name} (${defender.class}) ---`);
-
-//     distances.forEach(dist => {
-//       profiles.forEach(profile => {
-
-//         console.log(`\n[SCENARIO] Dist=${dist} | Profile=${profile.name}`);
-
-//         let wins = 0;
-//         let losses = 0;
-//         let ttkSum = 0;
-
-//         const RUNS = 10000;
-
-//         for (let i = 0; i < RUNS; i++) {
-//           const r = simulate(
-//             attacker,
-//             defender,
-//             profile.acc,
-//             profile.hs,
-//             profile.acc,
-//             profile.hs,
-//             dist,
-//             speedOv,
-//             meleeAdv,
-//             'both',
-//             false
-//           );
-
-//           console.log(`Run ${i + 1}: Winner=${r.winner}, Time=${r.time}`);
-
-//           if (r.winner === 'p1') {
-//             wins++;
-//             ttkSum += r.time;
-//           } else if (r.winner === 'p2') {
-//             losses++;
-//           }
-//         }
-
-//         const total = wins + losses;
-//         const winRate = total > 0 ? wins / total : 0;
-//         const avgTTK = wins > 0 ? (ttkSum / wins) : null;
-
-//         console.log("RESULT SUMMARY:", {
-//           wins,
-//           losses,
-//           total,
-//           winRate,
-//           avgTTK
-//         });
-
-//         const row = {
-//           attacker: attacker.name,
-//           defender: defender.name,
-//           class: defender.class,
-//           distance: dist,
-//           profile: profile.name,
-//           ttk: avgTTK,
-//           winRate,
-//           result: classifyMatchup(winRate)
-//         };
-
-//         console.log("PUSH ROW:", row);
-
-//         results.push(row);
-
-//       });
-//     });
-//   });
-
-//   console.log("\n=== FINAL RESULTS COUNT ===", results.length);
-//   console.log("Sample Results:", results.slice(0, 5));
-//   end = performance.now();
-//   console.log(`Cross analysis (${RUNS} Battles) completed in ${(end - start) / 1000} seconds`);
-//   renderCrossAnalysis(results);
-//   rendered = performance.now();
-//   console.log(`Rendering (${RUNS} battles) completed in ${(rendered - end) / 1000} seconds`);
-// }
-
-// function renderCrossAnalysis(results) {
-//   console.log("\n=== RENDER START ===");
-//   console.log("Incoming results length:", results.length);
-
-//   const container = document.getElementById('cross-table');
-
-//   if (!container) {
-//     console.error("❌ cross-table NOT FOUND");
-//     return;
-//   }
-
-//   console.log("✅ cross-table found");
-
-//   let html = `
-//     <table style="width:100%; font-size:11px;">
-//       <tr>
-//         <th>Defender</th>
-//         <th>Class</th>
-//         <th>Dist</th>
-//         <th>Profile</th>
-//         <th>TTK</th>
-//         <th>Win%</th>
-//         <th>Result</th>
-//       </tr>
-//   `;
-
-//   results.forEach((r, i) => {
-//     if (i < 5) console.log("Rendering row:", r); // only first 5 to avoid spam
-
-//     const color =
-//       r.result === 'favorable' ? '#39d974' :
-//       r.result === 'unfavorable' ? '#e84040' :
-//       '#f0b429';
-
-//     html += `
-//       <tr>
-//         <td>${r.defender}</td>
-//         <td>${r.class}</td>
-//         <td>${r.distance}</td>
-//         <td>${r.profile}</td>
-//         <td>${r.ttk ? r.ttk.toFixed(2) : '-'}</td>
-//         <td>${(r.winRate * 100).toFixed(1)}%</td>
-//         <td style="color:${color}">${r.result}</td>
-//       </tr>
-//     `;
-//   });
-
-//   html += `</table>`;
-
-//   container.innerHTML = html;
-
-//   console.log("✅ HTML injected into DOM");
-
-//   const tabBtn = document.querySelector('[onclick*="cross"]');
-
-//   if (!tabBtn) {
-//     console.error("❌ Cross tab button NOT FOUND");
-//   } else {
-//     console.log("✅ Cross tab button found, switching tab");
-//   }
-
-//   switchTab('cross', tabBtn);
-// }
 
 
