@@ -48,7 +48,7 @@ self.addEventListener('message', function(e) {
 
 function getStats(w) {
   const bodyDmg = parseNum(w.body_dmg) || 0;
-  const headDmg = parseNum(w.head_damage) || bodyDmg * 1.5;
+  const headDmg = parseNum(w.head_damage) || bodyDmg;
   const rpm = parseNum(w.rpm) || 60;
   const isMelee = w.type === 'Melee';
   const isBurst = w.shots_per_burst != null;
