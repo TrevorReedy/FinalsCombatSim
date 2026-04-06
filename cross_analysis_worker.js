@@ -4,7 +4,7 @@
 // Also participates in work stealing — can request
 // more jobs when its local queue runs dry.
 // ═══════════════════════════════════════
-importScripts('./simulate.js');
+importScripts('simulate.js');
 
 // ── Simulation constants (mirrored from main thread) ──
 const CLASS_SPEED = { light: 7.0, medium: 5.0, heavy: 3.5 };
