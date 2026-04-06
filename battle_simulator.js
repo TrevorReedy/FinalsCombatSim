@@ -298,7 +298,7 @@ function parseNum(s) {
 }
 function getStats(w) {
   const bodyDmg = parseNum(w.body_dmg) || 0;
-  const headDmg = parseNum(w.head_damage) || bodyDmg * 1.5;
+  const headDmg = parseNum(w.head_damage) || parseNum(w.body_damage);
   const rpm = parseNum(w.rpm) || 60;
   const isMelee = w.type === 'Melee';
   const isBurst = w.shots_per_burst != null;
@@ -345,117 +345,6 @@ function dropMult(dist, s) {
   return 1 - ((dist - s.dropMin) / (s.dropMax - s.dropMin)) * s.dropR;
 }
 
-function simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOverride, meleeAdv, fsa, captureFrames) {
-  const s1 = getStats(p1w), s2 = getStats(p2w);
-  const maxHP1 = CLASS_HP[p1w.class], maxHP2 = CLASS_HP[p2w.class];
-  let hp1 = maxHP1, hp2 = maxHP2;
-
-  // Movement speeds (class-based, capped by user override if lower)
-  const spd1 = Math.min(s1.classSpd, speedOverride || 99);
-  const spd2 = Math.min(s2.classSpd, speedOverride || 99);
-
-  let dist = startDist;
-  // P1 is at 0, P2 at startDist
-  let p1_position = 0, p2_position = startDist;
-
-  let time = 0;
-  let t1 = fsa === 'p2' ? s1.interval : 0;
-  let t2 = fsa === 'p1' ? s2.interval : 0;
-  let b1shots = 0, b2shots = 0;
-
-  let dmg1 = 0, dmg2 = 0, shots1 = 0, hits1 = 0, hs1count = 0;
-  let shots2 = 0, hits2 = 0, hs2count = 0;
-
-  const frames = captureFrames ? [] : null;
-  const log = captureFrames ? [] : null;
-
-  // Projectiles for visualization
-  let projectiles = [];
-
-  const MAX_TIME = 60;
-while (time < MAX_TIME && hp1 > 0 && hp2 > 0) {
-  let p1fired = false, p1hit = false, p1isHS = false;
-  let p2fired = false, p2hit = false, p2isHS = false;
-
-  // Movement
-  const advancing1 = s1.isMelee || meleeAdv;
-  const advancing2 = s2.isMelee || meleeAdv;
-  if (advancing1) p1_position = Math.min(p1_position + spd1 * DT, p2_position - MELEE_RANGE);
-  if (advancing2) p2_position = Math.max(p2_position - spd2 * DT, p1_position + MELEE_RANGE);
-  dist = Math.max(0, p2_position - p1_position);
-
-  // Simultaneous firing
-  let pendingDmgToP1 = 0;
-  let pendingDmgToP2 = 0;
-
-const p1State = { id: 'P1', nextT: t1, shots: shots1, hits: hits1, hsCount: hs1count, dmg: dmg1, magShots: 0, bShots: b1shots, fired: false, hit: false, isHS: false };
-const p2State = { id: 'P2', nextT: t2, shots: shots2, hits: hits2, hsCount: hs2count, dmg: dmg2, magShots: 0, bShots: b2shots, fired: false, hit: false, isHS: false };
-
-// inside the loop, replacing both blocks:
-if (time >= p1State.nextT) pendingDmgToP2 += fireShot({ id: 'P1' }, s1, p1acc, p1hs, dist, time, p1State, log, frames, projectiles, p1_position, p2_position);
-if (time >= p2State.nextT) pendingDmgToP1 += fireShot({ id: 'P2' }, s2, p2acc, p2hs, dist, time, p2State, log, frames, projectiles, p1_position, p2_position);
-// then sync back out after the loop
-t1 = p1State.nextT; shots1 = p1State.shots; hits1 = p1State.hits; hs1count = p1State.hsCount; dmg1 = p1State.dmg;
-t2 = p2State.nextT; shots2 = p2State.shots; hits2 = p2State.hits; hs2count = p2State.hsCount; dmg2 = p2State.dmg;
-p1fired = p1State.fired; p1hit = p1State.hit; p1isHS = p1State.isHS;
-p2fired = p2State.fired; p2hit = p2State.hit; p2isHS = p2State.isHS;
-
-
-  // Apply both at once
-  hp2 = Math.max(0, hp2 - pendingDmgToP2);
-  hp1 = Math.max(0, hp1 - pendingDmgToP1);
-
-  // Age/expire projectiles
-  projectiles = projectiles.filter(p => p.age < 3);
-  projectiles.forEach(p => p.age++);
-
-  if (frames) {
-    frames.push({
-      time,
-      dist,
-      p1_position: p1_position,
-      p2_position: p2_position,
-      hp1,
-      hp2,
-      maxHP1,
-      maxHP2,
-      p1class: p1w.class,
-      p2class: p2w.class,
-      p1flash: p1fired,
-      p2flash: p2fired,
-      p1hit,
-      p2hit,
-      p1hs: p1isHS,
-      p2hs: p2isHS,
-      initDist: startDist,
-      projectiles: JSON.parse(JSON.stringify(projectiles))
-    });
-  }
-
-  if (hp1 <= 0 || hp2 <= 0) break;
-
-  time += DT;
-}
-  
-
-  // Final frame
-  if (frames) {
-    const winner = hp1 <= 0 && hp2 <= 0 ? 'tie' : hp2 <= 0 ? 'p1' : hp1 <= 0 ? 'p2' : (hp1 > hp2 ? 'p1' : hp2 > hp1 ? 'p2' : 'tie');
-    frames.push({ time, dist, p1_position: p1_position/startDist*100, p2_position: p2_position/startDist*100, hp1: Math.max(0,hp1), hp2: Math.max(0,hp2), maxHP1, maxHP2, p1class: p1w.class, p2class: p2w.class, p1flash:false, p2flash:false, p1hit:false, p2hit:false, p1hs:false, p2hs:false, initDist: startDist, projectiles: [], winner });
-    log.push({ type: 'kill', text: winner==='tie' ? '⚡ TIE — BOTH ELIMINATED' : winner==='p1' ? '🏆 PLAYER 1 WINS' : '🏆 PLAYER 2 WINS' });
-  }
-
-  const winner = hp1 <= 0 && hp2 <= 0 ? 'tie' : hp2 <= 0 ? 'p1' : hp1 <= 0 ? 'p2' : (hp1 > hp2 ? 'p1' : hp2 > hp1 ? 'p2' : 'tie');
-  return { winner, time, dist, hp1: Math.max(0,hp1), hp2: Math.max(0,hp2), maxHP1, maxHP2,
-    dmg1, dmg2, shots1, hits1, hs1: hs1count, shots2, hits2, hs2: hs2count, frames, log };
-}
-
-{/* // ═══════════════════════════════════════
-// PLAYBACK LOOP
-// ═══════════════════════════════════════
-let lastRafTime = 0;
-let simTimeAccum = 0; */}
-
 function playback(rafTime) {
   if (!simFrames.length) return;
   const elapsed = (rafTime - lastRafTime) / 1000;
@@ -481,57 +370,7 @@ function playback(rafTime) {
   }
 }
 
-function fireShot(player, s, acc, hs, dist, time, state, log, frames, projectiles, p1_position, p2_position) {
-  const { id } = player; // 'P1' or 'P2'
-  state.shots++;
-  state.fired = true;
-
-  const hit = Math.random() < acc;
-  let dmg = 0, isHS = false;
-
-  if (hit) {
-    isHS = (s.headDmg > s.bodyDmg) && Math.random() < hs;
-    dmg  = (isHS ? s.headDmg : s.bodyDmg) * dropMult(dist, s);
-    state.dmg     += dmg;
-    state.hits++;
-    if (isHS) state.hsCount++;
-    state.hit  = true;
-    state.isHS = isHS;
-    if (log) log.push({ type: isHS ? 'hs' : (id === 'P1' ? 'hp1' : 'hp2'), text: `[${time.toFixed(2)}s] ${id} ${isHS ? '🎯 HEADSHOT' : '→ HIT'} for ${dmg.toFixed(1)} hit count: ${typeof state === 'object' ? state.hits : 'N/A'}` });
-    if (frames) projectiles.push({ x: (p1_position + p2_position) / 2, owner: id === 'P1' ? 1 : 2, isHS, age: 0 });
-  } else {
-    if (log) log.push({ type: 'info', text: `[${time.toFixed(2)}s] ${id} → MISS` });
-  }
-
-  // Advance next fire time, handling burst and reload
-  if (s.isBurst) {
-    state.bShots++;
-    if (state.bShots < s.bSize) {
-      state.nextT += s.interval;
-    } else {
-      state.bShots = 0;
-      state.magShots++;
-      if (s.magSize !== null && state.magShots >= s.magSize) {
-        state.magShots = 0;
-        state.nextT   += s.emptyReload;
-        if (log) log.push({ type: 'reload', text: `[${time.toFixed(2)}s] ${id} 🔄 RELOAD (${s.emptyReload.toFixed(2)}s)` });
-      } else {
-        state.nextT += s.bDelay + s.interval;
-      }
-    }
-  } else {
-    state.magShots++;
-    if (s.magSize !== null && state.magShots >= s.magSize) {
-      state.magShots = 0;
-      state.nextT   += s.emptyReload;
-      if (log) log.push({ type: 'reload', text: `[${time.toFixed(2)}s] ${id} 🔄 RELOAD (${s.emptyReload.toFixed(2)}s)` });
-    } else {
-      state.nextT += s.interval;
-    }
-  }
-
-  return dmg;
-}
+// 
 
 // ═══════════════════════════════════════
 // UI
@@ -564,6 +403,7 @@ function runSim() {
   const result = simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOv, meleeAdv, firstShot, true);
   lastResult = result;
   simFrames = result.frames;
+  
 
   // Populate combat log immediately
   const logEl = document.getElementById('combat-log');

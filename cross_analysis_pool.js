@@ -14,17 +14,38 @@
 //     next time (keeps memory clean; pool creation cost is negligible
 //     vs the simulation work)
 // ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// PROFILING CONTROLS
+// ═══════════════════════════════════════════════════════════════════
+let isProfiling = true;
 
+function startProfiling() {
+  if (typeof console.profile === 'function') {
+    isProfiling = true;
+    console.profile('CrossAnalysis');
+    console.log('🔴 Profiling started - run your analysis');
+  } else {
+    console.warn('console.profile not available. Run with --enable-devtools-experiments');
+  }
+}
+
+function stopProfiling() {
+  if (isProfiling && typeof console.profileEnd === 'function') {
+    console.profileEnd();
+    isProfiling = false;
+    console.log('🟢 Profiling complete! Check DevTools → Performance tab');
+  }
+}
 const POOL_SIZE  = Math.max(2, Math.min(8, (navigator.hardwareConcurrency || 4) - 1));
-const RUNS       = 100_000;
+const RUNS       = 10000;
 // Jobs are handed out in chunks so a steal request doesn't give a
 // single-job trickle. Tune upward if inter-thread messaging becomes
 // a bottleneck, downward for finer progress granularity.
-const STEAL_CHUNK = 4;
+const STEAL_CHUNK = 16;
 
 // ── Distances and aim profiles ──
 function getDistances() {
-  return [0, 15, 25, 30, 50, 75, 100];
+  return [5 ,15, 25, 50, 75, 100];
 }
 
 function getAimProfiles() {
@@ -42,29 +63,6 @@ function getAimProfiles() {
 // function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeAdv) {
 //   const jobs = [];
 //   let jobId  = 0;
-
-//   weapons.forEach(defender => {
-//     if (defender.name === attacker.name) return;
-//     distances.forEach(distance => {
-//       profiles.forEach(profile => {
-//         jobs.push({
-//           jobId: jobId++,
-//           attacker,
-//           defender,
-//           distance,
-//           profile,
-//           runs: RUNS,
-//           speedOverride,
-//           meleeAdv,
-//           acc: profile.acc,
-//           hs: profile.hs
-//         });
-//       });
-//     });
-//   });
-
-//   return jobs;
-// }
 function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeAdv, attackerAcc, attackerHs) {
   const jobs = [];
   let jobId  = 0;
@@ -109,6 +107,9 @@ function distributeJobs(jobs, poolSize) {
 
 // ── Main entry point ──
 function runCrossAnalysis() {
+  console.log("🚀 Cross Analysis START");
+const __analysisStart = performance.now();
+   startProfiling();
   const attackerIdx = parseInt(document.getElementById('p1-weapon').value);
   const attacker    = WEAPONS[attackerIdx];
   if (!attacker) return;
@@ -131,7 +132,11 @@ const allJobs = buildJobs(
   attackerAcc,
   attackerHs
 );
+
 const totalJobs = allJobs.length;
+console.log(`🧱 Built ${totalJobs} jobs`);
+console.log(`🧮 Total simulations: ${totalJobs * RUNS}`);
+console.log(`⚙️ Workers: ${POOL_SIZE}`);
 
   if (totalJobs === 0) return;
 
@@ -189,6 +194,7 @@ const totalJobs = allJobs.length;
   // Called when a worker posts steal_request.
   // Hands off up to STEAL_CHUNK jobs, or signals no_work.
   function handleStealRequest(worker) {
+    console.log(`🔀 Steal request — remaining jobs: ${globalQueue.length}`);
     if (globalQueue.length === 0) {
       worker.postMessage({ type: 'no_work' });
       return;
@@ -202,8 +208,9 @@ const totalJobs = allJobs.length;
 
   function onWorkerMessage(e) {
     const msg = e.data;
-
+    
     if (msg.type === 'result') {
+        console.log(`📥 Result received for job ${msg.result.jobId}`);
       results[msg.result.jobId] = msg.result;
       completedJobs++;
       updateProgress();
@@ -216,6 +223,7 @@ const totalJobs = allJobs.length;
     }
 
     if (msg.type === 'done') {
+        console.log(`💀 Worker terminated. Remaining: ${activeWorkers - 1}`);
       activeWorkers--;
       if (workerLabel) workerLabel.textContent = `${activeWorkers} workers active`;
       this.terminate();
@@ -223,6 +231,8 @@ const totalJobs = allJobs.length;
       if (activeWorkers === 0) {
         // All workers finished — render
         if (btn) btn.disabled = false;
+        const __analysisEnd = performance.now();
+console.log(`🏁 TOTAL ANALYSIS TIME: ${( __analysisEnd - __analysisStart ).toFixed(2)}ms`);
         renderCrossAnalysis(results.filter(Boolean));
       }
     }
@@ -232,6 +242,7 @@ const totalJobs = allJobs.length;
   const chunks = distributeJobs(allJobs, POOL_SIZE);
 
   for (let i = 0; i < POOL_SIZE; i++) {
+    console.log(`👷 Spawning worker ${i}`);
     // Worker script must be served from same origin.
     // Adjust path to match your deployment layout.
     const w = new Worker('./cross_analysis_worker.js');
@@ -410,7 +421,7 @@ function renderCrossAnalysis(results) {
       `;
 
       distRows.forEach(r => {
-        console.log('R OBJECT:', r);
+        
         const rowColor =
           r.result === 'favorable'   ? 'var(--green)' :
           r.result === 'unfavorable' ? 'var(--red)'   : 'var(--accent)';
@@ -420,11 +431,11 @@ function renderCrossAnalysis(results) {
             <td style="padding:5px 12px 5px 32px;color:var(--muted);font-size:20px;"></td>
             <td style="padding:5px 12px;"></td>
             <td style="padding:5px 12px;color:var(--muted);font-size:20px;"></td>
-            <td style="padding:5px 12px;font-size:20px;letter-spacing:1px;color:var(--white);">You ${(r.attackerAcc * 100).toFixed(0)}% / ${(r.attackerHs * 100).toFixed(0)}% HS
-              vs ${r.profile}
-              | Opp ${(r.defenderAcc * 100).toFixed(0)}% / ${(r.defenderHs * 100).toFixed(0)}% HS</td>
+            <td style="padding:5px 12px;font-size:20px;letter-spacing:1px;color:var(--white);">
+              Opponent Acc %: ${(r.defenderAcc * 100).toFixed(0)}% | HeadShot %: ${(r.defenderHs * 100).toFixed(0)}% 
+            </td> 
             <td style="padding:5px 12px;text-align:right;font-family:'Barlow Condensed',sans-serif;
-                       font-size:15px;font-weight:700;color:${rowColor};">
+              font-size:15px;font-weight:700;color:${rowColor};">
               ${(r.winRate * 100).toFixed(1)}%
             </td>
             <td style="padding:5px 12px;text-align:right;color:var(--blue);font-size:20px;">
@@ -447,4 +458,8 @@ function renderCrossAnalysis(results) {
 
   html += `</tbody></table></div>`;
   container.innerHTML = html;
+    stopProfiling();
+  
+  // Also log performance metrics
+  console.log(`✅ Cross Analysis Complete: ${results.length} scenarios processed`);
 }   
