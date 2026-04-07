@@ -273,8 +273,8 @@ input[type='range'] {
   appearance: none;
   background: linear-gradient(
     to right,
-    var(--accent) 0%,
-    var(--accent) var(--pct, 50%),
+    var(--slider-color, var(--accent)) 0%,
+    var(--slider-color, var(--accent)) var(--pct, 50%),
     var(--border) var(--pct, 50%),
     var(--border) 100%
   );
@@ -285,7 +285,7 @@ input[type='range']::-webkit-slider-thumb {
   width: clamp(0.75rem, 0.62rem + 0.22vw, 0.9rem);
   height: clamp(0.75rem, 0.62rem + 0.22vw, 0.9rem);
   border-radius: var(--radius-sm);
-  background: var(--accent);
+  background: var(--slider-color, var(--accent));
   box-shadow: 0 0 0.5rem rgba(240, 180, 41, 0.6);
   cursor: pointer;
 }
@@ -295,7 +295,7 @@ input[type='range']::-moz-range-thumb {
   height: clamp(0.75rem, 0.62rem + 0.22vw, 0.9rem);
   border: 0;
   border-radius: var(--radius-sm);
-  background: var(--accent);
+  background: var(--slider-color, var(--accent));
   box-shadow: 0 0 0.5rem rgba(240, 180, 41, 0.6);
   cursor: pointer;
 }
@@ -346,6 +346,10 @@ input[type='range']::-moz-range-thumb {
 .ftab.active.p2 {
   color: var(--red);
   border-color: var(--red);
+}
+
+#p2-acc{
+  color: var(--blue);
 }
 
 .fighter-panel {
@@ -1024,3 +1028,4 @@ td {
     border-right-width: 1px;
   }
 }
+

@@ -541,7 +541,7 @@
   },
   {
     "class": "heavy",
-    "type": "Miscellaneous",
+    "type": "Melee",
     "firing_mode": "Automatic",
     "name": "FLAMETHROWER",
     "body_dmg": 30,
@@ -554,7 +554,7 @@
     "delay_in_bursts": null,
     "damage_dropoff_min_range": 8,
     "damage_dropoff_max_range": 8,
-    "damage_reduction_at_max": 100,
+    "damage_reduction_at_max": 1,
     "notes": "(Need information about whether or not the fire DoT sticks to the player while dealing damage with Flamethrower ammo)",
     "weapon_type": "hitscan",
     "hitscan_range": null
@@ -713,7 +713,7 @@
     "delay_in_bursts": null,
     "damage_dropoff_min_range": 3,
     "damage_dropoff_max_range": 3,
-    "damage_reduction_at_max": 100,
+    "damage_reduction_at_max": 1,
     "notes": null
   },
   {
@@ -731,7 +731,7 @@
     "delay_in_bursts": null,
     "damage_dropoff_min_range": 3,
     "damage_dropoff_max_range": 3,
-    "damage_reduction_at_max": 100,
+    "damage_reduction_at_max": 1,
     "notes": "Cannot hit multiple targets in one stab. Has an 800ms wind-up time."
   },
   {
@@ -749,7 +749,7 @@
     "delay_in_bursts": null,
     "damage_dropoff_min_range": 3,
     "damage_dropoff_max_range": 3,
-    "damage_reduction_at_max": 100,
+    "damage_reduction_at_max": 1,
     "notes": "Cannot hit multiple targets in one stab. Has an 800ms wind-up time. Backstab angle is 150 degrees."
   },
 
@@ -768,7 +768,7 @@
     "delay_in_bursts": null,
     "damage_dropoff_min_range": 3,
     "damage_dropoff_max_range": 3,
-    "damage_reduction_at_max": 100,
+    "damage_reduction_at_max": 1,
     "notes": null
   },
   {
@@ -786,7 +786,7 @@
     "delay_in_bursts": null,
     "damage_dropoff_min_range": 9,
     "damage_dropoff_max_range": 9,
-    "damage_reduction_at_max": 100,
+    "damage_reduction_at_max": 1,
     "notes": "Can hit multiple targets in a single lunge."
   },
 
@@ -805,7 +805,7 @@
     "delay_in_bursts": null,
     "damage_dropoff_min_range": 3,
     "damage_dropoff_max_range": 3,
-    "damage_reduction_at_max": 100,
+    "damage_reduction_at_max": 1,
     "notes": "LMB combo = 2x50 damage, then 2x60 damage, then 100 damage. Can swap-cancel the combo when started. Swap-cancel will not optimize TTK, but quick melee will. Deflecting bullets deals 100% damage to the enemy, and 10% to you (30% if glancing). Blocking melee hits will reduce their damage to 25%."
   },
     {
@@ -823,7 +823,7 @@
     "delay_in_bursts": null,
     "damage_dropoff_min_range": 2,
     "damage_dropoff_max_range": 2,
-    "damage_reduction_at_max": 100,
+    "damage_reduction_at_max": 1,
     "notes": null
   },
   {
@@ -841,7 +841,7 @@
     "delay_in_bursts": null,
     "damage_dropoff_min_range": 3,
     "damage_dropoff_max_range": 3,
-    "damage_reduction_at_max": 100,
+    "damage_reduction_at_max": 1,
     "notes": null
   },
   {
@@ -859,7 +859,7 @@
     "delay_in_bursts": null,
     "damage_dropoff_min_range": 3,
     "damage_dropoff_max_range": 3,
-    "damage_reduction_at_max": 100,
+    "damage_reduction_at_max": 1,
     "notes": "Cannot hit multiple targets in one swing."
   },
   {
@@ -877,7 +877,7 @@
     "delay_in_bursts": null,
     "damage_dropoff_min_range": 4,
     "damage_dropoff_max_range": 4,
-    "damage_reduction_at_max": 100,
+    "damage_reduction_at_max": 1,
     "notes": "LMB combo = 65 damage, then 80 damage, then 90 damage. Has a ~4.4m range on 1st attack then ~4.6m range on 2nd and 3rd attack (credit to u/beansoncrayons on reddit)."
   },
   {
@@ -895,7 +895,7 @@
     "delay_in_bursts": null,
     "damage_dropoff_min_range": 4,
     "damage_dropoff_max_range": 4,
-    "damage_reduction_at_max": 100,
+    "damage_reduction_at_max": 1,
     "notes": "Damage is per hit in a 3-hit combo. Has a 3m radius."
   }
 ]

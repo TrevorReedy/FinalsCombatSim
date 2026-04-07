@@ -8,6 +8,33 @@ const CLASS_SCALE = {
 };
 let WEAPONS = [];
 
+const p1Sliders = [
+  document.getElementById('p1-acc'),
+  document.getElementById('p1-hs')
+];
+
+const p2Sliders = [
+  document.getElementById('p2-acc'),
+  document.getElementById('p2-hs')
+];
+
+function setSliderGroupColor(sliders, color) {
+  sliders.forEach(slider => {
+    if (!slider) return;
+    slider.style.setProperty('--slider-color', color);
+  });
+}
+
+function applyActiveSliderColors(player) {
+  if (player === 1) {
+    setSliderGroupColor(p1Sliders, '#4a9eff');
+    setSliderGroupColor(p2Sliders, '#444');
+  } else {
+    setSliderGroupColor(p1Sliders, '#444');
+    setSliderGroupColor(p2Sliders, '#e84040');
+  }
+}
+
 
 async function loadWeapons() {
   try {
@@ -383,6 +410,7 @@ function runSim() {
   frameIdx = 0;
   simTimeAccum = 0;
 
+
   const p1w   = WEAPONS[parseInt(document.getElementById('p1-weapon').value)];
   const p2w   = WEAPONS[parseInt(document.getElementById('p2-weapon').value)];
   const p1acc = parseInt(document.getElementById('p1-acc').value) / 100;
@@ -485,23 +513,41 @@ function showResults(r) {
   document.getElementById('s-range').textContent = r.dist.toFixed(1)+'m';
   document.getElementById('s-p1-hp').textContent = r.hp1.toFixed(0);
   document.getElementById('s-p2-hp').textContent = r.hp2.toFixed(0);
+
+
+
 }
 
 // ═══════════════════════════════════════
 // INIT & HELPERS
 // ═══════════════════════════════════════
-function switchFighterTab(n, el) {
+function switchFighterTab(player, el) {
   document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.fighter-panel').forEach(p => p.classList.remove('active'));
+
   el.classList.add('active');
-  document.getElementById('fp' + n).classList.add('active');
+  document.getElementById('fp' + player).classList.add('active');
+
+  applyActiveSliderColors(player);
 }
 
 function switchTab(name, el) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
+  const tabs = document.querySelectorAll('.tab');
+  const contents = document.querySelectorAll('.tab-content');
+
+  tabs.forEach(t => t.classList.remove('active'));
+  contents.forEach(c => c.classList.remove('active'));
+
+  if (el) el.classList.add('active');
+
+  const target = document.getElementById('tab-' + name);
+
+  if (!target) {
+    console.error('❌ Tab not found:', 'tab-' + name);
+    return; // prevent crash
+  }
+
+  target.classList.add('active');
 }
 
 function setFSA(v, btn) {
@@ -620,3 +666,6 @@ drawIdle();
 
 
 
+
+
+applyActiveSliderColors(1);

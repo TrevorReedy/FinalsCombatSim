@@ -150,31 +150,46 @@ console.log(`⚙️ Workers: ${POOL_SIZE}`);
   let   completedJobs = 0;
 
   // ── UI setup ──
-  const btn       = document.getElementById('cross-btn');
-  const container = document.getElementById('cross-table');
-  if (btn) btn.disabled = true;
+const btn = document.getElementById('cross-btn');
+const crossContainer = document.getElementById('cross-table');
+const heatContainer  = document.getElementById('heatmap-container');
 
-  container.innerHTML = `
-    <div style="padding:20px;">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;letter-spacing:2px;
-                  text-transform:uppercase;color:var(--muted);margin-bottom:10px;">
-        RUNNING CROSS ANALYSIS — ${POOL_SIZE} WORKERS · ${totalJobs.toLocaleString()} SCENARIOS · ${RUNS.toLocaleString()} RUNS EACH
-      </div>
-      <div style="height:6px;background:var(--border);overflow:hidden;margin-bottom:8px;">
-        <div id="ca-progress-bar"
-             style="height:100%;width:0%;background:var(--accent);transition:width .1s linear;"></div>
-      </div>
-      <div id="ca-progress-label"
-           style="font-size:20px;color:var(--muted);letter-spacing:1px;">
-        0 / ${totalJobs.toLocaleString()} scenarios complete
-        · <span id="ca-worker-label">${POOL_SIZE} workers active</span>
-      </div>
+if (btn) btn.disabled = true;
+
+const loadingHtml = `
+  <div style="padding:20px;">
+    <div style="
+      font-family:'Barlow Condensed',sans-serif;
+      font-size:20px;
+      letter-spacing:2px;
+      text-transform:uppercase;
+      color:var(--muted);
+      margin-bottom:10px;
+    ">
+      RUNNING CROSS ANALYSIS — ${POOL_SIZE} WORKERS · ${totalJobs.toLocaleString()} SCENARIOS · ${RUNS.toLocaleString()} RUNS EACH
     </div>
-  `;
 
+    <div style="height:6px;background:var(--border);overflow:hidden;margin-bottom:8px;">
+      <div class="ca-progress-bar"
+           style="height:100%;width:0%;background:var(--accent);transition:width .1s linear;"></div>
+    </div>
+
+    <div class="ca-progress-label"
+         style="font-size:20px;color:var(--muted);letter-spacing:1px;">
+      0 / ${totalJobs.toLocaleString()} scenarios complete
+      · <span class="ca-worker-label">${POOL_SIZE} workers active</span>
+    </div>
+  </div>
+`;
+
+if (crossContainer) crossContainer.innerHTML = loadingHtml;
+if (heatContainer) heatContainer.innerHTML = loadingHtml;
   // Switch to the cross tab immediately so the user sees progress
   const crossTabBtn = document.querySelector('[onclick*="cross"]');
   if (crossTabBtn) switchTab('cross', crossTabBtn);
+
+  const heatTabBtn = document.querySelector('[onclick*="heat"]');
+  if (heatTabBtn) switchTab('heat', heatTabBtn);
 
   const progressBar   = document.getElementById('ca-progress-bar');
   const progressLabel = document.getElementById('ca-progress-label');
@@ -229,11 +244,19 @@ console.log(`⚙️ Workers: ${POOL_SIZE}`);
       this.terminate();
 
       if (activeWorkers === 0) {
-        // All workers finished — render
         if (btn) btn.disabled = false;
+
+        const finalResults = results.filter(Boolean);
+        window.LAST_RESULTS = finalResults;
+
         const __analysisEnd = performance.now();
-console.log(`🏁 TOTAL ANALYSIS TIME: ${( __analysisEnd - __analysisStart ).toFixed(2)}ms`);
-        renderCrossAnalysis(results.filter(Boolean));
+        console.log(`🏁 TOTAL ANALYSIS TIME: ${( __analysisEnd - __analysisStart ).toFixed(2)}ms`);
+
+        renderCrossAnalysis(finalResults);
+
+        if (typeof renderHeatGraph === 'function') {
+          renderHeatGraph(finalResults, 'heatmap-container');
+        }
       }
     }
   }

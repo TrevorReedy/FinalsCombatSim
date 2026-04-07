@@ -8,6 +8,7 @@
 <script src="./simulate.js" defer></script>
 <script src="./battle_simulator.js" defer></script>
 <script src="./cross_analysis_pool.js" defer></script>
+<script src="./heatgraph.js" defer></script>
   <link rel="stylesheet" href="battle_simulation.css">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,8 +59,8 @@
 
         <label>Headshot Chance</label>
         <div class="range-row">
-          <input type="range" id="p1-hs" min="0" max="100" value="20" oninput="syncRange(this,'p1-hs-v','%')">
-          <span class="range-val" id="p1-hs-v">20%</span>
+          <input type="range" id="p1-hs" min="0" max="100" value="35" oninput="syncRange(this,'p1-hs-v','%')">
+          <span class="range-val" id="p1-hs-v">35%</span>
         </div>
       </div>
 
@@ -85,8 +86,8 @@
 
         <label>Headshot Chance</label>
         <div class="range-row">
-          <input type="range" id="p2-hs" min="0" max="100" value="20" oninput="syncRange(this,'p2-hs-v','%')">
-          <span class="range-val" id="p2-hs-v">20%</span>
+          <input type="range" id="p2-hs" min="0" max="100" value="35" oninput="syncRange(this,'p2-hs-v','%')">
+          <span class="range-val" id="p2-hs-v">35%</span>
         </div>
       </div>
 
@@ -140,6 +141,7 @@
       <div class="run-row">
         <button class="btn-run" id="run-btn" onclick="runSim()">▶ SIMULATE</button>
         <button class="btn-run" id="cross-btn" onclick="runCrossAnalysis()">📊 CROSS ANALYSIS</button>
+        <button class="btn-run" id="heat-btn" onclick="runCrossAnalysis()">📊 HEATMAP</button>
       </div>
     </div>
 
@@ -177,6 +179,7 @@
           <div class="tab" onclick="switchTab('log',this)">Combat Log</div>
           <div class="tab" id="multi-tab" onclick="switchTab('multi',this)" style="display:none;">Multi Stats</div>
           <div class="tab" onclick="switchTab('cross',this)">Cross Analysis</div>
+          <div class="tab" onclick="switchTab('heat', this)">🔥 HEAT MAP</div>
         </div>
 
         <div class="tab-content active" id="tab-result">
@@ -187,6 +190,8 @@
               <div class="winner-sub" id="winner-sub"></div>
             </div>
           </div>
+
+
 
           <div class="stats-grid" id="stats-grid" style="display:none;">
             <div class="stat-cell"><div class="stat-label">P1 Damage</div><div class="stat-val p1" id="s-p1-dmg">—</div></div>
@@ -206,6 +211,8 @@
             RUN A SIMULATION TO SEE RESULTS
           </div>
         </div>
+
+    
 
         <div class="tab-content" id="tab-log">
           <div id="combat-log" style="font-size:11px;line-height:1.9;padding:10px 14px; font-size: 20px;"></div>
@@ -254,6 +261,12 @@
         <div class="tab-content" id="tab-cross">
           <div id="cross-table" style="padding:10px;"></div>
         </div>
+
+          <div class="tab-content" id="tab-heat">
+            <div id="heatmap-container" style="padding:10px;">
+              HEAT MAP READY
+            </div>
+          </div>
       </div>
     </div>
   </div>

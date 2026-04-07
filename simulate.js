@@ -6,6 +6,16 @@
 // ═══════════════════════════════════════════════════════════════════
 function simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOverride, meleeAdv, fsa, captureFrames) {
   const s1 = getStats(p1w), s2 = getStats(p2w);
+let meleeRange1 = null;
+let meleeRange2 = null;
+
+if (s1.isMelee) {
+  meleeRange1 = s1.dropMin ?? MELEE_RANGE;
+}
+if (s2.isMelee) {
+  meleeRange2 = s2.dropMin ?? MELEE_RANGE;
+}
+
   const maxHP1 = CLASS_HP[p1w.class], maxHP2 = CLASS_HP[p2w.class];
   let hp1 = maxHP1, hp2 = maxHP2;
 
@@ -47,6 +57,10 @@ function simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOverride, 
     // ── Movement ──
     if (s1.isMelee || meleeAdv) p1pos = Math.min(p1pos + spd1 * DT, p2pos - MELEE_RANGE);
     if (s2.isMelee || meleeAdv) p2pos = Math.max(p2pos - spd2 * DT, p1pos + MELEE_RANGE);
+
+    //melee fix 
+    p1pos += spd1 * DT;
+    p2pos -= spd2 * DT;
     dist = Math.max(0, p2pos - p1pos);
 
     // ── Reload completion ──
@@ -70,18 +84,27 @@ function simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOverride, 
       p1fired = true;
       if (mag1 !== Infinity) mag1--;
 
-      if (Math.random() < p1acc) {
-        const isHS = (s1.headDmg > s1.bodyDmg) && Math.random() < p1hs;
-        const dmg  = (isHS ? s1.headDmg : s1.bodyDmg) * dropMult(dist, s1);
-        pendingDmgToP2 += dmg;
-        dmg1 += dmg; hits1++;
-        if (isHS) hs1count++;
-        p1hit = true; p1isHS = isHS;
-        if (log) log.push({ type: isHS ? 'hs' : 'hp1', text: `[${time.toFixed(2)}s] P1 ${isHS ? '🎯 HEADSHOT' : '→ HIT'} for ${dmg.toFixed(1)}` });
-        if (frames) projectiles.push({ x: (p1pos + p2pos) / 2, owner: 1, isHS, age: 0 });
-      } else {
-        if (log) log.push({ type: 'info', text: `[${time.toFixed(2)}s] P1 → MISS (${mag1 === Infinity ? '∞' : mag1} left)` });
-      }
+    const inRange = !s1.isMelee || dist <= MELEE_RANGE;
+
+const p1InRange = !s1.isMelee || dist <= meleeRange1;
+
+if (p1InRange && Math.random() < p1acc) {
+  const isHS = (s1.headDmg > s1.bodyDmg) && Math.random() < p1hs;
+  const dmg  = (isHS ? s1.headDmg : s1.bodyDmg) * dropMult(dist, s1);
+  pendingDmgToP2 += dmg;
+  dmg1 += dmg; hits1++;
+  if (isHS) hs1count++;
+  p1hit = true; p1isHS = isHS;
+  if (log) log.push({ type: isHS ? 'hs' : 'hp1', text: `[${time.toFixed(2)}s] P1 ${isHS ? '🎯 HEADSHOT' : '→ HIT'} for ${dmg.toFixed(1)} @ ${dist.toFixed(1)}m` });
+  if (frames) projectiles.push({ x: (p1pos + p2pos) / 2, owner: 1, isHS, age: 0 });
+} else {
+  if (log) {
+    const reason = s1.isMelee && !p1InRange
+      ? `OUT OF RANGE @ ${dist.toFixed(1)}m`
+      : `MISS (${mag1 === Infinity ? '∞' : mag1} left)`;
+    log.push({ type: 'info', text: `[${time.toFixed(2)}s] P1 → ${reason}` });
+  }
+}
 
       if (mag1 <= 0) {
         reloading1 = true;
@@ -104,18 +127,25 @@ function simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOverride, 
       p2fired = true;
       if (mag2 !== Infinity) mag2--;
 
-      if (Math.random() < p2acc) {
+        const p2InRange = !s2.isMelee || dist <= meleeRange2;
+
+        if (p2InRange && Math.random() < p2acc) {
         const isHS = (s2.headDmg > s2.bodyDmg) && Math.random() < p2hs;
         const dmg  = (isHS ? s2.headDmg : s2.bodyDmg) * dropMult(dist, s2);
         pendingDmgToP1 += dmg;
         dmg2 += dmg; hits2++;
         if (isHS) hs2count++;
         p2hit = true; p2isHS = isHS;
-        if (log) log.push({ type: isHS ? 'hs' : 'hp2', text: `[${time.toFixed(2)}s] P2 ${isHS ? '🎯 HEADSHOT' : '→ HIT'} for ${dmg.toFixed(1)}` });
+        if (log) log.push({ type: isHS ? 'hs' : 'hp2', text: `[${time.toFixed(2)}s] P2 ${isHS ? '🎯 HEADSHOT' : '→ HIT'} for ${dmg.toFixed(1)} @ ${dist.toFixed(1)}m` });
         if (frames) projectiles.push({ x: (p1pos + p2pos) / 2, owner: 2, isHS, age: 0 });
-      } else {
-        if (log) log.push({ type: 'info', text: `[${time.toFixed(2)}s] P2 → MISS` });
-      } 
+        } else {
+        if (log) {
+            const reason = s2.isMelee && !p2InRange
+            ? `OUT OF RANGE @ ${dist.toFixed(1)}m`
+            : 'MISS';
+            log.push({ type: 'info', text: `[${time.toFixed(2)}s] P2 → ${reason}` });
+        }
+        }
 
       if (mag2 <= 0) {
         reloading2 = true;

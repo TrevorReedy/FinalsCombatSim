@@ -11,8 +11,8 @@
     "empty_reload_time": null,
     "shots_per_burst": null,
     "delay_in_bursts": null,
-    "damage_dropoff_min_range": null,
-    "damage_dropoff_max_range": null,
+    "damage_dropoff_min_range": 3,
+    "damage_dropoff_max_range": 3,
     "damage_reduction_at_max": 100,
     "notes": null
   },
@@ -29,9 +29,9 @@
     "empty_reload_time": null,
     "shots_per_burst": null,
     "delay_in_bursts": null,
-    "damage_dropoff_min_range": null,
-    "damage_dropoff_max_range": null,
-    "damage_reduction_at_max": null,
+    "damage_dropoff_min_range": 3,
+    "damage_dropoff_max_range": 3,
+    "damage_reduction_at_max": 100,
     "notes": "Cannot hit multiple targets in one stab. Has an 800ms wind-up time."
   },
   {
@@ -47,9 +47,9 @@
     "empty_reload_time": null,
     "shots_per_burst": null,
     "delay_in_bursts": null,
-    "damage_dropoff_min_range": null,
-    "damage_dropoff_max_range": null,
-    "damage_reduction_at_max": null,
+    "damage_dropoff_min_range": 3,
+    "damage_dropoff_max_range": 3,
+    "damage_reduction_at_max": 100,
     "notes": "Cannot hit multiple targets in one stab. Has an 800ms wind-up time. Backstab angle is 150 degrees."
   },
 
@@ -66,9 +66,9 @@
     "empty_reload_time": null,
     "shots_per_burst": null,
     "delay_in_bursts": null,
-    "damage_dropoff_min_range": null,
-    "damage_dropoff_max_range": null,
-    "damage_reduction_at_max": null,
+    "damage_dropoff_min_range": 3,
+    "damage_dropoff_max_range": 3,
+    "damage_reduction_at_max": 100,
     "notes": null
   },
   {
@@ -84,9 +84,9 @@
     "empty_reload_time": null,
     "shots_per_burst": null,
     "delay_in_bursts": null,
-    "damage_dropoff_min_range": null,
-    "damage_dropoff_max_range": null,
-    "damage_reduction_at_max": null,
+    "damage_dropoff_min_range": 9,
+    "damage_dropoff_max_range": 9,
+    "damage_reduction_at_max": 100,
     "notes": "Can hit multiple targets in a single lunge."
   },
 
@@ -103,9 +103,9 @@
     "empty_reload_time": null,
     "shots_per_burst": null,
     "delay_in_bursts": null,
-    "damage_dropoff_min_range": null,
-    "damage_dropoff_max_range": null,
-    "damage_reduction_at_max": null,
+    "damage_dropoff_min_range": 3,
+    "damage_dropoff_max_range": 3,
+    "damage_reduction_at_max": 100,
     "notes": "LMB combo = 2x50 damage, then 2x60 damage, then 100 damage. Can swap-cancel the combo when started. Swap-cancel will not optimize TTK, but quick melee will. Deflecting bullets deals 100% damage to the enemy, and 10% to you (30% if glancing). Blocking melee hits will reduce their damage to 25%."
   },
     {
@@ -121,9 +121,9 @@
     "empty_reload_time": null,
     "shots_per_burst": null,
     "delay_in_bursts": null,
-    "damage_dropoff_min_range": null,
-    "damage_dropoff_max_range": null,
-    "damage_reduction_at_max": null,
+    "damage_dropoff_min_range": 2,
+    "damage_dropoff_max_range": 2,
+    "damage_reduction_at_max": 100,
     "notes": null
   },
   {
@@ -139,9 +139,9 @@
     "empty_reload_time": null,
     "shots_per_burst": null,
     "delay_in_bursts": null,
-    "damage_dropoff_min_range": null,
-    "damage_dropoff_max_range": null,
-    "damage_reduction_at_max": null,
+    "damage_dropoff_min_range": 3,
+    "damage_dropoff_max_range": 3,
+    "damage_reduction_at_max": 100,
     "notes": null
   },
   {
@@ -157,9 +157,9 @@
     "empty_reload_time": null,
     "shots_per_burst": null,
     "delay_in_bursts": null,
-    "damage_dropoff_min_range": null,
-    "damage_dropoff_max_range": null,
-    "damage_reduction_at_max": null,
+    "damage_dropoff_min_range": 3,
+    "damage_dropoff_max_range": 3,
+    "damage_reduction_at_max": 100,
     "notes": "Cannot hit multiple targets in one swing."
   },
   {
@@ -175,9 +175,9 @@
     "empty_reload_time": null,
     "shots_per_burst": null,
     "delay_in_bursts": null,
-    "damage_dropoff_min_range": null,
-    "damage_dropoff_max_range": null,
-    "damage_reduction_at_max": null,
+    "damage_dropoff_min_range": 4,
+    "damage_dropoff_max_range": 4,
+    "damage_reduction_at_max": 100,
     "notes": "LMB combo = 65 damage, then 80 damage, then 90 damage. Has a ~4.4m range on 1st attack then ~4.6m range on 2nd and 3rd attack (credit to u/beansoncrayons on reddit)."
   },
   {
@@ -193,9 +193,9 @@
     "empty_reload_time": null,
     "shots_per_burst": null,
     "delay_in_bursts": null,
-    "damage_dropoff_min_range": null,
-    "damage_dropoff_max_range": null,
-    "damage_reduction_at_max": null,
+    "damage_dropoff_min_range": 4,
+    "damage_dropoff_max_range": 4,
+    "damage_reduction_at_max": 100,
     "notes": "Damage is per hit in a 3-hit combo. Has a 3m radius."
   }
 ]
