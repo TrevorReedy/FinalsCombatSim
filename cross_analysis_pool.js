@@ -1,8 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // CROSS ANALYSIS ENGINE — Worker Pool + Work Stealing
 //
-// Drop-in replacement for runCrossAnalysis() and renderCrossAnalysis()
-// in battle_simulator.js.
 //
 // Architecture:
 //   - POOL_SIZE workers created once, reused across analyses
@@ -106,10 +104,191 @@ function distributeJobs(jobs, poolSize) {
 }
 
 // ── Main entry point ──
+// function runCrossAnalysis() {
+//   console.log("🚀 Cross Analysis START");
+// const __analysisStart = performance.now();
+//    startProfiling();
+//   const attackerIdx = parseInt(document.getElementById('p1-weapon').value);
+//   const attacker    = WEAPONS[attackerIdx];
+//   if (!attacker) return;
+
+//   const distances     = getDistances();
+//   const profiles      = getAimProfiles();
+//   const speedOverride = parseFloat(document.getElementById('speed').value);
+//   const meleeAdv      = document.getElementById('melee-advance').checked;
+
+//   const attackerAcc   = parseFloat(document.getElementById('p1-acc').value) / 100;
+// const attackerHs    = parseFloat(document.getElementById('p1-hs').value) / 100;
+
+// const allJobs = buildJobs(
+//   attacker,
+//   WEAPONS,
+//   distances,
+//   profiles,
+//   speedOverride,
+//   meleeAdv,
+//   attackerAcc,
+//   attackerHs
+// );
+
+// const totalJobs = allJobs.length;
+// console.log(`🧱 Built ${totalJobs} jobs`);
+// console.log(`🧮 Total simulations: ${totalJobs * RUNS}`);
+// console.log(`⚙️ Workers: ${POOL_SIZE}`);
+
+//   if (totalJobs === 0) return;
+
+//   // Central queue — shared reference, mutated as workers steal from it
+//   // Stored as a plain array; we pop() from the tail (O(1)).
+//   // The queue is reversed so the first jobs are at the tail for pop().
+//   const globalQueue = [...allJobs].reverse();
+
+//   // Results accumulator
+//   const results     = new Array(totalJobs);
+//   let   completedJobs = 0;
+
+//   // ── UI setup ──
+// const btn = document.getElementById('cross-btn');
+// const crossContainer = document.getElementById('cross-table');
+// const heatContainer  = document.getElementById('heatmap-container');
+
+// if (btn) btn.disabled = true;
+
+// const loadingHtml = `
+//   <div style="padding:20px;">
+//     <div style="
+//       font-family:'Barlow Condensed',sans-serif;
+//       font-size:20px;
+//       letter-spacing:2px;
+//       text-transform:uppercase;
+//       color:var(--muted);
+//       margin-bottom:10px;
+//     ">
+//       RUNNING CROSS ANALYSIS — ${POOL_SIZE} WORKERS · ${totalJobs.toLocaleString()} SCENARIOS · ${RUNS.toLocaleString()} RUNS EACH
+//     </div>
+
+//     <div style="height:6px;background:var(--border);overflow:hidden;margin-bottom:8px;">
+//       <div id="ca-progress-bar"
+//            style="height:100%;width:0%;background:var(--accent);transition:width .1s linear;"></div>
+//     </div>
+
+//     <div id="ca-progress-label"
+//          style="font-size:20px;color:var(--muted);letter-spacing:1px;">
+//       0 / ${totalJobs.toLocaleString()} scenarios complete
+//       · <span id="ca-worker-label">${POOL_SIZE} workers active</span>
+//     </div>
+//   </div>
+// `;
+
+// if (crossContainer) crossContainer.innerHTML = loadingHtml;
+// if (heatContainer) heatContainer.innerHTML = loadingHtml;
+//   // Switch to the cross tab immediately so the user sees progress
+//   const crossTabBtn = document.querySelector('[onclick*="cross"]');
+//   if (crossTabBtn) switchTab('cross', crossTabBtn);
+
+//   const heatTabBtn = document.querySelector('[onclick*="heat"]');
+//   if (heatTabBtn) switchTab('heat', heatTabBtn);
+
+//   const progressBar   = document.getElementById('ca-progress-bar');
+//   const progressLabel = document.getElementById('ca-progress-label');
+//   const workerLabel   = document.getElementById('ca-worker-label');
+
+//   function updateProgress() {
+//     const pct = (completedJobs / totalJobs * 100).toFixed(1);
+//     if (progressBar)   progressBar.style.width = pct + '%';
+//     if (progressLabel) progressLabel.textContent =
+//       `${completedJobs.toLocaleString()} / ${totalJobs.toLocaleString()} scenarios complete`;
+//   }
+
+//   // ── Worker pool ──
+//   let activeWorkers = POOL_SIZE;
+//   const workers     = [];
+
+//   // Called when a worker posts steal_request.
+//   // Hands off up to STEAL_CHUNK jobs, or signals no_work.
+//   function handleStealRequest(worker) {
+//     console.log(`🔀 Steal request — remaining jobs: ${globalQueue.length}`);
+//     if (globalQueue.length === 0) {
+//       worker.postMessage({ type: 'no_work' });
+//       return;
+//     }
+//     const stolen = [];
+//     for (let i = 0; i < STEAL_CHUNK && globalQueue.length > 0; i++) {
+//       stolen.push(globalQueue.pop());
+//     }
+//     worker.postMessage({ type: 'stolen', jobs: stolen });
+//   }
+
+//   function onWorkerMessage(e) {
+//     const msg = e.data;
+    
+//     if (msg.type === 'result') {
+//         console.log(`📥 Result received for job ${msg.result.jobId}`);
+//       results[msg.result.jobId] = msg.result;
+//       completedJobs++;
+//       updateProgress();
+//       return;
+//     }
+
+//     if (msg.type === 'steal_request') {
+//       handleStealRequest(this);
+//       return;
+//     }
+
+//     if (msg.type === 'done') {
+//         console.log(`💀 Worker terminated. Remaining: ${activeWorkers - 1}`);
+//       activeWorkers--;
+//       if (workerLabel) workerLabel.textContent = `${activeWorkers} workers active`;
+//       this.terminate();
+
+//       if (activeWorkers === 0) {
+//         if (btn) btn.disabled = false;
+
+//         const finalResults = results.filter(Boolean);
+//         window.LAST_RESULTS = finalResults;
+
+//         const __analysisEnd = performance.now();
+//         console.log(`🏁 TOTAL ANALYSIS TIME: ${( __analysisEnd - __analysisStart ).toFixed(2)}ms`);
+
+//         renderCrossAnalysis(finalResults);
+
+//         if (typeof renderHeatGraph === 'function') {
+//           renderHeatGraph(finalResults, 'heatmap-container');
+//         }
+//       }
+//     }
+//   }
+
+//   // Create workers, assign initial chunks
+//   const chunks = distributeJobs(allJobs, POOL_SIZE);
+
+//   for (let i = 0; i < POOL_SIZE; i++) {
+//     console.log(`👷 Spawning worker ${i}`);
+//     // Worker script must be served from same origin.
+//     // Adjust path to match your deployment layout.
+//     const w = new Worker('./cross_analysis_worker.js');
+//     w.onmessage = onWorkerMessage.bind(w);
+//     w.onerror   = (err) => console.error(`Worker ${i} error:`, err);
+//     workers.push(w);
+
+//     // Remove the initial chunk from the global queue so it isn't
+//     // double-assigned if a worker steals before finishing its own batch.
+//     // (chunks are sliced from allJobs, not from globalQueue, so there's
+//     // no overlap — but we still drain globalQueue by the same count to
+//     // keep accounting consistent.)
+//     const jobsToSend = chunks[i];
+//     // Drain equivalent entries from the tail of globalQueue
+//     for (let j = 0; j < jobsToSend.length; j++) globalQueue.pop();
+
+//     w.postMessage({ type: 'jobs', jobs: jobsToSend });
+//   }
+// }
+
 function runCrossAnalysis() {
   console.log("🚀 Cross Analysis START");
-const __analysisStart = performance.now();
-   startProfiling();
+  const __analysisStart = performance.now();
+  startProfiling();
+
   const attackerIdx = parseInt(document.getElementById('p1-weapon').value);
   const attacker    = WEAPONS[attackerIdx];
   if (!attacker) return;
@@ -120,100 +299,91 @@ const __analysisStart = performance.now();
   const meleeAdv      = document.getElementById('melee-advance').checked;
 
   const attackerAcc   = parseFloat(document.getElementById('p1-acc').value) / 100;
-const attackerHs    = parseFloat(document.getElementById('p1-hs').value) / 100;
+  const attackerHs    = parseFloat(document.getElementById('p1-hs').value) / 100;
 
-const allJobs = buildJobs(
-  attacker,
-  WEAPONS,
-  distances,
-  profiles,
-  speedOverride,
-  meleeAdv,
-  attackerAcc,
-  attackerHs
-);
+  const allJobs = buildJobs(
+    attacker,
+    WEAPONS,
+    distances,
+    profiles,
+    speedOverride,
+    meleeAdv,
+    attackerAcc,
+    attackerHs
+  );
 
-const totalJobs = allJobs.length;
-console.log(`🧱 Built ${totalJobs} jobs`);
-console.log(`🧮 Total simulations: ${totalJobs * RUNS}`);
-console.log(`⚙️ Workers: ${POOL_SIZE}`);
+  const totalJobs = allJobs.length;
+  console.log(`🧱 Built ${totalJobs} jobs`);
+  console.log(`🧮 Total simulations: ${totalJobs * RUNS}`);
+  console.log(`⚙️ Workers: ${POOL_SIZE}`);
 
   if (totalJobs === 0) return;
 
-  // Central queue — shared reference, mutated as workers steal from it
-  // Stored as a plain array; we pop() from the tail (O(1)).
-  // The queue is reversed so the first jobs are at the tail for pop().
   const globalQueue = [...allJobs].reverse();
+  const results = new Array(totalJobs);
+  let completedJobs = 0;
 
-  // Results accumulator
-  const results     = new Array(totalJobs);
-  let   completedJobs = 0;
+  const btn = document.getElementById('cross-btn');
+  const crossContainer = document.getElementById('cross-table');
 
-  // ── UI setup ──
-const btn = document.getElementById('cross-btn');
-const crossContainer = document.getElementById('cross-table');
-const heatContainer  = document.getElementById('heatmap-container');
+  if (btn) btn.disabled = true;
 
-if (btn) btn.disabled = true;
+  const loadingHtml = `
+    <div style="padding:20px;">
+      <div style="
+        font-family:'Barlow Condensed',sans-serif;
+        font-size:20px;
+        letter-spacing:2px;
+        text-transform:uppercase;
+        color:var(--muted);
+        margin-bottom:10px;
+      ">
+        RUNNING CROSS ANALYSIS — ${POOL_SIZE} WORKERS · ${totalJobs.toLocaleString()} SCENARIOS · ${RUNS.toLocaleString()} RUNS EACH
+      </div>
 
-const loadingHtml = `
-  <div style="padding:20px;">
-    <div style="
-      font-family:'Barlow Condensed',sans-serif;
-      font-size:20px;
-      letter-spacing:2px;
-      text-transform:uppercase;
-      color:var(--muted);
-      margin-bottom:10px;
-    ">
-      RUNNING CROSS ANALYSIS — ${POOL_SIZE} WORKERS · ${totalJobs.toLocaleString()} SCENARIOS · ${RUNS.toLocaleString()} RUNS EACH
+      <div style="height:6px;background:var(--border);overflow:hidden;margin-bottom:8px;">
+        <div class="ca-progress-bar"
+             style="height:100%;width:0%;background:var(--accent);transition:width .1s linear;"></div>
+      </div>
+
+      <div class="ca-progress-label"
+           style="font-size:20px;color:var(--muted);letter-spacing:1px;">
+        0 / ${totalJobs.toLocaleString()} scenarios complete
+        · <span class="ca-worker-label">${POOL_SIZE} workers active</span>
+      </div>
     </div>
+  `;
 
-    <div style="height:6px;background:var(--border);overflow:hidden;margin-bottom:8px;">
-      <div class="ca-progress-bar"
-           style="height:100%;width:0%;background:var(--accent);transition:width .1s linear;"></div>
-    </div>
+  if (crossContainer) crossContainer.innerHTML = loadingHtml;
 
-    <div class="ca-progress-label"
-         style="font-size:20px;color:var(--muted);letter-spacing:1px;">
-      0 / ${totalJobs.toLocaleString()} scenarios complete
-      · <span class="ca-worker-label">${POOL_SIZE} workers active</span>
-    </div>
-  </div>
-`;
-
-if (crossContainer) crossContainer.innerHTML = loadingHtml;
-if (heatContainer) heatContainer.innerHTML = loadingHtml;
-  // Switch to the cross tab immediately so the user sees progress
   const crossTabBtn = document.querySelector('[onclick*="cross"]');
   if (crossTabBtn) switchTab('cross', crossTabBtn);
 
-  const heatTabBtn = document.querySelector('[onclick*="heat"]');
-  if (heatTabBtn) switchTab('heat', heatTabBtn);
-
-  const progressBar   = document.getElementById('ca-progress-bar');
-  const progressLabel = document.getElementById('ca-progress-label');
-  const workerLabel   = document.getElementById('ca-worker-label');
+  const progressBar   = crossContainer?.querySelector('.ca-progress-bar');
+  const progressLabel = crossContainer?.querySelector('.ca-progress-label');
+  const workerLabel   = crossContainer?.querySelector('.ca-worker-label');
 
   function updateProgress() {
     const pct = (completedJobs / totalJobs * 100).toFixed(1);
-    if (progressBar)   progressBar.style.width = pct + '%';
-    if (progressLabel) progressLabel.textContent =
-      `${completedJobs.toLocaleString()} / ${totalJobs.toLocaleString()} scenarios complete`;
+    if (progressBar) progressBar.style.width = pct + '%';
+    if (progressLabel) {
+      progressLabel.innerHTML = `
+        ${completedJobs.toLocaleString()} / ${totalJobs.toLocaleString()} scenarios complete
+        · <span class="ca-worker-label">${activeWorkers} workers active</span>
+      `;
+    }
   }
 
-  // ── Worker pool ──
   let activeWorkers = POOL_SIZE;
-  const workers     = [];
+  const workers = [];
 
-  // Called when a worker posts steal_request.
-  // Hands off up to STEAL_CHUNK jobs, or signals no_work.
   function handleStealRequest(worker) {
     console.log(`🔀 Steal request — remaining jobs: ${globalQueue.length}`);
     if (globalQueue.length === 0) {
       worker.postMessage({ type: 'no_work' });
       return;
     }
+
     const stolen = [];
     for (let i = 0; i < STEAL_CHUNK && globalQueue.length > 0; i++) {
       stolen.push(globalQueue.pop());
@@ -223,9 +393,9 @@ if (heatContainer) heatContainer.innerHTML = loadingHtml;
 
   function onWorkerMessage(e) {
     const msg = e.data;
-    
+
     if (msg.type === 'result') {
-        console.log(`📥 Result received for job ${msg.result.jobId}`);
+      console.log(`📥 Result received for job ${msg.result.jobId}`);
       results[msg.result.jobId] = msg.result;
       completedJobs++;
       updateProgress();
@@ -238,10 +408,10 @@ if (heatContainer) heatContainer.innerHTML = loadingHtml;
     }
 
     if (msg.type === 'done') {
-        console.log(`💀 Worker terminated. Remaining: ${activeWorkers - 1}`);
+      console.log(`💀 Worker terminated. Remaining: ${activeWorkers - 1}`);
       activeWorkers--;
-      if (workerLabel) workerLabel.textContent = `${activeWorkers} workers active`;
       this.terminate();
+      updateProgress();
 
       if (activeWorkers === 0) {
         if (btn) btn.disabled = false;
@@ -250,36 +420,25 @@ if (heatContainer) heatContainer.innerHTML = loadingHtml;
         window.LAST_RESULTS = finalResults;
 
         const __analysisEnd = performance.now();
-        console.log(`🏁 TOTAL ANALYSIS TIME: ${( __analysisEnd - __analysisStart ).toFixed(2)}ms`);
-
-        renderCrossAnalysis(finalResults);
+        console.log(`🏁 TOTAL ANALYSIS TIME: ${(__analysisEnd - __analysisStart).toFixed(2)}ms`);
 
         if (typeof renderHeatGraph === 'function') {
-          renderHeatGraph(finalResults, 'heatmap-container');
+          renderHeatGraph(finalResults, 'cross-table');
         }
       }
     }
   }
 
-  // Create workers, assign initial chunks
   const chunks = distributeJobs(allJobs, POOL_SIZE);
 
   for (let i = 0; i < POOL_SIZE; i++) {
     console.log(`👷 Spawning worker ${i}`);
-    // Worker script must be served from same origin.
-    // Adjust path to match your deployment layout.
     const w = new Worker('./cross_analysis_worker.js');
     w.onmessage = onWorkerMessage.bind(w);
-    w.onerror   = (err) => console.error(`Worker ${i} error:`, err);
+    w.onerror = (err) => console.error(`Worker ${i} error:`, err);
     workers.push(w);
 
-    // Remove the initial chunk from the global queue so it isn't
-    // double-assigned if a worker steals before finishing its own batch.
-    // (chunks are sliced from allJobs, not from globalQueue, so there's
-    // no overlap — but we still drain globalQueue by the same count to
-    // keep accounting consistent.)
     const jobsToSend = chunks[i];
-    // Drain equivalent entries from the tail of globalQueue
     for (let j = 0; j < jobsToSend.length; j++) globalQueue.pop();
 
     w.postMessage({ type: 'jobs', jobs: jobsToSend });
