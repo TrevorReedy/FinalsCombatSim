@@ -43,7 +43,7 @@ const STEAL_CHUNK = 16;
 
 // ── Distances and aim profiles ──
 function getDistances() {
-  return [5 ,15, 25, 50, 75, 100];
+  return [1, 5 ,15, 25, 50, 75, 100];
 }
 
 function getAimProfiles() {

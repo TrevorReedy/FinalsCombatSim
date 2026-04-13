@@ -42,7 +42,7 @@ self.addEventListener('message', function(e) {
     workerProfiling = false;
   }
   
-  // ... existing message handling code ...
+
 });
 
 
