@@ -5,7 +5,7 @@
 // captureFrames = true only in the main thread visual sim.
 // ═══════════════════════════════════════════════════════════════════
 function simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOverride, meleeAdv, fsa, captureFrames) {
-  const s1 = getStats(p1w), s2 = getStats(p2w);
+const s1 = getStats(p1w), s2 = getStats(p2w);
 let meleeRange1 = null;
 let meleeRange2 = null;
 
@@ -49,7 +49,7 @@ if (s2.isMelee) {
   let   projectiles = [];
 
   const MAX_TIME = 60;
-
+//firing
   while (time < MAX_TIME && hp1 > 0 && hp2 > 0) {
     let p1fired = false, p1hit = false, p1isHS = false;
     let p2fired = false, p2hit = false, p2isHS = false;
@@ -216,4 +216,57 @@ if (p1InRange && Math.random() < p1acc) {
     shots2, hits2, hs2: hs2count,
     frames, log
   };
+}
+
+
+function getStats(w) {
+
+
+  const rpm = parseNum(w.rpm) || 60;
+
+
+
+
+  const bodyDmg = parseNum(w.body_dmg) || 0;
+  const headDmg = parseNum(w.head_damage) || bodyDmg;
+  const isMelee = w.type === 'Melee';
+  const isBurst = w.shots_per_burst != null;
+  const bSize = isBurst ? parseInt(w.shots_per_burst) : 1;
+  const bDelay = isBurst ? parseFloat(w.delay_in_bursts) : 0;
+  const dropMin = parseNum(w.damage_dropoff_min_range);
+  const dropMax = parseNum(w.damage_dropoff_max_range);
+  const dropR = w.damage_reduction_at_max
+    ? parseFloat(String(w.damage_reduction_at_max).replace(/[~%]/g, ''))
+    : 0;
+  const interval = 60 / rpm;
+  const classSpd = CLASS_SPEED[w.class];
+
+  const magSize = Number.isFinite(parseInt(w.magazine_size)) ? parseInt(w.magazine_size) : null;
+  const tacticalReload = parseNum(w.tactical_reload_time) || 0;
+  const emptyReload = parseNum(w.empty_reload_time) || tacticalReload || 0;
+
+  return {
+    bodyDmg,
+    headDmg,
+    rpm,
+    interval,
+    isMelee,
+    isBurst,
+    bSize,
+    bDelay,
+    dropMin,
+    dropMax,
+    dropR,
+    classSpd,
+    magSize,
+    tacticalReload,
+    emptyReload
+  };
+}
+
+function dropMult(dist, s) {
+  if (!s.dropMin || !s.dropMax) return 1;
+  if (dist <= s.dropMin) return 1;
+  if (dist >= s.dropMax) return 1 - s.dropR;
+  return 1 - ((dist - s.dropMin) / (s.dropMax - s.dropMin)) * s.dropR;
 }

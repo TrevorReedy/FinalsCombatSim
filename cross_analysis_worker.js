@@ -7,7 +7,7 @@
 importScripts('./simulate.js');
 
 // ── Simulation constants (mirrored from main thread) ──
-const CLASS_SPEED = { light: 7.0, medium: 5.0, heavy: 3.5 };
+const CLASS_SPEED = { light: 7.0, medium: 5.0, heavy: 2.5 };
 const CLASS_HP    = { light: 150, medium: 250, heavy: 350 };
 const MELEE_RANGE = 2.0;
 const DT          = 0.01;
@@ -46,51 +46,57 @@ self.addEventListener('message', function(e) {
 });
 
 
-function getStats(w) {
-  const bodyDmg = parseNum(w.body_dmg) || 0;
-  const headDmg = parseNum(w.head_damage) || bodyDmg;
-  const rpm = parseNum(w.rpm) || 60;
-  const isMelee = w.type === 'Melee';
-  const isBurst = w.shots_per_burst != null;
-  const bSize = isBurst ? parseInt(w.shots_per_burst) : 1;
-  const bDelay = isBurst ? parseFloat(w.delay_in_bursts) : 0;
-  const dropMin = parseNum(w.damage_dropoff_min_range);
-  const dropMax = parseNum(w.damage_dropoff_max_range);
-  const dropR = w.damage_reduction_at_max
-    ? parseFloat(String(w.damage_reduction_at_max).replace(/[~%]/g, '')) / 100
-    : 0;
-  const interval = 60 / rpm;
-  const classSpd = CLASS_SPEED[w.class];
+// function getStats(w) {
 
-  const magSize = Number.isFinite(parseInt(w.magazine_size)) ? parseInt(w.magazine_size) : null;
-  const tacticalReload = parseNum(w.tactical_reload_time) || 0;
-  const emptyReload = parseNum(w.empty_reload_time) || tacticalReload || 0;
 
-  return {
-    bodyDmg,
-    headDmg,
-    rpm,
-    interval,
-    isMelee,
-    isBurst,
-    bSize,
-    bDelay,
-    dropMin,
-    dropMax,
-    dropR,
-    classSpd,
-    magSize,
-    tacticalReload,
-    emptyReload
-  };
-}
+//   const rpm = parseNum(w.rpm) || 60;
 
-function dropMult(dist, s) {
-  if (!s.dropMin || !s.dropMax) return 1;
-  if (dist <= s.dropMin) return 1;
-  if (dist >= s.dropMax) return 1 - s.dropR;
-  return 1 - ((dist - s.dropMin) / (s.dropMax - s.dropMin)) * s.dropR;
-}
+
+
+
+//   const bodyDmg = parseNum(w.body_dmg) || 0;
+//   const headDmg = parseNum(w.head_damage) || bodyDmg;
+//   const isMelee = w.type === 'Melee';
+//   const isBurst = w.shots_per_burst != null;
+//   const bSize = isBurst ? parseInt(w.shots_per_burst) : 1;
+//   const bDelay = isBurst ? parseFloat(w.delay_in_bursts) : 0;
+//   const dropMin = parseNum(w.damage_dropoff_min_range);
+//   const dropMax = parseNum(w.damage_dropoff_max_range);
+//   const dropR = w.damage_reduction_at_max
+//     ? parseFloat(String(w.damage_reduction_at_max).replace(/[~%]/g, ''))
+//     : 0;
+//   const interval = 60 / rpm;
+//   const classSpd = CLASS_SPEED[w.class];
+
+//   const magSize = Number.isFinite(parseInt(w.magazine_size)) ? parseInt(w.magazine_size) : null;
+//   const tacticalReload = parseNum(w.tactical_reload_time) || 0;
+//   const emptyReload = parseNum(w.empty_reload_time) || tacticalReload || 0;
+
+//   return {
+//     bodyDmg,
+//     headDmg,
+//     rpm,
+//     interval,
+//     isMelee,
+//     isBurst,
+//     bSize,
+//     bDelay,
+//     dropMin,
+//     dropMax,
+//     dropR,
+//     classSpd,
+//     magSize,
+//     tacticalReload,
+//     emptyReload
+//   };
+// }
+
+// function dropMult(dist, s) {
+//   if (!s.dropMin || !s.dropMax) return 1;
+//   if (dist <= s.dropMin) return 1;
+//   if (dist >= s.dropMax) return 1 - s.dropR;
+//   return 1 - ((dist - s.dropMin) / (s.dropMax - s.dropMin)) * s.dropR;
+// }
 
 function runJob(job) {
   console.log(`🧠 Worker ${workerId} START job ${job.jobId} | ${job.attacker.name} vs ${job.defender.name} | ${job.distance}m | ${job.profile.name}`);

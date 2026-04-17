@@ -323,54 +323,62 @@ function parseNum(s) {
   const m = String(s).match(/[\d.]+/);
   return m ? parseFloat(m[0]) : null;
 }
-function getStats(w) {
-  const bodyDmg = parseNum(w.body_dmg) || 0;
-  const headDmg = parseNum(w.head_damage) || parseNum(w.body_damage);
-  const rpm = parseNum(w.rpm) || 60;
-  const isMelee = w.type === 'Melee';
-  const isBurst = w.shots_per_burst != null;
-  const bSize = isBurst ? parseInt(w.shots_per_burst) : 1;
-  const bDelay = isBurst ? parseFloat(w.delay_in_bursts) : 0;
-  const dropMin = parseNum(w.damage_dropoff_min_range);
-  const dropMax = parseNum(w.damage_dropoff_max_range);
-  const dropR = w.damage_reduction_at_max
-    ? parseFloat(String(w.damage_reduction_at_max).replace(/[~%]/g, '')) / 100
-    : 0;
 
- const magSize = Number.isFinite(parseInt(w.magazine_size))
-  ? parseInt(w.magazine_size)
-  : Infinity;
-  const tacticalReload = parseNum(w.tactical_reload_time) || 0;
-  const emptyReload = parseNum(w.empty_reload_time) || tacticalReload || 0;
+/*stats edge cases
+  MINIGUN rpm = minigunRPM(spinTime)
+                interval = 60 / rpm
+                effectiveAcc = baseAcc * spreadPenalty(distance)
+                damage = baseDamage * dropMult(distance)
 
-  const interval = 60 / rpm;
-  const classSpd = CLASS_SPEED[w.class];
+*/
+// function getStats(w) {
+//   const bodyDmg = parseNum(w.body_dmg) || 0;
+//   const headDmg = parseNum(w.head_damage) || parseNum(w.body_damage);
+//   const rpm = parseNum(w.rpm) || 60;
+//   const isMelee = w.type === 'Melee';
+//   const isBurst = w.shots_per_burst != null;
+//   const bSize = isBurst ? parseInt(w.shots_per_burst) : 1;
+//   const bDelay = isBurst ? parseFloat(w.delay_in_bursts) : 0;
+//   const dropMin = parseNum(w.damage_dropoff_min_range);
+//   const dropMax = parseNum(w.damage_dropoff_max_range);
+//   const dropR = w.damage_reduction_at_max
+//     ? parseFloat(String(w.damage_reduction_at_max).replace(/[~%]/g, ''))
+//     : 0;
 
-  return {
-    bodyDmg,
-    headDmg,
-    rpm,
-    interval,
-    isMelee,
-    isBurst,
-    bSize,
-    bDelay,
-    dropMin,
-    dropMax,
-    dropR,
-    classSpd,
-    magSize,
-    tacticalReload,
-    emptyReload
-  };
-}
+//  const magSize = Number.isFinite(parseInt(w.magazine_size))
+//   ? parseInt(w.magazine_size)
+//   : Infinity;
+//   const tacticalReload = parseNum(w.tactical_reload_time) || 0;
+//   const emptyReload = parseNum(w.empty_reload_time) || tacticalReload || 0;
 
-function dropMult(dist, s) {
-  if (!s.dropMin || !s.dropMax) return 1;
-  if (dist <= s.dropMin) return 1;
-  if (dist >= s.dropMax) return 1 - s.dropR;
-  return 1 - ((dist - s.dropMin) / (s.dropMax - s.dropMin)) * s.dropR;
-}
+//   const interval = w.name === 'Crossbow' ? 1 : 60 / rpm;
+//   const classSpd = CLASS_SPEED[w.class];
+
+//   return {
+//     bodyDmg,
+//     headDmg,
+//     rpm,
+//     interval,
+//     isMelee,
+//     isBurst,
+//     bSize,
+//     bDelay,
+//     dropMin,
+//     dropMax,
+//     dropR,
+//     classSpd,
+//     magSize,
+//     tacticalReload,
+//     emptyReload
+//   };
+// }
+
+// function dropMult(dist, s) {
+//   if (!s.dropMin || !s.dropMax) return 1;
+//   if (dist <= s.dropMin) return 1;
+//   if (dist >= s.dropMax) return 1 - s.dropR;
+//   return 1 - ((dist - s.dropMin) / (s.dropMax - s.dropMin)) * s.dropR;
+// }
 
 function playback(rafTime) {
   if (!simFrames.length) return;

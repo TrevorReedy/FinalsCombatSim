@@ -35,7 +35,7 @@ function stopProfiling() {
   }
 }
 const POOL_SIZE  = Math.max(2, Math.min(8, (navigator.hardwareConcurrency || 4) - 1));
-const RUNS       = 10000;
+const RUNS       =  50000;
 // Jobs are handed out in chunks so a steal request doesn't give a
 // single-job trickle. Tune upward if inter-thread messaging becomes
 // a bottleneck, downward for finer progress granularity.
