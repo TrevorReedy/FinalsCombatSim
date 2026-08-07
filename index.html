@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>THE FINALS — Battle Simulator</title>
+  <title>THE FINALS — Combat Simulator</title>
 
 <script src="./simulate.js" defer></script>
+<script src="./duel_solver.js" defer></script>
 <script src="./battle_simulator.js" defer></script>
 <script src="./cross_analysis_pool.js" defer></script>
 <script src="./heatgraph.js" defer></script>
+<script src="./ui_shell.js" defer></script>
   <link rel="stylesheet" href="battle_simulation.css">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,254 +23,714 @@
 </head>
 <body>
   <header>
-    <div>
+    <button class="brand" id="brand-home" type="button" title="Back to main menu">
       <div class="logo">⚡ THE FINALS</div>
-      <div class="sub">Finals Simulation Engine v2.0 — Visual Mode</div>
-    </div>
+      <div class="sub" id="view-subtitle">Combat Simulator v2.0</div>
+    </button>
+
+    <nav class="topnav" id="topnav" aria-label="Sections">
+      <button class="navbtn" type="button" data-route="help">Help</button>
+      <button class="navbtn" type="button" data-route="stats">Stats</button>
+      <button class="navbtn" type="button" data-route="sim">Simulation</button>
+      <button class="navbtn" type="button" data-route="meta">Meta</button>
+    </nav>
+
+    <label class="version-picker" title="Weapon data version used by every screen">
+      <span>Data</span>
+      <select class="data-version-picker" aria-label="Weapon data version"></select>
+    </label>
+
+    <label class="check-row header-toggle" title="Alternate colour scheme">
+      <input type="checkbox" id="ospuze-toggle">
+      <span>OSPUZE</span>
+    </label>
   </header>
 
-  <div class="app" style="grid-template-columns: 420px 1fr;">
-    <div class="sidebar">
-      <label class="check-row" style="padding: 12px 18px;">
-        <input type="checkbox" id="ospuze-toggle">
-        <span>OSPUZE Mode</span>
-      </label>
+  <main id="main">
 
-      <div class="fighter-tabs">
-        <div class="ftab active p1" onclick="switchFighterTab(1,this)">◈ Player 1</div>
-        <div class="ftab p2" onclick="switchFighterTab(2,this)">◈ Player 2</div>
-      </div>
+    <!-- ══════════════════════════════════════════════════════════
+         HOME
+         ══════════════════════════════════════════════════════════ -->
+    <section class="view view-home active" id="view-home">
+      <div class="home-inner">
+        <img class="home-logo" src="THE_FINALS_Logo.png" alt="" onerror="this.remove()">
 
-      <div class="fighter-panel active" id="fp1">
-        <label>Class Filter</label>
-        <select id="p1-class" onchange="filterWeapons(1)">
-          <option value="">All Classes</option>
-          <option value="light">Light — 150 HP</option>
-          <option value="medium">Medium — 250 HP</option>
-          <option value="heavy">Heavy — 350 HP</option>
-        </select>
+        <h1 class="home-title">Combat Simulator</h1>
+        <p class="home-tagline">
+          A tick-accurate time-to-kill sandbox built on Season 10 weapon data.
+          Duel any two loadouts, or run one weapon against the entire arsenal.
+        </p>
 
-        <label>Weapon</label>
-        <select id="p1-weapon" onchange="updateWeaponInfo(1)"></select>
-        <div id="p1-badges" class="weapon-badge"></div>
-        <div id="p1-note" class="weapon-note"></div>
+        <nav class="home-menu" aria-label="Main menu">
+          <button class="menu-card" type="button" data-route="help">
+            <span class="menu-num">01</span>
+            <span class="menu-body">
+              <span class="menu-title">Help</span>
+              <span class="menu-desc">How the engine works, what each stat means, and where the data comes from.</span>
+            </span>
+            <span class="menu-arrow">▶</span>
+          </button>
 
-        <label>Accuracy</label>
-        <div class="range-row">
-          <input type="range" id="p1-acc" min="1" max="100" value="75" oninput="syncRange(this,'p1-acc-v','%')">
-          <span class="range-val" id="p1-acc-v">75%</span>
-        </div>
+          <button class="menu-card" type="button" data-route="stats">
+            <span class="menu-num">02</span>
+            <span class="menu-body">
+              <span class="menu-title">Weapon / Gadget Stats</span>
+              <span class="menu-desc">Browse and sort every weapon: damage, RPM, magazine, dropoff and ideal TTK per class.</span>
+            </span>
+            <span class="menu-arrow">▶</span>
+          </button>
 
-        <label>Headshot Chance</label>
-        <div class="range-row">
-          <input type="range" id="p1-hs" min="0" max="100" value="35" oninput="syncRange(this,'p1-hs-v','%')">
-          <span class="range-val" id="p1-hs-v">35%</span>
-        </div>
-      </div>
+          <button class="menu-card" type="button" data-route="sim">
+            <span class="menu-num">03</span>
+            <span class="menu-body">
+              <span class="menu-title">Simulation</span>
+              <span class="menu-desc">A single 1v1 duel played out shot by shot — or batched into a win-rate distribution.</span>
+            </span>
+            <span class="menu-arrow">▶</span>
+          </button>
 
-      <div class="fighter-panel" id="fp2">
-        <label>Class Filter</label>
-        <select id="p2-class" onchange="filterWeapons(2)">
-          <option value="">All Classes</option>
-          <option value="light">Light — 150 HP</option>
-          <option value="medium">Medium — 250 HP</option>
-          <option value="heavy">Heavy — 350 HP</option>
-        </select>
+          <button class="menu-card" type="button" data-route="meta">
+            <span class="menu-num">04</span>
+            <span class="menu-body">
+              <span class="menu-title">Meta Simulation</span>
+              <span class="menu-desc">One weapon versus every other, across every range and aim profile — the full cross product.</span>
+            </span>
+            <span class="menu-arrow">▶</span>
+          </button>
+        </nav>
 
-        <label>Weapon</label>
-        <select id="p2-weapon"oninput ="drawIdle()" onchange="updateWeaponInfo(2)"></select>
-        <div id="p2-badges" class="weapon-badge"></div>
-        <div id="p2-note" class="weapon-note"></div>
-
-        <label>Accuracy</label>
-        <div class="range-row">
-          <input type="range" id="p2-acc" min="1" max="100" value="75" oninput="syncRange(this,'p2-acc-v','%')">
-          <span class="range-val" id="p2-acc-v">75%</span>
-        </div>
-
-        <label>Headshot Chance</label>
-        <div class="range-row">
-          <input type="range" id="p2-hs" min="0" max="100" value="35" oninput="syncRange(this,'p2-hs-v','%')">
-          <span class="range-val" id="p2-hs-v">35%</span>
+        <div class="home-foot">
+          <span id="home-weapon-count">Loading weapon data…</span>
+          <span class="dot">·</span>
+          <span>Season 10.0 data sheet</span>
+          <span class="dot">·</span>
+          <span>Unofficial — not affiliated with Embark Studios</span>
         </div>
       </div>
 
-      <div class="section">
-        <div class="section-title">Battle Settings</div>
+      <!-- Kill time against the pool average, every weapon at a glance -->
+      <section class="home-chart" aria-labelledby="ttk-chart-title">
+        <div class="chart-head">
+          <h2 class="chart-title" id="ttk-chart-title">Kill Time vs Average</h2>
+          <p class="chart-sub" id="ttk-chart-sub">—</p>
 
-        <label>Starting Distance (m)</label>
-        <div class="range-row">
-          <input type="range" id="start-dist" min="1" max="100" value="30" oninput="syncRange(this,'sd-v','m')">
-          <span class="range-val" id="sd-v">30m</span>
+          <div class="chart-controls">
+            <label class="chart-control">
+              <span>Data</span>
+              <select class="data-version-picker" aria-label="Weapon data version"></select>
+            </label>
+            <label class="chart-control">
+              <span>Shooting a</span>
+              <select id="ttk-target" aria-label="Target class">
+                <option value="light">Light — 150 HP</option>
+                <option value="medium" selected>Medium — 250 HP</option>
+                <option value="heavy">Heavy — 350 HP</option>
+              </select>
+            </label>
+          </div>
         </div>
 
-        <label>Melee Advance Speed (m/s)</label>
-        <div class="range-row">
-          <input type="range" id="speed" min="0" max="12" value="3" step="0.5" oninput="syncRange(this,'sp-v','')">
-          <span class="range-val" id="sp-v">3.0</span>
+        <div class="ttk-scale">
+          <span class="faster">← kills faster</span>
+          <span class="axis-mid">seconds from average</span>
+          <span class="slower">kills slower →</span>
         </div>
 
-        <label class="check-row">
-          <input type="checkbox" id="melee-advance">
-          <span>Both players advance (melee mode)</span>
-        </label>
+        <div id="ttk-chart"></div>
 
-        <label style="margin-top:12px;">First Shot</label>
-        <div class="toggle-group">
-          <div class="tbtn active" onclick="setFSA('p1',this)">P1 First</div>
-          <div class="tbtn" onclick="setFSA('both',this)">Both</div>
-          <div class="tbtn" onclick="setFSA('p2',this)">P2 First</div>
+        <div class="ttk-footer" id="ttk-chart-footer"></div>
+        <p class="chart-note">
+          Time to kill at 100% accuracy, body shots only, point blank — the floor for each weapon,
+          not what you will average in a match. Melee weapons are left out because the data sheets
+          record no fire rate for them. Click any weapon to see how it has changed across patches.
+        </p>
+      </section>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════
+         HELP
+         ══════════════════════════════════════════════════════════ -->
+    <section class="view view-doc" id="view-help" hidden>
+      <div class="doc-inner">
+        <div class="page-head">
+          <h1 class="page-title">Help</h1>
+          <p class="page-lead">
+            Everything this tool does, and the assumptions behind every number it prints.
+          </p>
         </div>
 
-        <label style="margin-top:12px;">Simulation Mode</label>
-        <div class="toggle-group">
-          <div class="tbtn active" onclick="setSimMode('single',this)">Single</div>
-          <div class="tbtn" onclick="setSimMode('multi',this)">Multi</div>
+        <div class="doc-grid">
+          <article class="doc-card">
+            <h2>What this is</h2>
+            <p>
+              A combat model for THE FINALS. It replays a duel between two loadouts on a
+              10&nbsp;ms tick, rolling accuracy and headshots shot by shot, applying damage
+              dropoff by range, and forcing reloads when a magazine runs dry. Nothing is
+              averaged ahead of time — the win rates you see come from actually running the fight.
+            </p>
+          </article>
+
+          <article class="doc-card">
+            <h2>The screens</h2>
+            <dl class="doc-dl">
+              <dt>Weapon / Gadget Stats</dt>
+              <dd>A sortable reference table of the raw Season 10 numbers, plus derived DPS and ideal TTK against each class. Click any weapon name for its history.</dd>
+              <dt>Weapon history</dt>
+              <dd>How one weapon's stats moved across seven community data sheets (1.5 → 11.3.0): a chart of any metric over time, a wiki-style snapshot of the weapon at any version, and the change log between them.</dd>
+              <dt>Simulation</dt>
+              <dd>One duel, animated, with a full combat log. Switch to Multi to run the same matchup hundreds of times and get a win rate instead of an anecdote.</dd>
+              <dt>Meta Simulation</dt>
+              <dd>Your weapon against every other weapon, at seven ranges and four aim profiles, every matchup solved exactly rather than sampled. Stand and fight: both sides hold the listed range, so each cell measures the weapon at that range with movement taken out. Produces the matchup heat map.</dd>
+            </dl>
+          </article>
+
+          <article class="doc-card">
+            <h2>Which data version you are running</h2>
+            <p>
+              The <em>Data</em> picker in the header sets the weapon numbers every screen uses —
+              stats table, 1v1 simulation and meta analysis alike. It defaults to the newest sheet
+              available and remembers your choice. The same picker sits in the Simulation and Meta
+              Simulation sidebars.
+            </p>
+            <p>
+              Versions are ordered by their version number, not by the order the sheets were added,
+              so a newly ingested sheet slots into the right place automatically.
+            </p>
+            <dl class="doc-dl">
+              <dt>Blank cells stay blank</dt>
+              <dd>If a sheet records a weapon but leaves a stat empty, that is the author saying "not applicable" — it is never back-filled from an older sheet.</dd>
+              <dt>Missing weapons inherit</dt>
+              <dd>If a sheet lists a weapon with no stats at all (11.3.0 does this for melee), it runs on the last version that did record it, and says so.</dd>
+              <dt>Reach is engine knowledge</dt>
+              <dd>No sheet records melee swing range or the flamethrower's cone, so those fill in from a fixed table — only where the sheet is silent.</dd>
+            </dl>
+          </article>
+
+          <article class="doc-card">
+            <h2>Solved, not sampled</h2>
+            <p>
+              Meta Simulation does not run duels and count winners. Because nobody moves and
+              nobody reacts to being shot, each fighter's shot timing is fixed and only the hit
+              rolls are random — so the exact chance of every outcome can be worked out directly.
+              The win rates carry <strong>no sampling error</strong> and are identical every run.
+            </p>
+            <p>
+              The 1v1 screen still plays duels out shot by shot, because that is what produces the
+              animation and the combat log. Any matchup where fighters move is sampled rather than
+              solved, from a seed, so a surprising result can be replayed exactly.
+            </p>
+            <p class="doc-note">
+              Solving also removed a bias: rounding every event to a 10&nbsp;ms tick delayed shots
+              slightly, worst on burst weapons whose burst delay does not divide into the tick. The
+              93R's average time to kill was about 3&nbsp;ms too slow because of it.
+            </p>
+          </article>
+
+          <article class="doc-card">
+            <h2>How a tick resolves</h2>
+            <ol class="doc-ol">
+              <li>Melee fighters (or both, if <em>melee mode</em> is on) close distance at their class speed. In Meta Simulation nobody moves at all.</li>
+              <li>Any finished reload is applied.</li>
+              <li>Each player whose next-shot timer has come due fires: a roll against accuracy decides hit or miss, then a roll against headshot chance decides which damage number is used.</li>
+              <li>Damage is scaled by the dropoff curve for the current range.</li>
+              <li>Both players' damage is applied <strong>simultaneously</strong> — which is why true ties are possible.</li>
+              <li>If neither fighter dies inside 60 seconds the duel is reported as a timeout rather than being awarded to whoever has more health left.</li>
+            </ol>
+          </article>
+
+          <article class="doc-card">
+            <h2>Stats glossary</h2>
+            <dl class="doc-dl">
+              <dt>TTK</dt>
+              <dd>Time to kill — seconds from the first shot to the killing blow, reloads included.</dd>
+              <dt>Ideal TTK</dt>
+              <dd>TTK at 100% accuracy, body shots only, no dropoff. A floor, not an expectation.</dd>
+              <dt>Dropoff</dt>
+              <dd>Damage is full until the min range, then falls linearly to the stated reduction at the max range.</dd>
+              <dt>Aim profile</dt>
+              <dd>An opponent skill preset used by Meta Simulation: Poor 50/20, Average 75/35, Strong 90/55, Elite 99/80 (accuracy / headshot %).</dd>
+              <dt>Favorable / Even / Unfavorable</dt>
+              <dd>Win rate ≥ 60%, 40–60%, and &lt; 40% respectively.</dd>
+            </dl>
+          </article>
+
+          <article class="doc-card">
+            <h2>Class baselines</h2>
+            <div class="class-table">
+              <div class="class-row head"><span>Class</span><span>Health</span><span>Move speed</span></div>
+              <div class="class-row"><span class="cls light">Light</span><span>150 HP</span><span>7.0 m/s</span></div>
+              <div class="class-row"><span class="cls medium">Medium</span><span>250 HP</span><span>5.0 m/s</span></div>
+              <div class="class-row"><span class="cls heavy">Heavy</span><span>350 HP</span><span>3.5 m/s</span></div>
+            </div>
+            <p class="doc-note">Hitboxes are not modelled — a Heavy is not easier to hit than a Light. Accuracy is whatever you set it to.</p>
+          </article>
+
+          <article class="doc-card warn">
+            <h2>Known limits</h2>
+            <ul class="doc-ul">
+              <li>No gadgets, specializations, healing or shields — weapons only.</li>
+              <li>No cover, movement mechanics, recoil or spread growth; accuracy is a flat per-shot probability.</li>
+              <li>Projectile travel time is cosmetic; hits resolve on the tick they are fired.</li>
+              <li>Quick-reload behaviour (e.g. the ARN-220) is not implemented yet.</li>
+              <li>Weapon data is a community data sheet and can lag behind live patches.</li>
+              <li>History covers seven sheets, not every patch, so a change is attributed to a range of versions rather than to the patch that made it. Nothing is cross-checked against official patch notes yet.</li>
+            </ul>
+          </article>
         </div>
 
-        <div id="multi-opts" style="display:none;">
-          <label>Runs</label>
-          <input type="number" id="sim-count" value="200" min="10" max="10000">
-        </div>
-
-        <label style="margin-top:12px;">Playback Speed</label>
-        <div class="toggle-group">
-          <div class="tbtn" onclick="setPlaySpeed(0.25,this)">0.25×</div>
-          <div class="tbtn active" onclick="setPlaySpeed(1,this)">1×</div>
-          <div class="tbtn" onclick="setPlaySpeed(3,this)">3×</div>
-          <div class="tbtn" onclick="setPlaySpeed(10,this)">10×</div>
+        <div class="doc-actions">
+          <button class="btn-run btn-ghost" type="button" data-route="stats">Weapon / Gadget Stats</button>
+          <button class="btn-run" type="button" data-route="sim">Start a simulation</button>
         </div>
       </div>
+    </section>
 
-      <div class="run-row">
-        <button class="btn-run" id="run-btn" onclick="runSim()">▶ SIMULATE</button>
-        <button class="btn-run" id="cross-btn" onclick="runCrossAnalysis()">📊 CROSS ANALYSIS</button>      </div>
-    </div>
+    <!-- ══════════════════════════════════════════════════════════
+         WEAPON / GADGET STATS
+         ══════════════════════════════════════════════════════════ -->
+    <section class="view view-doc" id="view-stats" hidden>
+      <div class="doc-inner wide">
+        <div class="page-head">
+          <h1 class="page-title">Weapon / Gadget Stats</h1>
+          <p class="page-lead">
+            Raw Season 10 values on the left, engine-derived numbers on the right.
+            Click any column header to sort.
+          </p>
+        </div>
 
-    <div class="main-area">
-      <div class="arena-wrap">
-        <canvas id="arena" height="400"></canvas>
-
-        <div class="arena-overlay">
-          <div class="player-hud">
-            <div class="hud-name p1" id="hud-p1-name">—</div>
-            <div class="hud-hp-bar">
-              <div class="hud-hp-fill p1" id="hud-p1-hp" style="width:100%"></div>
-            </div>
-            <div class="hud-hp-val" id="hud-p1-hpval">— HP</div>
+        <div class="stats-toolbar">
+          <div class="field">
+            <label for="stats-search">Search</label>
+            <input type="text" id="stats-search" placeholder="Weapon name…" autocomplete="off">
           </div>
-
-          <div class="arena-center-hud">
-            <div class="dist-big" id="hud-dist">—</div>
-            <div class="time-small" id="hud-time">READY</div>
+          <div class="field">
+            <label for="stats-class">Class</label>
+            <select id="stats-class">
+              <option value="">All classes</option>
+              <option value="light">Light</option>
+              <option value="medium">Medium</option>
+              <option value="heavy">Heavy</option>
+            </select>
           </div>
-
-          <div class="player-hud" style="text-align:right;">
-            <div class="hud-name p2" id="hud-p2-name">—</div>
-            <div class="hud-hp-bar">
-              <div class="hud-hp-fill p2" id="hud-p2-hp" style="width:100%"></div>
-            </div>
-            <div class="hud-hp-val p2" id="hud-p2-hpval">— HP</div>
+          <div class="field">
+            <label for="stats-type">Type</label>
+            <select id="stats-type">
+              <option value="">All types</option>
+            </select>
+          </div>
+          <div class="field grow">
+            <label>Showing</label>
+            <div class="field-readout" id="stats-count">—</div>
           </div>
         </div>
+
+        <div class="table-scroll">
+          <table class="data-table" id="stats-table">
+            <thead id="stats-head"></thead>
+            <tbody id="stats-body"></tbody>
+          </table>
+        </div>
+
+        <p class="doc-note table-note">
+          DPS is sustained body-shot damage including reloads. Ideal TTK assumes every shot
+          hits the body at point-blank range. Weapons with no RPM in the dataset — most melee —
+          are modelled at 60 RPM, so treat their timings as placeholders. See
+          <button class="linkish" type="button" data-route="help">Help</button> for what is and isn't modelled.
+        </p>
+
+        <article class="doc-card gadget-card">
+          <h2>Gadgets</h2>
+          <p>
+            Gadget data isn't in the dataset yet, so nothing here would be trustworthy.
+            The simulation is weapons-only until it is.
+          </p>
+          <p class="doc-note">
+            Adding them needs per-gadget damage, radius, arm/fuse time, cooldown and charges
+            in <code>weapons_s10_cleaned.json</code>'s format, plus a tick handler in the engine.
+          </p>
+        </article>
       </div>
+    </section>
 
-      <div class="results-area" id="results-area">
-        <div class="tab-bar">
-          <div class="tab active" onclick="switchTab('result',this)">Result</div>
-          <div class="tab" onclick="switchTab('log',this)">Combat Log</div>
-          <div class="tab" id="multi-tab" onclick="switchTab('multi',this)" style="display:none;">Multi Stats</div>
-          <div class="tab" onclick="switchTab('cross',this)">Cross Analysis</div>
+    <!-- ══════════════════════════════════════════════════════════
+         WEAPON HISTORY (one weapon across versions)
+         ══════════════════════════════════════════════════════════ -->
+    <section class="view view-doc" id="view-weapon" hidden>
+      <div class="doc-inner wide">
+        <div class="page-head">
+          <button class="linkish back-link" type="button" data-route="stats">← All weapons</button>
+          <h1 class="page-title" id="wp-name">—</h1>
+          <div class="weapon-badge" id="wp-badges"></div>
+          <p class="page-lead" id="wp-lead"></p>
         </div>
 
-        <div class="tab-content active" id="tab-result">
-          <div class="winner-banner" id="winner-banner" style="display:none;">
-            <div class="winner-icon" id="winner-icon">🏆</div>
-            <div>
-              <div class="winner-name" id="winner-name">—</div>
-              <div class="winner-sub" id="winner-sub"></div>
+        <div class="weapon-grid">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Stat history</h2>
+              <select id="wp-metric" aria-label="Metric to plot"></select>
+            </div>
+            <div class="chart-wrap" id="wp-chart"></div>
+            <p class="doc-note" id="wp-chart-note"></p>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Snapshot</h2>
+              <div class="version-chips" id="wp-versions"></div>
+            </div>
+            <div id="wp-snapshot"></div>
+          </section>
+        </div>
+
+        <section class="panel">
+          <div class="panel-head"><h2>Change log</h2></div>
+          <div id="wp-changes"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SIMULATION (1v1)
+         ══════════════════════════════════════════════════════════ -->
+    <section class="view view-app" id="view-sim" hidden>
+      <div class="app">
+        <div class="sidebar">
+          <div class="sidebar-head">
+            <div class="section-title">Loadouts</div>
+            <p class="sidebar-hint">Pick a weapon for each side, set how well they aim, then simulate.</p>
+
+            <label style="margin-top:12px;">Weapon Data Version</label>
+            <select class="data-version-picker" aria-label="Weapon data version"></select>
+            <p class="sidebar-hint data-version-note"></p>
+          </div>
+
+          <div class="fighter-tabs">
+            <div class="ftab active p1" onclick="switchFighterTab(1,this)">◈ Player 1</div>
+            <div class="ftab p2" onclick="switchFighterTab(2,this)">◈ Player 2</div>
+          </div>
+
+          <div class="fighter-panel active" id="fp1">
+            <label>Class Filter</label>
+            <select id="p1-class" onchange="filterWeapons(1)">
+              <option value="">All Classes</option>
+              <option value="light">Light — 150 HP</option>
+              <option value="medium">Medium — 250 HP</option>
+              <option value="heavy">Heavy — 350 HP</option>
+            </select>
+
+            <label>Weapon</label>
+            <select id="p1-weapon" onchange="updateWeaponInfo(1)"></select>
+            <div id="p1-badges" class="weapon-badge"></div>
+            <div id="p1-note" class="weapon-note"></div>
+
+            <label>Accuracy</label>
+            <div class="range-row">
+              <input type="range" id="p1-acc" min="1" max="100" value="75" oninput="syncRange(this,'p1-acc-v','%')">
+              <span class="range-val" id="p1-acc-v">75%</span>
+            </div>
+
+            <label>Headshot Chance</label>
+            <div class="range-row">
+              <input type="range" id="p1-hs" min="0" max="100" value="35" oninput="syncRange(this,'p1-hs-v','%')">
+              <span class="range-val" id="p1-hs-v">35%</span>
             </div>
           </div>
 
+          <div class="fighter-panel" id="fp2">
+            <label>Class Filter</label>
+            <select id="p2-class" onchange="filterWeapons(2)">
+              <option value="">All Classes</option>
+              <option value="light">Light — 150 HP</option>
+              <option value="medium">Medium — 250 HP</option>
+              <option value="heavy">Heavy — 350 HP</option>
+            </select>
 
+            <label>Weapon</label>
+            <select id="p2-weapon"oninput ="drawIdle()" onchange="updateWeaponInfo(2)"></select>
+            <div id="p2-badges" class="weapon-badge"></div>
+            <div id="p2-note" class="weapon-note"></div>
 
-          <div class="stats-grid" id="stats-grid" style="display:none;">
-            <div class="stat-cell"><div class="stat-label">P1 Damage</div><div class="stat-val p1" id="s-p1-dmg">—</div></div>
-            <div class="stat-cell"><div class="stat-label">P1 Shots/Hit/HS</div><div class="stat-val p1" id="s-p1-shs">—</div></div>
-            <div class="stat-cell"><div class="stat-label">P2 Damage</div><div class="stat-val p2" id="s-p2-dmg">—</div></div>
-            <div class="stat-cell"><div class="stat-label">P2 Shots/Hit/HS</div><div class="stat-val p2" id="s-p2-shs">—</div></div>
-            <div class="stat-cell"><div class="stat-label">Time to Kill</div><div class="stat-val neutral" id="s-ttk">—</div></div>
-            <div class="stat-cell"><div class="stat-label">Final Range</div><div class="stat-val neutral" id="s-range">—</div></div>
-            <div class="stat-cell"><div class="stat-label">P1 HP Left</div><div class="stat-val p1" id="s-p1-hp">—</div></div>
-            <div class="stat-cell"><div class="stat-label">P2 HP Left</div><div class="stat-val p2" id="s-p2-hp">—</div></div>
+            <label>Accuracy</label>
+            <div class="range-row">
+              <input type="range" id="p2-acc" min="1" max="100" value="75" oninput="syncRange(this,'p2-acc-v','%')">
+              <span class="range-val" id="p2-acc-v">75%</span>
+            </div>
+
+            <label>Headshot Chance</label>
+            <div class="range-row">
+              <input type="range" id="p2-hs" min="0" max="100" value="35" oninput="syncRange(this,'p2-hs-v','%')">
+              <span class="range-val" id="p2-hs-v">35%</span>
+            </div>
           </div>
 
-          <div
-            id="pre-run-msg"
-            style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;letter-spacing:2px;"
-          >
-            RUN A SIMULATION TO SEE RESULTS
+          <div class="section">
+            <div class="section-title">Battle Settings</div>
+
+            <label>Starting Distance (m)</label>
+            <div class="range-row">
+              <input type="range" id="start-dist" min="1" max="100" value="30" oninput="syncRange(this,'sd-v','m')">
+              <span class="range-val" id="sd-v">30m</span>
+            </div>
+
+            <label>Melee Advance Speed (m/s)</label>
+            <div class="range-row">
+              <input type="range" id="speed" min="0" max="12" value="3" step="0.5" oninput="syncRange(this,'sp-v','')">
+              <span class="range-val" id="sp-v">3.0</span>
+            </div>
+
+            <label class="check-row">
+              <input type="checkbox" id="melee-advance">
+              <span>Both players advance (melee mode)</span>
+            </label>
+
+            <label style="margin-top:12px;">First Shot</label>
+            <div class="toggle-group">
+              <div class="tbtn active" onclick="setFSA('p1',this)">P1 First</div>
+              <div class="tbtn" onclick="setFSA('both',this)">Both</div>
+              <div class="tbtn" onclick="setFSA('p2',this)">P2 First</div>
+            </div>
+
+            <label style="margin-top:12px;">Simulation Mode</label>
+            <div class="toggle-group">
+              <div class="tbtn active" onclick="setSimMode('single',this)">Single</div>
+              <div class="tbtn" onclick="setSimMode('multi',this)">Multi</div>
+            </div>
+
+            <div id="multi-opts" style="display:none;">
+              <label>Runs</label>
+              <input type="number" id="sim-count" value="200" min="10" max="10000">
+            </div>
+
+            <label style="margin-top:12px;">Playback Speed</label>
+            <div class="toggle-group">
+              <div class="tbtn" onclick="setPlaySpeed(0.25,this)">0.25×</div>
+              <div class="tbtn active" onclick="setPlaySpeed(1,this)">1×</div>
+              <div class="tbtn" onclick="setPlaySpeed(3,this)">3×</div>
+              <div class="tbtn" onclick="setPlaySpeed(10,this)">10×</div>
+            </div>
+          </div>
+
+          <div class="run-row">
+            <button class="btn-run" id="run-btn" onclick="runSim()">▶ SIMULATE</button>
+            <button class="btn-run btn-ghost" type="button" data-route="meta">📊 Meta Simulation</button>
           </div>
         </div>
 
-    
+        <div class="main-area">
+          <div class="arena-wrap">
+            <canvas id="arena" height="400"></canvas>
 
-        <div class="tab-content" id="tab-log">
-          <div id="combat-log" style="font-size:11px;line-height:1.9;padding:10px 14px; font-size: 20px;"></div>
-        </div>
+            <div class="arena-overlay">
+              <div class="player-hud">
+                <div class="hud-name p1" id="hud-p1-name">—</div>
+                <div class="hud-hp-bar">
+                  <div class="hud-hp-fill p1" id="hud-p1-hp" style="width:100%"></div>
+                </div>
+                <div class="hud-hp-val" id="hud-p1-hpval">— HP</div>
+              </div>
 
-        <div class="tab-content" id="tab-multi">
-          <div class="winrate-section">
-            <div class="winrate-labels">
-              <span id="wr-p1-lbl" style="color:var(--blue)">P1: —</span>
-              <span id="wr-tie-lbl" style="color:var(--tie)">TIE: —</span>
-              <span id="wr-p2-lbl" style="color:var(--red)">P2: —</span>
-            </div>
+              <div class="arena-center-hud">
+                <div class="dist-big" id="hud-dist">—</div>
+                <div class="time-small" id="hud-time">READY</div>
+              </div>
 
-            <div class="winrate-bar">
-              <div class="wr-p1" id="wr-p1-bar" style="width:0%;transition:width .5s ease;"></div>
-              <div class="wr-tie" id="wr-tie-bar" style="width:0%;transition:width .5s ease;"></div>
-              <div class="wr-p2" id="wr-p2-bar" style="width:0%;transition:width .5s ease;"></div>
+              <div class="player-hud" style="text-align:right;">
+                <div class="hud-name p2" id="hud-p2-name">—</div>
+                <div class="hud-hp-bar">
+                  <div class="hud-hp-fill p2" id="hud-p2-hp" style="width:100%"></div>
+                </div>
+                <div class="hud-hp-val p2" id="hud-p2-hpval">— HP</div>
+              </div>
             </div>
           </div>
 
-          <div class="multi-grid">
-            <div class="left-mult-=grid">
-              <div class="multi-cell"><div class="stat-label">P1 Wins</div><div class="stat-val p1" id="ms-w1">—</div></div>
-              <div class="multi-cell"><div class="stat-label">P1 Looses</div><div class="stat-val p1" id="ms-l1">—</div></div>
-              <div class="multi-cell"><div class="stat-label">Avg TTK P1 </div><div class="stat-val p1" id="ms-ttk1">—</div></div>
-              <div class="multi-cell"><div class="stat-label">Avg HP Left P1</div><div class="stat-val p1" id="ms-hp1">—</div></div>
-              <div class="multi-cell"><div class="stat-label">Avg Bullets To Kill P2</div><div class="stat-val p2" id="ms-bulletsToKill1">—</div></div>
+          <div class="results-area" id="results-area">
+            <div class="tab-bar">
+              <div class="tab active" onclick="switchTab('result',this)">Result</div>
+              <div class="tab" onclick="switchTab('log',this)">Combat Log</div>
+              <div class="tab" id="multi-tab" onclick="switchTab('multi',this)" style="display:none;">Multi Stats</div>
             </div>
 
-            <div class="middle-multi-grid">
-              <div class="multi-cell"><div class="stat-label">Ties</div><div class="stat-val neutral" id="ms-tie">—</div></div>
+            <div class="tab-content active" id="tab-result">
+              <div class="winner-banner" id="winner-banner" style="display:none;">
+                <div class="winner-icon" id="winner-icon">🏆</div>
+                <div>
+                  <div class="winner-name" id="winner-name">—</div>
+                  <div class="winner-sub" id="winner-sub"></div>
+                </div>
+              </div>
+
+              <div class="stats-grid" id="stats-grid" style="display:none;">
+                <div class="stat-cell"><div class="stat-label">P1 Damage</div><div class="stat-val p1" id="s-p1-dmg">—</div></div>
+                <div class="stat-cell"><div class="stat-label">P1 Shots/Hit/HS</div><div class="stat-val p1" id="s-p1-shs">—</div></div>
+                <div class="stat-cell"><div class="stat-label">P2 Damage</div><div class="stat-val p2" id="s-p2-dmg">—</div></div>
+                <div class="stat-cell"><div class="stat-label">P2 Shots/Hit/HS</div><div class="stat-val p2" id="s-p2-shs">—</div></div>
+                <div class="stat-cell"><div class="stat-label">Time to Kill</div><div class="stat-val neutral" id="s-ttk">—</div></div>
+                <div class="stat-cell"><div class="stat-label">Final Range</div><div class="stat-val neutral" id="s-range">—</div></div>
+                <div class="stat-cell"><div class="stat-label">P1 HP Left</div><div class="stat-val p1" id="s-p1-hp">—</div></div>
+                <div class="stat-cell"><div class="stat-label">P2 HP Left</div><div class="stat-val p2" id="s-p2-hp">—</div></div>
+              </div>
+
+              <div class="empty-state" id="pre-run-msg">
+                <div class="empty-icon">◈</div>
+                <div class="empty-title">No duel run yet</div>
+                <div class="empty-sub">Choose both loadouts on the left, then press SIMULATE.</div>
+              </div>
             </div>
 
-            <div class="right-multi-grid">
-              <div class="left-mult-=grid">
-                <div class="multi-cell"><div class="stat-label">P2 Wins</div><div class="stat-val p2" id="ms-w2">—</div></div>
-                <div class="multi-cell"><div class="stat-label">P2 Looses</div><div class="stat-val p2" id="ms-l2">—</div></div>
-                <div class="multi-cell"><div class="stat-label">Avg TTK P2</div><div class="stat-val p2" id="ms-ttk2">—</div></div>
-                <div class="multi-cell"><div class="stat-label">Avg HP Left P2</div><div class="stat-val p2" id="ms-hp2">—</div></div>
-                <div class="multi-cell"><div class="stat-label">Avg Bullets To Kill P1</div><div class="stat-val p1" id="ms-bulletsToKill2">—</div></div>
+            <div class="tab-content" id="tab-log">
+              <div id="combat-log"></div>
+            </div>
+
+            <div class="tab-content" id="tab-multi">
+              <div class="winrate-section">
+                <div class="winrate-labels">
+                  <span id="wr-p1-lbl" style="color:var(--blue)">P1: —</span>
+                  <span id="wr-tie-lbl" style="color:var(--tie)">TIE: —</span>
+                  <span id="wr-p2-lbl" style="color:var(--red)">P2: —</span>
+                </div>
+
+                <div class="winrate-bar">
+                  <div class="wr-p1" id="wr-p1-bar" style="width:0%;transition:width .5s ease;"></div>
+                  <div class="wr-tie" id="wr-tie-bar" style="width:0%;transition:width .5s ease;"></div>
+                  <div class="wr-p2" id="wr-p2-bar" style="width:0%;transition:width .5s ease;"></div>
+                </div>
+              </div>
+
+              <div class="multi-grid">
+                <div class="left-mult-=grid">
+                  <div class="multi-cell"><div class="stat-label">P1 Wins</div><div class="stat-val p1" id="ms-w1">—</div></div>
+                  <div class="multi-cell"><div class="stat-label">P1 Looses</div><div class="stat-val p1" id="ms-l1">—</div></div>
+                  <div class="multi-cell"><div class="stat-label">Avg TTK P1 </div><div class="stat-val p1" id="ms-ttk1">—</div></div>
+                  <div class="multi-cell"><div class="stat-label">Avg HP Left P1</div><div class="stat-val p1" id="ms-hp1">—</div></div>
+                  <div class="multi-cell"><div class="stat-label">Avg Bullets To Kill P2</div><div class="stat-val p2" id="ms-bulletsToKill1">—</div></div>
+                </div>
+
+                <div class="middle-multi-grid">
+                  <div class="multi-cell"><div class="stat-label">Ties</div><div class="stat-val neutral" id="ms-tie">—</div></div>
+                </div>
+
+                <div class="right-multi-grid">
+                  <div class="left-mult-=grid">
+                    <div class="multi-cell"><div class="stat-label">P2 Wins</div><div class="stat-val p2" id="ms-w2">—</div></div>
+                    <div class="multi-cell"><div class="stat-label">P2 Looses</div><div class="stat-val p2" id="ms-l2">—</div></div>
+                    <div class="multi-cell"><div class="stat-label">Avg TTK P2</div><div class="stat-val p2" id="ms-ttk2">—</div></div>
+                    <div class="multi-cell"><div class="stat-label">Avg HP Left P2</div><div class="stat-val p2" id="ms-hp2">—</div></div>
+                    <div class="multi-cell"><div class="stat-label">Avg Bullets To Kill P1</div><div class="stat-val p1" id="ms-bulletsToKill2">—</div></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+    </section>
 
-        <div class="tab-content" id="tab-cross">
-          <div id="cross-table" style="padding:10px;"></div>
-        </div>
+    <!-- ══════════════════════════════════════════════════════════
+         META SIMULATION (cross product)
+         ══════════════════════════════════════════════════════════ -->
+    <section class="view view-app" id="view-meta" hidden>
+      <div class="app">
+        <div class="sidebar">
+          <div class="sidebar-head">
+            <div class="section-title">Meta Simulation</div>
+            <p class="sidebar-hint">
+              Runs your weapon against every other weapon, at every range, against every
+              aim profile — then maps the matchups.
+            </p>
+          </div>
 
-          <div class="tab-content" id="tab-heat">
-            <div id="heatmap-container" style="padding:10px;">
-              HEAT MAP READY
+          <div class="fighter-panel active">
+            <label>Weapon Data Version</label>
+            <select class="data-version-picker" aria-label="Weapon data version"></select>
+            <p class="sidebar-hint data-version-note"></p>
+
+            <label>Class Filter</label>
+            <select id="meta-class">
+              <option value="">All Classes</option>
+              <option value="light">Light — 150 HP</option>
+              <option value="medium">Medium — 250 HP</option>
+              <option value="heavy">Heavy — 350 HP</option>
+            </select>
+
+            <label>Your Weapon</label>
+            <select id="meta-weapon"></select>
+            <div id="meta-badges" class="weapon-badge"></div>
+
+            <label>Your Accuracy</label>
+            <div class="range-row">
+              <input type="range" id="meta-acc" min="1" max="100" value="75">
+              <span class="range-val" id="meta-acc-v">75%</span>
+            </div>
+
+            <label>Your Headshot Chance</label>
+            <div class="range-row">
+              <input type="range" id="meta-hs" min="0" max="100" value="35">
+              <span class="range-val" id="meta-hs-v">35%</span>
             </div>
           </div>
+
+          <div class="section">
+            <div class="section-title">Run Settings</div>
+
+            <label>Method</label>
+            <div class="toggle-group" id="meta-method-group">
+              <div class="tbtn active" data-method="exact">Exact</div>
+              <div class="tbtn" data-method="sampled">Sampled</div>
+            </div>
+
+            <div id="meta-runs-wrap" style="display:none;">
+              <label style="margin-top:12px;">Runs Per Scenario</label>
+              <div class="toggle-group" id="meta-runs-group">
+                <div class="tbtn" data-runs="1000">1K</div>
+                <div class="tbtn active" data-runs="10000">10K</div>
+                <div class="tbtn" data-runs="50000">50K</div>
+              </div>
+            </div>
+
+            <div class="meta-estimate" id="meta-estimate">—</div>
+
+            <p class="doc-note">
+              <strong>Stand and fight.</strong> Both duellists hold the listed range for the whole
+              fight — no advancing, no closing the gap, no class-speed advantage. Each cell measures
+              the weapon at that range and nothing else. Melee weapons can therefore only land hits
+              at ranges inside their own reach.
+            </p>
+
+            <p class="doc-note" id="meta-method-note"></p>
+          </div>
+
+          <div class="run-row">
+            <button class="btn-run" id="meta-run-btn" type="button">▶ RUN META ANALYSIS</button>
+            <button class="btn-run btn-ghost" id="meta-cancel-btn" type="button" disabled>■ CANCEL</button>
+          </div>
+        </div>
+
+        <div class="main-area">
+          <div class="results-area">
+            <div class="tab-bar">
+              <div class="tab active">Matchup Map</div>
+            </div>
+
+            <div class="tab-content active">
+              <div id="cross-table">
+                <div class="empty-state">
+                  <div class="empty-icon">▦</div>
+                  <div class="empty-title">No analysis run yet</div>
+                  <div class="empty-sub">
+                    Pick your weapon and press RUN META ANALYSIS. It runs in background
+                    workers — expect several seconds to a couple of minutes depending on runs per scenario.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
+    </section>
+
+  </main>
 
   <script>
     const ospuzeToggle = document.getElementById('ospuze-toggle');

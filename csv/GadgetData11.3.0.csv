@@ -1,0 +1,11 @@
+,Body Damage,Head Damage,Rate of Fire (RPM),Magazine Size,Damage Per Magazine,Empty Reload Time (seconds),Tactical Reload Time (seconds),Shots Per Burst,Delay Until Next Burst (seconds),TTK vs. Light @ Body (seconds),STK (L),TTK vs. Medium @ Body (seconds),STK (M),TTK vs. Heavy @ Body (seconds),STK (H),TTK vs. Light @ Head (seconds),STK (L),TTK vs. Medium @ Head (seconds),STK (M),TTK vs. Heavy @ Head (seconds),STK (H),Damage Dropoff Minimum Range,Damage Dropoff Maximum Range,Damage Dropoff Modifier @ Max Range,Notes
+
+
+LIGHT,,,,,,,,,,,,,,,,,,,,,,,,,
+
+
+MEDIUM,,,,,,,,,,,,,,,,,,,,,,,,,
+
+
+
+HEAVY,,,,,,,,,,,,,,,,,,,,,,,,,

@@ -1,0 +1,54 @@
+,Body Damage,Head Damage,Rate of Fire (RPM),Magazine Size,Damage Per Magazine,Empty Reload Time (seconds),Tactical Reload Time (seconds),Shots Per Burst,Delay Until Next Burst (seconds),TTK vs. Light @ Body (seconds),STK (L),TTK vs. Medium @ Body (seconds),STK (M),TTK vs. Heavy @ Body (seconds),STK (H),TTK vs. Light @ Head (seconds),STK (L),TTK vs. Medium @ Head (seconds),STK (M),TTK vs. Heavy @ Head (seconds),STK (H),Damage Dropoff Minimum Range,Damage Dropoff Maximum Range,Damage Dropoff Modifier @ Max Range,Notes
+LIGHT,,,,,,,,,,,,,,,,,,,,,,,,,
+93R,26,39,1000,24,624,1.75,1.45,3,0.275,0.52,6,1.19,10,1.64,14,0.40,4,0.79,7,0.91,9,32m,42m,~40%,
+ARN-220,17,25.5,725,"60
+(30)","1020
+(510)","2.80
+(0.80)",2.45,-,-,0.66,9,1.16,15,1.66,21,0.41,6,0.74,10,1.08,14,37.5m,45m,~72%,"Quick reload is 0.80s long. It triggers when you have emptied a magazine, and when you have a ""quick magazine"" available (indicated by the bars near your ammo count). Otherwise, a normal reload will occur."
+Dagger,60,-,-,-,-,-,-,-,-,-,3,-,5,-,7,-,-,-,-,-,-,-,-,-,
+Dagger (Alt. w/ Backstab),320*,-,-,-,-,-,-,-,-,-,1,-,1,-,2,-,-,-,-,-,-,-,-,-,Deals 75 damage without backstab.  Cannot hit multiple targets in one stab.  Backstab angle is 150 degrees.  Has an 800ms wind-up time.
+LH1,44,88,280,15,660,2.85,1.95,-,-,0.67,4,1.11,6,1.56,8,0.22,2,0.44,3,0.67,4,50m,55m,~72%,
+M11,16,24,1000,40,640,1.85,1.55,-,-,0.54,10,0.90,16,1.26,22,0.36,7,0.60,11,0.84,15,10m,17.5m,~52%,
+M26 Matter,121,-,85,8,968,2.45,2.05,-,-,0.71,2,1.41,3,1.41,3,-,-,-,-,-,-,15m,25m,~64%,
+Recurve Bow (uncharged),60,90,78,-,-,-,-,-,-,1.54,3,3.08,5,3.85,6,0.77,2,1.54,3,2.31,4,-,-,-,Takes ~160ms to fire the 1st shot. Various methods of optimizing TTK: https://i.imgur.com/DLfa7hv.jpeg (qm = quick melee). TTK does not account for projectile travel time.
+Recurve Bow (charged),124,186,48,-,-,-,-,-,-,1.25,2,2.50,3,2.50,3,0.00,1,1.25,2,1.25,2,-,-,-,Takes ~640ms to charge a shot. Various methods of optimizing TTK: https://i.imgur.com/DLfa7hv.jpeg (qm = quick melee). TTK does not account for projectile travel time.  Damage increases from 60 to 124 (continuously) based on how long this weapon was charged.
+SH1900,195,-,80,2,390,2.60,2.20,-,-,0.00,1,0.75,2,0.75,2,-,-,-,-,-,-,-,-,-,
+SR-84,118,236,40,6,708,3.35,1.95,-,-,1.30,2,2.61,3,2.61,3,0.00,1,1.30,2,1.30,2,80m,100m,~75%,"Bullets are hitscan up until 40m, and then converted into projectiles afterwards."
+Sword,88,-,-,-,-,-,-,-,-,-,2,-,3,-,4,-,-,-,-,-,-,-,-,-,
+Sword (Alt.),120,-,-,-,-,-,-,-,-,-,2,-,3,-,3,-,,-,,-,,-,-,-,
+Throwing Knives,60,90,545.45,-,-,-,-,2,0.59,0.78,3,1.56,5,1.67,6,0.11,2,0.78,3,0.89,4,-,-,-,"TTK does not account for projectile travel time, or the initial delay when throwing the knives.  It represents more of a ""time-to-death"" calculation, if anything."
+Throwing Knives (Alt.),140,210,27.7,-,-,-,-,-,-,2.17,2,2.17,2,4.33,3,0.00,1,2.17,2,2.17,2,-,-,-,"TTK does not account for projectile travel time, or the initial delay when throwing the knives.  It represents more of a ""time-to-death"" calculation, if anything."
+V9S,40,60,360,20,800,1.50,1.25,-,-,0.50,4,1.00,7,1.33,9,0.33,3,0.67,5,0.83,6,10m,15m,~67%,
+XP-54,16,24,860,34,544,2.50,2.25,-,-,0.63,10,1.05,16,1.47,22,0.42,7,0.70,11,0.98,15,22.5m,32.5m,~52%,
+MEDIUM,,,,,,,,,,,,,,,,,,,,,,,,,
+AKM,20,30,600,32,640,2.35,2.35,-,-,0.70,8,1.20,13,1.70,18,0.40,5,0.80,9,1.10,12,30m,37.5m,~55%,
+CB-01 Repeater,88,132,,8,704,5.05,(varies),-,-,0.78,2,1.56,3,2.34,4,0.78,2,0.78,2,1.56,3,40m,45m,~69%,Firing the weapon will cancel the reload animation.
+Cerberus 12GA,99*,-,100,3,297*,2.95,(varies),-,-,0.60*,2*,1.20*,3*,(see notes)*,4*,-,-,-,-,-,-,10m,17.5m,~63%,"Deals 99 damage on hit (9 x 11 pellets), and then an extra ~31 damage from the fire DoT that last for ~2 seconds.  DoT does not stack, and it resets on every hit.  With the DoT, it takes 2 hits to kill a Light (or 1 hit + quick-melee), 3 hits to kill a Medium, and 4 hits to kill a Heavy."
+CL-40 (Direct),100,-,75,5,500,3.95,(varies),-,-,0.80,2,1.60,3,2.40,4,-,,-,,-,,-,-,-,
+CL-40 (Splash),90,-,75,5,450,3.95,(varies),-,-,0.80,2,1.60,3,2.40,4,-,,-,,-,,-,-,-,Inner blast radius for maximum damage is 0.6m.
+Dual Blades,(see notes)*,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,"LMB combo = 2x50 damage, then 2x60 damage, then 65 damage.  Can swap-cancel the combo when started.  Swap-cancel will not optimize TTK, but quick melee will. Deflecting bullets deals 100% damage to the enemy, and 10% to you (30% if glancing).  Blocking melee hits will reduce their damage to 25%."
+FAMAS,23,34.5,1080,27,621,2.60,2.15,3,0.27,0.76,7,1.20,11,1.91*,16,0.44,5,0.82,8,1.20,11,35m,42.5m,~50%,"15 bullets deal 345 damage to the body, so a Heavy player may be killable within 5 bursts upon taking chip damage.  In that scenario, its TTK vs. Heavy @ Body = 1.64s, and its TTK vs. Heavy @ Head = 1.14s (with 10 headshots)."
+FCAR,22,33,540,25,550,2.10,2.10,-,-,0.67,7,1.22,12,1.67,16,0.44,5,0.78,8,1.11,11,35m,40m,~55%,
+Model 1887,108,-,69,7,756,4.30,(varies),-,-,0.87,2,1.74,3,2.61,4,-,-,-,-,-,-,20m,30m,~65%,Firing the weapon will cancel the reload animation.
+P90,14,21,900,50,700,2.70,2.45,-,-,0.67,11,1.13,18,1.60,25,0.47,8,0.73,12,1.07,17,10m,20m,~62%,Excellent hipfire accuracy.
+Pike .556,48,72,200,12,576,3.25,2.10,-,-,0.90,4,1.50,6,2.10,8,0.60,3,0.90,4,1.20,5,40m,50m,~80%,
+R.357,74,148,140,6,444,2.50,2.20,-,-,0.86,3,1.29,4,1.71,5,0.43,2,0.43,2,0.86,3,27.5m,44m,~40%,
+Riot Shield,90,-,-,-,-,-,-,-,-,-,2,-,3,-,4,-,-,-,-,-,-,-,-,-,
+HEAVY,,,,,,,,,,,,,,,,,,,,,,,,,
+.50 Akimbo,44,88,230,14,616,3.00,2.20,-,-,0.78,4,1.30,6,1.83,8,0.26,2,0.52,3,0.78,4,32m,39m,~50%,
+BFR Titan,90,135,75,5,450,5.00,(varies),-,-,0.80,2,1.60,3,2.40,4,0.80,2,0.80,2,1.60,3,30m,45m,~70%,
+Flamethrower,30*,-,170,30,900,3.55,3.55,-,-,1.41,5,2.82,9,3.88,12,-,-,-,-,-,-,-,-,-,(need information about whether or not the fire DoT sticks to the player while dealing damage with Flamethrower ammo)
+KS-23,100,-,78,6,600,5.55,(varies),-,-,0.77,2,1.54,3,2.31,4,-,-,-,-,-,-,18m,23m,~70%,"Shots are hitscan within 25m, and then they become projectiles afterwards (with a projectile velocity of 280 m/s).  Firing the weapon will cancel the reload animation."
+Lewis Gun,22,33,500,47,1034,3.55,3.25,-,-,0.72,7,1.32,12,1.80,16,0.48,5,0.84,8,1.20,11,35m,40m,~67%,
+M134 Minigun,11,14.6,1500,250,2750,5.25,5.00,-,-,0.52,14,0.88,23,1.24,32,0.40,11,0.68,18,0.92,24,30m,50m,~53%,TTK assumes a full ramp-up to maximum fire rate.  Major levels of spread make it 100% accurate only at extreme close range (within ~5m).  Spin-up time until minimum fire rate (500 RPM) is 0.90s.  Spin-up time until maximum fire rate is 1.60s.
+M60,20,30,580,70,1400,3.55,3.55,-,-,0.72,8,1.24,13,1.76,18,0.41,5,0.83,9,1.14,12,25m,35m,~50%,
+MGL-32,83,-,90,6,498,3.10,2.85,-,-,0.67,2,2.00,4,2.67,5,-,-,-,-,-,-,-,-,-,Rounds detonate on impact after the 1st bounce. Maximum fuse time = 2.5s. Explosion inner radius = 1.5m.
+SA1216,72,-,190,"16
+(4)","1152
+(288)","3.25
+(0.80)",2.35,-,-,0.63,3,0.95,4,1.75,5,-,-,-,-,-,-,12.5m,20m,~67%,"Quick reload is 0.80s long. It triggers when you have emptied a magazine, and when you have a ""quick magazine"" available (indicated by the bars near your ammo count). Otherwise, a normal reload will occur."
+ShAK-50,30,45,420,20,600,3.20,2.40,-,-,0.57,5,1.14,9,1.57,12,0.43,4,0.71,6,1.00,8,15m,25m,~67%,"Shoots 2 bullets per round, spread out horizontally, each dealing 15 damage."
+Sledgehammer,100,-,-,-,-,-,-,-,-,-,2,-,3,-,4,-,-,-,-,-,-,-,-,-,
+Sledgehammer (Alt.),175,-,-,-,-,-,-,-,-,-,1,-,2,-,3,-,-,-,-,-,-,-,-,-,Cannot hit multiple targets in one swing.
+Spear,(see notes)*,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,"LMB combo = 65 damage, then 80 damage, then 90 damage.  Has a 3-4m range."
+Spear (Alt.),105,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,Damage is per hit in a 3-hit combo.  Has a 3m radius.

@@ -48,6 +48,8 @@ async function loadWeapons() {
     // Init after weapons are loaded
     filterWeapons(1);
     filterWeapons(2);
+    updateWeaponInfo(1);
+    updateWeaponInfo(2);
 
     ['p1-acc','p1-hs','p2-acc','p2-hs'].forEach(id => {
       const el = document.getElementById(id);
@@ -63,9 +65,12 @@ async function loadWeapons() {
     });
 
     drawIdle();
+
+    // Let the UI shell (stats table, meta panel, home counter) fill itself in.
+    document.dispatchEvent(new CustomEvent('weapons:loaded'));
   } catch (err) {
     console.error(err);
-    alert('Could not load weapons_s10_cleaned.json');
+    document.dispatchEvent(new CustomEvent('weapons:error', { detail: err }));
   }
 }
 
@@ -96,7 +101,12 @@ let particles = [];
 function resizeCanvas() {
   canvas.width = canvas.parentElement.clientWidth;
 }
-window.addEventListener('resize', () => { resizeCanvas(); if(simFrames.length) drawFrame(simFrames[Math.min(frameIdx,simFrames.length-1)]); });
+// Resizing the canvas clears it, so always repaint whatever should be on screen.
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  if (simFrames.length) drawFrame(simFrames[Math.min(frameIdx, simFrames.length - 1)]);
+  else drawIdle();
+});
 resizeCanvas();
 
 function drawFrame(frame) {
@@ -419,8 +429,8 @@ function runSim() {
   simTimeAccum = 0;
 
 
-  const p1w   = WEAPONS[parseInt(document.getElementById('p1-weapon').value)];
-  const p2w   = WEAPONS[parseInt(document.getElementById('p2-weapon').value)];
+  const p1_weapon   = WEAPONS[parseInt(document.getElementById('p1-weapon').value)];
+  const p2_weapon   = WEAPONS[parseInt(document.getElementById('p2-weapon').value)];
   const p1acc = parseInt(document.getElementById('p1-acc').value) / 100;
   const p1hs  = parseInt(document.getElementById('p1-hs').value)  / 100;
   const p2acc = parseInt(document.getElementById('p2-acc').value) / 100;
@@ -436,7 +446,7 @@ function runSim() {
   document.getElementById('stats-grid').style.display = 'none';
 
   // Run visual sim (single, always)
-  const result = simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOv, meleeAdv, firstShot, true);
+  const result = simulate(p1_weapon, p2_weapon, p1acc, p1hs, p2acc, p2hs, startDist, speedOv, meleeAdv, firstShot, true);
   lastResult = result;
   simFrames = result.frames;
   
@@ -446,14 +456,14 @@ function runSim() {
   logEl.innerHTML = (result.log || []).slice(0, 400).map(l => `<div class="ll ${l.type}">${l.text}</div>`).join('');
 
   // Set HUD names
-  document.getElementById('hud-p1-name').textContent = p1w.name;
-  document.getElementById('hud-p2-name').textContent = p2w.name;
+  document.getElementById('hud-p1-name').textContent = p1_weapon.name;
+  document.getElementById('hud-p2-name').textContent = p2_weapon.name;
 
   // Multi sim
   if (simMode === 'multi' && simN > 1) {
     let w1=0, w2=0, ties=0, ttkArr1=[], ttkArr2=[], hp1Arr=[], hp2Arr=[]; bulletsToKill1=[], bulletsToKill2=[];
     for (let i = 0; i < simN; i++) {
-      const r = simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOv, meleeAdv, firstShot, false);
+      const r = simulate(p1_weapon, p2_weapon, p1acc, p1hs, p2acc, p2hs, startDist, speedOv, meleeAdv, firstShot, false);
       if (r.winner==='p1') { 
       w1++; ttkArr1.push(r.time);
         bulletsToKill1.push(r.hits1);
@@ -508,10 +518,10 @@ function showResults(r) {
   const w = r.winner;
   const wEl = document.getElementById('winner-name');
   wEl.className = 'winner-name ' + (w==='tie' ? 'tie' : w);
-  const p1w = WEAPONS[parseInt(document.getElementById('p1-weapon').value)];
-  const p2w = WEAPONS[parseInt(document.getElementById('p2-weapon').value)];
+  const p1_weapon = WEAPONS[parseInt(document.getElementById('p1-weapon').value)];
+  const p2_weapon = WEAPONS[parseInt(document.getElementById('p2-weapon').value)];
   document.getElementById('winner-icon').textContent = w==='tie' ? '⚡' : '🏆';
-  wEl.textContent = w==='p1' ? p1w.name : w==='p2' ? p2w.name : 'TIE';
+  wEl.textContent = w==='p1' ? p1_weapon.name : w==='p2' ? p2_weapon.name : 'TIE';
   document.getElementById('winner-sub').textContent = w==='tie' ? 'Simultaneous elimination' : `${w==='p1'?'Player 1':'Player 2'} wins in ${r.time.toFixed(2)}s`;
   document.getElementById('s-p1-dmg').textContent = r.dmg1.toFixed(0);
   document.getElementById('s-p2-dmg').textContent = r.dmg2.toFixed(0);
@@ -618,7 +628,13 @@ function updateWeaponInfo(p) {
     ${w.rpm ? `<span class="badge">${w.rpm} RPM</span>` : ''}
     <span class="badge ${w.class}">${spdLabel} ${spd}m/s</span>
   `;
-  const ddInfo = w.damage_dropoff_min_range ? `DROP: ${w.damage_dropoff_min_range}–${w.damage_dropoff_max_range} (${w.damage_reduction_at_max})` : 'No dropoff data';
+  // damage_reduction_at_max is stored as a fraction (0.5) for guns and as a
+  // percentage (100) for melee — normalise before showing it.
+  const rawDrop = w.damage_reduction_at_max;
+  const dropPct = rawDrop == null ? null : Math.round(parseFloat(rawDrop) <= 1 ? parseFloat(rawDrop) * 100 : parseFloat(rawDrop));
+  const ddInfo = w.damage_dropoff_min_range
+    ? `DROP: ${w.damage_dropoff_min_range}–${w.damage_dropoff_max_range}m${dropPct != null ? ` (−${dropPct}% dmg)` : ''}`
+    : 'No dropoff data';
   note.innerHTML = ddInfo + (w.notes ? ` &nbsp;|&nbsp; ${w.notes}` : '');
   drawIdle();
 }
@@ -636,22 +652,22 @@ function drawIdle() {
   ctx.fillStyle = '#2a3040'; ctx.font = '11px Share Tech Mono'; ctx.textAlign = 'center';
   ctx.fillText('SELECT FIGHTERS AND PRESS SIMULATE', W/2, H/2 - 10);
 
-  const p1w = WEAPONS[parseInt(document.getElementById('p1-weapon').value)];
-  const p2w = WEAPONS[parseInt(document.getElementById('p2-weapon').value)];
-  if (p1w && p2w) {
+  const p1_weapon = WEAPONS[parseInt(document.getElementById('p1-weapon').value)];
+  const p2_weapon = WEAPONS[parseInt(document.getElementById('p2-weapon').value)];
+  if (p1_weapon && p2_weapon) {
     const startDist = parseInt(document.getElementById('start-dist').value);
     const margin = 60, trackW = W - margin * 2;
     const p1x = margin;
     const p2x = margin + trackW;
-  drawCharacter(ctx, p1x, groundY, p1w.class, '#4a9eff', false, false, false, CLASS_SCALE[p1w.class]);
-  drawCharacter(ctx, p2x, groundY, p2w.class, '#e84040', true, false, false, CLASS_SCALE[p2w.class]);
-    document.getElementById('hud-p1-name').textContent = p1w.name;
-    document.getElementById('hud-p2-name').textContent = p2w.name;
+  drawCharacter(ctx, p1x, groundY, p1_weapon.class, '#4a9eff', false, false, false, CLASS_SCALE[p1_weapon.class]);
+  drawCharacter(ctx, p2x, groundY, p2_weapon.class, '#e84040', true, false, false, CLASS_SCALE[p2_weapon.class]);
+    document.getElementById('hud-p1-name').textContent = p1_weapon.name;
+    document.getElementById('hud-p2-name').textContent = p2_weapon.name;
     document.getElementById('hud-dist').textContent = startDist + 'm';
     document.getElementById('hud-p1-hp').style.width = '100%';
     document.getElementById('hud-p2-hp').style.width = '100%';
-    document.getElementById('hud-p1-hpval').textContent = CLASS_HP[p1w.class] + ' HP';
-    document.getElementById('hud-p2-hpval').textContent = CLASS_HP[p2w.class] + ' HP';
+    document.getElementById('hud-p1-hpval').textContent = CLASS_HP[p1_weapon.class] + ' HP';
+    document.getElementById('hud-p2-hpval').textContent = CLASS_HP[p2_weapon.class] + ' HP';
   }
 }
 

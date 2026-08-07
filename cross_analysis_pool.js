@@ -35,7 +35,13 @@ function stopProfiling() {
   }
 }
 const POOL_SIZE  = Math.max(2, Math.min(8, (navigator.hardwareConcurrency || 4) - 1));
-const RUNS       =  50000;
+let RUNS         = 10000;
+
+// Runs per scenario is chosen in the Meta Simulation panel.
+function setCrossRuns(n) {
+  const parsed = parseInt(n, 10);
+  if (Number.isFinite(parsed) && parsed > 0) RUNS = parsed;
+}
 // Jobs are handed out in chunks so a steal request doesn't give a
 // single-job trickle. Tune upward if inter-thread messaging becomes
 // a bottleneck, downward for finer progress granularity.
@@ -55,13 +61,21 @@ function getAimProfiles() {
   ];
 }
 
+// ── Stand and fight ──
+// The meta analysis holds both duellists at the listed range for the whole
+// fight: no advancing, no closing the gap, no class-speed advantage. The point
+// of the grid is to isolate how a weapon performs AT a range, so movement is
+// removed rather than modelled. Consequence: a melee weapon can only land hits
+// at ranges inside its own reach, and loses outright everywhere else.
+const STAND_AND_FIGHT = { speedOverride: 0, meleeAdv: false };
+
 // ── Job builder ──
 // Produces the full cartesian product: every defender × distance × profile.
 // Each job is a self-contained description; workers need no shared state.
 // function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeAdv) {
 //   const jobs = [];
 //   let jobId  = 0;
-function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeAdv, attackerAcc, attackerHs) {
+function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeAdv, attackerAcc, attackerHs, analysisSeed, forceSampling) {
   const jobs = [];
   let jobId  = 0;
 
@@ -79,6 +93,22 @@ function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeA
           runs: RUNS,
           speedOverride,
           meleeAdv,
+
+          // Only used if this job has to fall back to sampling. Derived
+          // from the analysis seed so a whole run replays identically.
+          //
+          // The multiplier is the golden-ratio prime, so neighbouring job
+          // ids get well separated seeds. simulate.js expands each into 128
+          // bits of generator state, which is what makes the streams
+          // independent — a 32-bit generator's single 4.3 billion number
+          // cycle would be lapped by a 50,000-run analysis and have
+          // different scenarios sharing random numbers.
+          seed: (analysisSeed + jobId * 2654435761) >>> 0,
+
+          // Sampling is normally only used where the solver cannot apply,
+          // but it can also be asked for deliberately to check the solver
+          // against the engine it replaced.
+          forceSampling,
 
           // USER / ATTACKER SETTINGS
           attackerAcc,
@@ -284,22 +314,36 @@ function distributeJobs(jobs, poolSize) {
 //   }
 // }
 
-function runCrossAnalysis() {
+// Handle on the in-flight analysis, or null when idle.
+let activeRun = null;
+
+function cancelCrossAnalysis() {
+  if (activeRun) activeRun.cancel();
+}
+
+// opts: { attacker, attackerAcc, attackerHs, mountId, button, onComplete }
+// Movement is not an option here — see STAND_AND_FIGHT above.
+function runCrossAnalysis(opts = {}) {
   console.log("🚀 Cross Analysis START");
   const __analysisStart = performance.now();
   startProfiling();
 
-  const attackerIdx = parseInt(document.getElementById('p1-weapon').value);
-  const attacker    = WEAPONS[attackerIdx];
+  const attacker = opts.attacker;
   if (!attacker) return;
 
   const distances     = getDistances();
   const profiles      = getAimProfiles();
-  const speedOverride = parseFloat(document.getElementById('speed').value);
-  const meleeAdv      = document.getElementById('melee-advance').checked;
+  const speedOverride = STAND_AND_FIGHT.speedOverride;
+  const meleeAdv      = STAND_AND_FIGHT.meleeAdv;
 
-  const attackerAcc   = parseFloat(document.getElementById('p1-acc').value) / 100;
-  const attackerHs    = parseFloat(document.getElementById('p1-hs').value) / 100;
+  const attackerAcc   = opts.attackerAcc;
+  const attackerHs    = opts.attackerHs;
+  const mountId       = opts.mountId || 'cross-table';
+  const onComplete    = typeof opts.onComplete === 'function' ? opts.onComplete : () => {};
+
+  // A run is reproducible: the same seed replays the same table. Only the
+  // sampling fallback consumes it — exact solves need no randomness at all.
+  const analysisSeed = opts.seed != null ? (opts.seed >>> 0) : (Date.now() >>> 0);
 
   const allJobs = buildJobs(
     attacker,
@@ -309,7 +353,9 @@ function runCrossAnalysis() {
     speedOverride,
     meleeAdv,
     attackerAcc,
-    attackerHs
+    attackerHs,
+    analysisSeed,
+    opts.method === 'sampled'
   );
 
   const totalJobs = allJobs.length;
@@ -317,37 +363,30 @@ function runCrossAnalysis() {
   console.log(`🧮 Total simulations: ${totalJobs * RUNS}`);
   console.log(`⚙️ Workers: ${POOL_SIZE}`);
 
-  if (totalJobs === 0) return;
+  if (totalJobs === 0) { onComplete([]); return; }
 
   const globalQueue = [...allJobs].reverse();
   const results = new Array(totalJobs);
   let completedJobs = 0;
 
-  const btn = document.getElementById('cross-btn');
-  const crossContainer = document.getElementById('cross-table');
+  const btn = opts.button || null;
+  const crossContainer = document.getElementById(mountId);
 
   if (btn) btn.disabled = true;
 
   const loadingHtml = `
-    <div style="padding:20px;">
-      <div style="
-        font-family:'Barlow Condensed',sans-serif;
-        font-size:20px;
-        letter-spacing:2px;
-        text-transform:uppercase;
-        color:var(--muted);
-        margin-bottom:10px;
-      ">
-        RUNNING CROSS ANALYSIS — ${POOL_SIZE} WORKERS · ${totalJobs.toLocaleString()} SCENARIOS · ${RUNS.toLocaleString()} RUNS EACH
+    <div class="ca-progress">
+      <div class="ca-progress-head">
+        Running ${attacker.name} vs the field, stand and fight — ${POOL_SIZE} workers ·
+        ${totalJobs.toLocaleString()} scenarios ·
+        ${opts.method === 'sampled' ? `${RUNS.toLocaleString()} runs each` : 'solved exactly'}
       </div>
 
-      <div style="height:6px;background:var(--border);overflow:hidden;margin-bottom:8px;">
-        <div class="ca-progress-bar"
-             style="height:100%;width:0%;background:var(--accent);transition:width .1s linear;"></div>
+      <div class="ca-progress-track">
+        <div class="ca-progress-bar"></div>
       </div>
 
-      <div class="ca-progress-label"
-           style="font-size:20px;color:var(--muted);letter-spacing:1px;">
+      <div class="ca-progress-label">
         0 / ${totalJobs.toLocaleString()} scenarios complete
         · <span class="ca-worker-label">${POOL_SIZE} workers active</span>
       </div>
@@ -355,9 +394,6 @@ function runCrossAnalysis() {
   `;
 
   if (crossContainer) crossContainer.innerHTML = loadingHtml;
-
-  const crossTabBtn = document.querySelector('[onclick*="cross"]');
-  if (crossTabBtn) switchTab('cross', crossTabBtn);
 
   const progressBar   = crossContainer?.querySelector('.ca-progress-bar');
   const progressLabel = crossContainer?.querySelector('.ca-progress-label');
@@ -376,6 +412,25 @@ function runCrossAnalysis() {
 
   let activeWorkers = POOL_SIZE;
   const workers = [];
+
+  // Exposed so the Meta Simulation panel can abort a long run.
+  activeRun = {
+    cancel() {
+      workers.forEach(w => w.terminate());
+      globalQueue.length = 0;
+      activeWorkers = 0;
+      activeRun = null;
+      if (btn) btn.disabled = false;
+      if (crossContainer) {
+        crossContainer.innerHTML =
+          `<div class="empty-state"><div class="empty-icon">■</div>
+             <div class="empty-title">Analysis cancelled</div>
+             <div class="empty-sub">${completedJobs.toLocaleString()} of ${totalJobs.toLocaleString()} scenarios had finished.</div>
+           </div>`;
+      }
+      onComplete(null);
+    }
+  };
 
   function handleStealRequest(worker) {
     console.log(`🔀 Steal request — remaining jobs: ${globalQueue.length}`);
@@ -415,16 +470,20 @@ function runCrossAnalysis() {
 
       if (activeWorkers === 0) {
         if (btn) btn.disabled = false;
+        activeRun = null;
 
         const finalResults = results.filter(Boolean);
         window.LAST_RESULTS = finalResults;
+        window.LAST_ANALYSIS_SEED = analysisSeed;
 
         const __analysisEnd = performance.now();
         console.log(`🏁 TOTAL ANALYSIS TIME: ${(__analysisEnd - __analysisStart).toFixed(2)}ms`);
 
         if (typeof renderHeatGraph === 'function') {
-          renderHeatGraph(finalResults, 'cross-table');
+          renderHeatGraph(finalResults, mountId);
         }
+
+        onComplete(finalResults);
       }
     }
   }

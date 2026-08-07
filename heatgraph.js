@@ -194,6 +194,11 @@
         winRate: average(matches.map(r => r.winRate).filter(v => v != null)),
         avgAttackerTTK: average(matches.map(r => r.avgAttackerTTK).filter(v => v != null)),
         avgDefenderTTK: average(matches.map(r => r.avgDefenderTTK).filter(v => v != null)),
+        // Share of duels where neither weapon could land a killing blow —
+        // two melee weapons held apart, say. A 0% win rate there means
+        // "nothing can happen", not "you lose", and must not be painted
+        // the same deep red as a genuine total loss.
+        timeoutRate: average(matches.map(r => r.timeoutRate).filter(v => v != null)),
         count: matches.length,
         profiles: buildProfileBreakdown(matches)
       };
@@ -408,13 +413,6 @@
         const cells = group.cells;
 
         const cellHtml = cells.map(cell => {
-          console.log("🟦 Cell:", {
-            distance: cell.distance,
-            winRate: cell.winRate,
-            count: cell.count,
-            profiles: cell.profiles?.length || 0
-          });
-
           if (cell.winRate == null) {
             return `
               <td style="
@@ -427,6 +425,26 @@
                 height:64px;
                 font-size:12px;
               ">—</td>
+            `;
+          }
+
+          // Neither side can kill the other: report it as a stalemate
+          // rather than colouring a meaningless 0% as a crushing defeat.
+          if (cell.timeoutRate != null && cell.timeoutRate > 0.5) {
+            return `
+              <td title="Neither weapon can reach the other at this range, so no duel is decided."
+                  style="
+                border:1px solid var(--border);
+                background:repeating-linear-gradient(45deg,rgba(255,255,255,0.05),rgba(255,255,255,0.05) 6px,transparent 6px,transparent 12px);
+                color:var(--muted);
+                text-align:center;
+                padding:8px 6px;
+                min-width:88px;
+                height:64px;
+                font-size:11px;
+                letter-spacing:1px;
+                text-transform:uppercase;
+              ">stalemate<br><span style="font-size:10px;opacity:0.7;">out of reach</span></td>
             `;
           }
 

@@ -1,0 +1,33 @@
+Weapon,Body Damage,Head Damage,Rate of Fire (RPM),Magazine Size,Damage Per Magazine,Empty Reload Time (seconds),Tactical Reload Time (seconds),Shots Per Burst,Delay Between Bursts (seconds),TTK vs. Light @ Body (seconds),TTK vs. Medium @ Body (seconds),TTK vs. Heavy @ Body (seconds),TTK vs. Light @ Head (seconds),TTK vs. Medium @ Head (seconds),TTK vs. Heavy @ Head (seconds),Damage Dropoff Minimum Range,Damage Dropoff Maximum Range,Damage Dropoff Modifier @ Max Range,Notes
+LIGHT,,,,,,,,,,,,,,,,,,,
+93R,24,36,1020,21,504,1.75,1.45,3,0.235,0.71,1.12,1.53,0.41,0.71,1.06,15m,22.5m,~67%,
+Dagger,50,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,
+Dagger (Alt. w/ Backstab),320*,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,Deals 50 damage without backstab.
+LH1,49,98,300,15,735,2.85,1.95,-,-,0.60,1.00,1.40,0.20,0.40,0.60,80m,100m,~72%,
+M11,16,24,1002,40,640,1.85,1.55,-,-,0.54,0.90,1.26,0.36,0.60,0.84,10m,15m,~62%,
+SH1900,150,-,100,2,300,2.95,2.55,-,-,0.00,0.60,3.56*,-,-,-,-,-,-,Heavy TTK = time to fire 2 shots (0.6s) + empty reload time (2.96s) + time to fire 3rd shot (0.0s)
+SR-84,115,230,40,6,690,3.35,1.95,-,-,1.50,3.00,4.50,0.00,1.50,1.50,80m,100m,~75%,
+Sword,74,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,
+Sword (Alt.),140,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,
+Throwing Knives,60,90,400,-,-,-,-,2,0.7,0.85,1.70,1.85,0.15,0.85,1.00,-,-,-,
+Throwing Knives (Alt.),140,215,27.7,-,-,-,-,-,-,2.17,2.17,4.33,0.00,2.17,2.17,-,-,-,
+V9S,36,54,430,20,720,1.50,1.25,-,-,0.56,0.84,1.26,0.28,0.56,0.84,10m,15m,~70%,
+XP-54,18,27,850,30,540,2.50,2.25,-,-,0.56,0.92,1.34,0.35,0.64,0.85,15m,27.5m,~70%,
+MEDIUM,,,,,,,,,,,,,,,,,,,
+AKM,20,30,600,36,720,2.35,2.35,-,-,0.70,1.20,1.70,0.40,0.80,1.10,30m,37.5m,~55%,
+CL-40 (Direct),110,-,70,4,440,(see notes)*,(see notes)*,-,-,0.86,1.71,2.57,-,-,-,-,-,-,(insert reload time stats here)
+CL-40 (Splash),75,-,70,4,300,(see notes)*,(see notes)*,-,-,0.86,2.57,3.43,-,-,-,-,-,-,(insert reload time stats here)
+FAMAS,23,34,1100,27,621,2.60,2.15,3,0.26,0.74,1.16,1.85,0.42,0.79,1.16,35m,47.5m,~50%,
+FCAR,25,38,540,20,500,2.10,2.10,-,-,0.56,1.00,1.44,0.33,0.67,1.00,35m,40m,~50%,
+Model 1887,128,-,67,6,768,(see notes)*,(see notes)*,-,-,0.90,0.90,1.79,-,-,-,15m,25m,~70%,(insert reload time stats here)
+R.357,74,148,140,6,444,2.50,2.20,-,-,0.86,1.29,1.71,0.43,0.43,0.86,23m,40m,~45%,
+Riot Shield,84,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,
+HEAVY,,,,,,,,,,,,,,,,,,,
+Flamethrower,30*,-,170,30,900,3.55,3.55,-,-,1.41,2.82,3.88,-,-,-,-,-,-,(need information about whether or not the fire DoT sticks to the player while dealing damage with Flamethrower ammo)
+KS-23,100,-,73,6,600,(see notes)*,(see notes)*,-,-,0.82,1.64,2.47,-,-,-,17.5m,22.5m,~60%,(insert reload time stats here)
+Lewis Gun,25,38,500,47,1175,3.55,3.25,-,-,0.60,1.08,1.56,0.36,0.72,1.08,35m,40m,~67%,
+M60,22,33,560,70,1540,3.55,3.55,-,-,0.64,1.18,1.61,0.43,0.75,1.07,25m,32.5m,~40%,
+MGL-32,83,-,90,6,498,3.35,3.15,-,-,0.67,2.00,2.67,-,-,-,-,-,-,
+SA1216,78,-,200,16,1248,3.25,2.35,4,1.1,0.30,0.90,2.00,-,-,-,10m,15m,~67%,
+Sledgehammer,90,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,
+Sledgehammer (Alt.),200,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,

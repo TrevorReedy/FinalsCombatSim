@@ -1,0 +1,25 @@
+,Body Damage,Head Damage,Rate of Fire (RPM),Magazine Size,Damage Per Magazine,Empty Reload Time (seconds),Tactical Reload Time (seconds),Shots Per Burst,Delay Until Next Burst (seconds),TTK vs. Light @ Body (seconds),STK (L),TTK vs. Medium @ Body (seconds),STK (M),TTK vs. Heavy @ Body (seconds),STK (H),TTK vs. Light @ Head (seconds),STK (L),TTK vs. Medium @ Head (seconds),STK (M),TTK vs. Heavy @ Head (seconds),STK (H),Damage Dropoff Minimum Range,Damage Dropoff Maximum Range,Damage Dropoff Modifier @ Max Range,Notes
+LIGHT,,,,,,,,,,,,,,,,,,,,,,,,,
+Dagger,50,-,-,1,50,-,-,-,-,-,3,-,5,-,7,-,-,-,-,-,-,-,-,-,
+LH1,49,98,300,15,735,2.7,-,-,-,0.60,4,1.00,6,1.40,8,0.20,2,0.40,3,0.60,4,-,-,-,"Head damage derived from the sheet's 2x headshot multiplier.  Sheet records falloff as "">120m"" — treated as no measurable dropoff.  Source has a single unlabelled reload column; kind (tactical vs empty) unknown."
+M11,16,24,1000,40,640,1.7,-,-,-,0.54,10,0.90,16,1.26,22,0.36,7,0.60,11,0.84,15,15m,-,-,Head damage derived from the sheet's 1.5x headshot multiplier.  Source has a single unlabelled reload column; kind (tactical vs empty) unknown.
+SH1900,150,-,100,2,300,2.5,-,-,-,0.00,1,0.60,2,3.10,3,-,-,-,-,-,-,-,-,-,Source has a single unlabelled reload column; kind (tactical vs empty) unknown.
+SR-84,115,230,50,6,690,3,-,-,-,1.20,2,2.40,3,3.60,4,0.00,1,1.20,2,1.20,2,-,-,-,"Head damage derived from the sheet's 2x headshot multiplier.  Sheet records falloff as "">120m"" — treated as no measurable dropoff.  Source has a single unlabelled reload column; kind (tactical vs empty) unknown."
+Sword,74,-,-,1,74,-,-,-,-,-,3,-,4,-,5,-,-,-,-,-,-,-,-,-,
+Throwing Knives,60,90,140,1,60,-,-,-,-,0.00,3,0.00,5,0.00,6,0.00,2,0.00,3,0.00,4,-,-,-,"Head damage derived from the sheet's 1.5x headshot multiplier.  Sheet records falloff as "">50m"" — treated as no measurable dropoff."
+V9S,36,54,425,20,720,1.3,-,-,-,0.56,5,0.85,7,1.27,10,0.28,3,0.56,5,0.85,7,15m,-,-,Head damage derived from the sheet's 1.5x headshot multiplier.  Source has a single unlabelled reload column; kind (tactical vs empty) unknown.
+XP-54,18,27,850,30,540,2.7,-,-,-,0.56,9,0.92,14,1.34,20,0.35,6,0.64,10,0.85,13,25m,-,-,Head damage derived from the sheet's 1.5x headshot multiplier.  Source has a single unlabelled reload column; kind (tactical vs empty) unknown.
+MEDIUM,,,,,,,,,,,,,,,,,,,,,,,,,
+AKM,20,30,600,36,720,2.3,-,-,-,0.70,8,1.20,13,1.70,18,0.40,5,0.80,9,1.10,12,-,-,-,"Head damage derived from the sheet's 1.5x headshot multiplier.  Sheet records falloff as "">120m"" — treated as no measurable dropoff.  Source has a single unlabelled reload column; kind (tactical vs empty) unknown."
+CL-40 (Direct),110,-,80,4,440,2.3,-,-,-,0.75,2,1.50,3,2.25,4,-,-,-,-,-,-,-,-,-,Source has a single unlabelled reload column; kind (tactical vs empty) unknown.
+FCAR,25,37.5,540,20,500,2,-,-,-,0.56,6,1.00,10,1.44,14,0.33,4,0.67,7,1.00,10,-,-,-,"Head damage derived from the sheet's 1.5x headshot multiplier.  Sheet records falloff as "">120m"" — treated as no measurable dropoff.  Source has a single unlabelled reload column; kind (tactical vs empty) unknown."
+Model 1887,128,-,75,6,768,3,-,-,-,0.80,2,0.80,2,1.60,3,-,-,-,-,-,-,-,-,-,Source has a single unlabelled reload column; kind (tactical vs empty) unknown.
+R.357,74,148,150,6,444,2.2,-,-,-,0.80,3,1.20,4,1.60,5,0.40,2,0.40,2,0.80,3,23m,-,-,Head damage derived from the sheet's 2x headshot multiplier.  Source has a single unlabelled reload column; kind (tactical vs empty) unknown.
+Riot Shield,84,-,-,1,84,-,-,-,-,-,2,-,3,-,5,-,-,-,-,-,-,-,-,-,
+HEAVY,,,,,,,,,,,,,,,,,,,,,,,,,
+Flamethrower,30,-,170,30,900,3.5,-,-,-,1.41,5,2.82,9,3.88,12,-,-,-,-,-,-,-,-,-,Source has a single unlabelled reload column; kind (tactical vs empty) unknown.
+Lewis Gun,25,37.5,500,47,1175,3.5,-,-,-,0.60,6,1.08,10,1.56,14,0.36,4,0.72,7,1.08,10,-,-,-,"Head damage derived from the sheet's 1.5x headshot multiplier.  Sheet records falloff as "">120m"" — treated as no measurable dropoff.  Source has a single unlabelled reload column; kind (tactical vs empty) unknown."
+M60,22,33,570,70,1540,3.5,-,-,-,0.63,7,1.16,12,1.58,16,0.42,5,0.74,8,1.05,11,30m,-,-,Head damage derived from the sheet's 1.5x headshot multiplier.  Source has a single unlabelled reload column; kind (tactical vs empty) unknown.
+MGL-32,83,-,-,6,498,3.1,-,-,-,-,2,-,4,-,5,-,-,-,-,-,-,-,-,-,Source has a single unlabelled reload column; kind (tactical vs empty) unknown.
+SA1216,91,-,225,16,1456,3,-,-,-,0.27,2,0.53,3,0.80,4,-,-,-,-,-,-,-,-,-,Source has a single unlabelled reload column; kind (tactical vs empty) unknown.
+Sledgehammer,115,-,-,1,115,-,-,-,-,-,2,-,3,-,4,-,-,-,-,-,-,-,-,-,

@@ -1,9 +1,74 @@
 // ═══════════════════════════════════════════════════════════════════
 // SHARED SIMULATION ENGINE
-// Used by both battle_simulator.js (visual playback) and
-// cross_analysis_worker.js (headless 100k runs).
-// captureFrames = true only in the main thread visual sim.
+//
+// Plays out one duel shot by shot on a 10ms tick, rolling for each hit.
+// Used by battle_simulator.js for animated playback (captureFrames = true)
+// and as the sampling fallback for matchups duel_solver.js cannot solve
+// exactly — which today means any duel where the fighters move, since
+// moving changes the damage of every shot.
+//
+// For a fixed-range duel, prefer duel_solver.js: it computes the same
+// model's outcome exactly and about 200x faster.
 // ═══════════════════════════════════════════════════════════════════
+
+// ── Randomness ────────────────────────────────────────────────────
+// Every roll goes through this one function so a run can be replayed.
+// Left on the system generator by default; seed it to get a duel you can
+// reproduce exactly, which is what makes a surprising result debuggable
+// and a published win-rate table checkable.
+let rollRandom = Math.random;
+
+/**
+ * Installs a seeded generator and returns it. The same seed always replays
+ * the same duels.
+ *
+ * This is xoshiro128** with its 128 bits of state expanded from the seed by
+ * splitmix32. The state size is the point: a 32-bit generator has a single
+ * cycle roughly 4.3 billion numbers long, so two differently-seeded runs are
+ * only ever different starting points on that one loop. A cross analysis at
+ * 50,000 runs per scenario draws about 2 million numbers per scenario across
+ * 1,260 scenarios, which is enough to lap the short cycle and have separate
+ * matchups quietly sharing the same random numbers. 128 bits of state makes
+ * that impossible.
+ */
+function useSeededRandom(seed) {
+  // splitmix32: turns one number into four well-mixed ones, so neighbouring
+  // seeds do not produce related starting states.
+  let mix = seed >>> 0;
+  const nextSeedWord = () => {
+    mix = (mix + 0x9E3779B9) >>> 0;
+    let z = mix;
+    z = Math.imul(z ^ (z >>> 16), 0x21F0AAAD);
+    z = Math.imul(z ^ (z >>> 15), 0x735A2D97);
+    return (z ^ (z >>> 15)) >>> 0;
+  };
+
+  let a = nextSeedWord(), b = nextSeedWord(), c = nextSeedWord(), d = nextSeedWord();
+
+  rollRandom = function () {
+    const scrambled = Math.imul(rotateLeft32(Math.imul(b, 5), 7), 9) >>> 0;
+    const t = (b << 9) >>> 0;
+
+    c = (c ^ a) >>> 0;
+    d = (d ^ b) >>> 0;
+    b = (b ^ c) >>> 0;
+    a = (a ^ d) >>> 0;
+    c = (c ^ t) >>> 0;
+    d = rotateLeft32(d, 11);
+
+    return scrambled / 4294967296;
+  };
+  return rollRandom;
+}
+
+function rotateLeft32(value, bits) {
+  return (((value << bits) | (value >>> (32 - bits))) >>> 0);
+}
+
+/** Back to the system generator: every run different. */
+function useSystemRandom() {
+  rollRandom = Math.random;
+}
 function simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOverride, meleeAdv, fsa, captureFrames) {
 const s1 = getStats(p1w), s2 = getStats(p2w);
 let meleeRange1 = null;
@@ -19,8 +84,12 @@ if (s2.isMelee) {
   const maxHP1 = CLASS_HP[p1w.class], maxHP2 = CLASS_HP[p2w.class];
   let hp1 = maxHP1, hp2 = maxHP2;
 
-  const spd1 = Math.min(s1.classSpd, speedOverride || 99);
-  const spd2 = Math.min(s2.classSpd, speedOverride || 99);
+  // `?? 99` rather than `|| 99`: a speedOverride of 0 means "nobody moves",
+  // which is a real setting (the Meta Simulation runs stand-and-fight, and the
+  // 1v1 speed slider goes down to 0). Treating 0 as absent ran them at full
+  // class speed instead.
+  const spd1 = Math.min(s1.classSpd, speedOverride ?? 99);
+  const spd2 = Math.min(s2.classSpd, speedOverride ?? 99);
 
   let dist = startDist;
   let p1pos = 0, p2pos = startDist;
@@ -55,12 +124,12 @@ if (s2.isMelee) {
     let p2fired = false, p2hit = false, p2isHS = false;
 
     // ── Movement ──
+    // Only melee users (or everyone, in melee mode) close the gap, and they
+    // stop at melee range. Advancing unconditionally on top of this made every
+    // duel collapse to point blank and defeated the clamp.
     if (s1.isMelee || meleeAdv) p1pos = Math.min(p1pos + spd1 * DT, p2pos - MELEE_RANGE);
     if (s2.isMelee || meleeAdv) p2pos = Math.max(p2pos - spd2 * DT, p1pos + MELEE_RANGE);
 
-    //melee fix 
-    p1pos += spd1 * DT;
-    p2pos -= spd2 * DT;
     dist = Math.max(0, p2pos - p1pos);
 
     // ── Reload completion ──
@@ -84,12 +153,10 @@ if (s2.isMelee) {
       p1fired = true;
       if (mag1 !== Infinity) mag1--;
 
-    const inRange = !s1.isMelee || dist <= MELEE_RANGE;
-
 const p1InRange = !s1.isMelee || dist <= meleeRange1;
 
-if (p1InRange && Math.random() < p1acc) {
-  const isHS = (s1.headDmg > s1.bodyDmg) && Math.random() < p1hs;
+if (p1InRange && rollRandom() < p1acc) {
+  const isHS = (s1.headDmg > s1.bodyDmg) && rollRandom() < p1hs;
   const dmg  = (isHS ? s1.headDmg : s1.bodyDmg) * dropMult(dist, s1);
   pendingDmgToP2 += dmg;
   dmg1 += dmg; hits1++;
@@ -115,6 +182,11 @@ if (p1InRange && Math.random() < p1acc) {
         if (log) log.push({ type: 'reload', text: `[${time.toFixed(2)}s] P1 🔄 RELOAD (${reloadTime1.toFixed(2)}s)` });
       } else if (s1.isBurst) {
         b1shots++;
+        // delay_in_bursts is an extra pause on top of the normal shot interval.
+        // Verified against Krome's 10.0.0 sheet — the source of weapons_s10_cleaned.json —
+        // whose published TTKs match this convention exactly for the 93R, FAMAS and
+        // Throwing Knives. (Zafferman's sheets use the opposite convention, so their
+        // published TTKs are not directly comparable.)
         t1 += b1shots < s1.bSize ? s1.interval : (b1shots = 0, s1.bDelay + s1.interval);
       } else {
         t1 += s1.interval;
@@ -129,8 +201,8 @@ if (p1InRange && Math.random() < p1acc) {
 
         const p2InRange = !s2.isMelee || dist <= meleeRange2;
 
-        if (p2InRange && Math.random() < p2acc) {
-        const isHS = (s2.headDmg > s2.bodyDmg) && Math.random() < p2hs;
+        if (p2InRange && rollRandom() < p2acc) {
+        const isHS = (s2.headDmg > s2.bodyDmg) && rollRandom() < p2hs;
         const dmg  = (isHS ? s2.headDmg : s2.bodyDmg) * dropMult(dist, s2);
         pendingDmgToP1 += dmg;
         dmg2 += dmg; hits2++;

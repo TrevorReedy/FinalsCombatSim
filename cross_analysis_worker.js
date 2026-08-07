@@ -1,13 +1,21 @@
 // ═══════════════════════════════════════
 // CROSS ANALYSIS WORKER
-// Receives jobs, runs simulate(), posts results back.
+// Receives jobs, resolves each matchup, posts results back.
 // Also participates in work stealing — can request
 // more jobs when its local queue runs dry.
+//
+// Each job is resolved one of two ways:
+//   * exactly, by duel_solver.js, whenever nobody moves (which is every
+//     job in the stand-and-fight grid) — no sampling, no noise;
+//   * by sampling with simulate.js otherwise, from a per-job seed so a
+//     surprising number can always be replayed.
 // ═══════════════════════════════════════
-importScripts('./simulate.js');
+importScripts('./simulate.js', './duel_solver.js');
 
 // ── Simulation constants (mirrored from main thread) ──
-const CLASS_SPEED = { light: 7.0, medium: 5.0, heavy: 2.5 };
+// Must stay in step with battle_simulator.js — a mismatch here silently gave
+// the meta analysis a different game than the 1v1 simulation.
+const CLASS_SPEED = { light: 7.0, medium: 5.0, heavy: 3.5 };
 const CLASS_HP    = { light: 150, medium: 250, heavy: 350 };
 const MELEE_RANGE = 2.0;
 const DT          = 0.01;
@@ -99,82 +107,136 @@ self.addEventListener('message', function(e) {
 // }
 
 function runJob(job) {
-  console.log(`🧠 Worker ${workerId} START job ${job.jobId} | ${job.attacker.name} vs ${job.defender.name} | ${job.distance}m | ${job.profile.name}`);
-const __jobStart = performance.now();
-let __simTime = 0;
   const {
-  attacker,
-  defender,
-  distance,
-  profile,
-  runs,
-  speedOverride,
-  meleeAdv,
-  attackerAcc,
-  attackerHs,
-  defenderAcc,
-  defenderHs
-} = job;
+    attacker, defender, distance, profile, runs,
+    speedOverride, meleeAdv,
+    attackerAcc, attackerHs, defenderAcc, defenderHs,
+    seed, forceSampling
+  } = job;
 
-  let wins = 0, losses = 0, ties = 0;
-  let attackerTTKSum = 0, defenderTTKSum = 0;
+  const attackerStats = getStats(attacker);
+  const defenderStats = getStats(defender);
 
-  for (let i = 0; i < runs; i++) {
-    const __simStart = performance.now();
-  const r = simulate(
-  attacker,
-  defender,
-  attackerAcc,
-  attackerHs,
-  defenderAcc,
-  defenderHs,
-  distance,
-  speedOverride,
-  meleeAdv,
-  'both'
-);
-__simTime += performance.now() - __simStart;
+  const settings = {
+    attacker, defender, attackerStats, defenderStats, distance,
+    attackerAcc, attackerHs, defenderAcc, defenderHs,
+    speedOverride, meleeAdv, runs, seed
+  };
 
-    if (r.winner === 'p1')       { wins++;   attackerTTKSum += r.time; }
-    else if (r.winner === 'p2')  { losses++; defenderTTKSum += r.time; }
-    else                         { ties++; }
+  const solvable = !forceSampling && canSolveExactly({
+    meleeAdvance: meleeAdv,
+    speedOverride,
+    p1Stats: attackerStats,
+    p2Stats: defenderStats
+  });
+
+  const outcome = solvable ? resolveExactly(settings) : resolveBySampling(settings);
+
+  return {
+    jobId: job.jobId,
+    defender: defender.name,
+    class: defender.class,
+    distance,
+    profile: profile.name,
+
+    attackerAcc,
+    attackerHs,
+    defenderAcc,
+    defenderHs,
+
+    // Probabilities, not counts. The exact solver has no notion of a
+    // sample; the sampling path reports the fractions it measured, so both
+    // paths mean the same thing and the heat map reads them the same way.
+    winRate: outcome.attackerWinRate,
+    lossRate: outcome.defenderWinRate,
+    tieRate: outcome.tieRate,
+    timeoutRate: outcome.timeoutRate,
+
+    avgAttackerTTK: outcome.attackerKillTime,
+    avgDefenderTTK: outcome.defenderKillTime,
+
+    // How this number was arrived at, so nothing downstream has to guess.
+    method: outcome.method,
+    samples: outcome.samples,
+
+    // A matchup nobody can win is not an unfavourable one. Checked first,
+    // because a stalemate always reads as a 0% win rate.
+    result: outcome.timeoutRate > 0.5 ? 'stalemate'
+          : outcome.attackerWinRate >= 0.6 ? 'favorable'
+          : outcome.attackerWinRate >= 0.4 ? 'even'
+          : 'unfavorable'
+  };
+}
+
+/** Exact probabilities, straight from the solver. */
+function resolveExactly(s) {
+  const exact = solveDuelExactly({
+    p1Stats: s.attackerStats,
+    p2Stats: s.defenderStats,
+    p1Accuracy: s.attackerAcc,
+    p1HeadshotChance: s.attackerHs,
+    p2Accuracy: s.defenderAcc,
+    p2HeadshotChance: s.defenderHs,
+    p1MaxHealth: CLASS_HP[s.attacker.class],
+    p2MaxHealth: CLASS_HP[s.defender.class],
+    distance: s.distance,
+    firstShot: 'both',
+    maxTime: MAX_TIME,
+    dropMultiplierFor: dropMult
+  });
+
+  return {
+    attackerWinRate: exact.p1WinRate,
+    defenderWinRate: exact.p2WinRate,
+    tieRate: exact.tieRate,
+    timeoutRate: exact.timeoutRate,
+    attackerKillTime: exact.p1AvgKillTime,
+    defenderKillTime: exact.p2AvgKillTime,
+    method: 'exact',
+    samples: 0
+  };
+}
+
+/**
+ * Sampling fallback for matchups the solver cannot express — currently
+ * anything where a fighter moves, since that changes damage shot to shot.
+ * Seeded per job so the same analysis always produces the same table.
+ */
+function resolveBySampling(s) {
+  useSeededRandom(s.seed);
+
+  let wins = 0, losses = 0, ties = 0, timeouts = 0;
+  let attackerTimeSum = 0, defenderTimeSum = 0;
+
+  for (let i = 0; i < s.runs; i++) {
+    const duel = simulate(
+      s.attacker, s.defender,
+      s.attackerAcc, s.attackerHs, s.defenderAcc, s.defenderHs,
+      s.distance, s.speedOverride, s.meleeAdv, 'both'
+    );
+
+    // simulate() awards a 60 second stalemate to whoever has more health
+    // left, which invents a winner nobody earned. Both still standing means
+    // nobody landed a killing blow, so it is counted as a timeout here —
+    // the same way the exact solver reports it.
+    const bothStillStanding = duel.hp1 > 0 && duel.hp2 > 0;
+
+    if (bothStillStanding) timeouts++;
+    else if (duel.winner === 'p1') { wins++; attackerTimeSum += duel.time; }
+    else if (duel.winner === 'p2') { losses++; defenderTimeSum += duel.time; }
+    else ties++;
   }
 
-  const total       = wins + losses + ties;
-  const winRate     = total > 0 ? wins / total : 0;
-  const avgAttackerTTK = wins   > 0 ? attackerTTKSum / wins   : null;
-  const avgDefenderTTK = losses > 0 ? defenderTTKSum / losses : null;
-  const __jobEnd = performance.now();
-const __jobMs = __jobEnd - __jobStart;
-
-console.log(
-  `✅ Worker ${workerId} DONE job ${job.jobId} | ` +
-  `time=${__jobMs.toFixed(2)}ms | ` +
-  `avgSim=${(__simTime / runs).toFixed(4)}ms | ` +
-  `runs=${runs}`
-);
-return {
-  jobId: job.jobId,
-  defender: defender.name,
-  class: defender.class,
-  distance: job.distance,
-  profile: profile.name,
-
-  attackerAcc,
-  attackerHs,
-  defenderAcc,
-  defenderHs,
-
-  wins,
-  losses,
-  ties,
-  total,
-  winRate,
-  avgAttackerTTK,
-  avgDefenderTTK,
-  result: winRate >= 0.6 ? 'favorable' : winRate >= 0.4 ? 'even' : 'unfavorable'
-};
-
+  return {
+    attackerWinRate: wins / s.runs,
+    defenderWinRate: losses / s.runs,
+    tieRate: ties / s.runs,
+    timeoutRate: timeouts / s.runs,
+    attackerKillTime: wins > 0 ? attackerTimeSum / wins : null,
+    defenderKillTime: losses > 0 ? defenderTimeSum / losses : null,
+    method: 'sampled',
+    samples: s.runs
+  };
 }
 
 // ── Message handler ──

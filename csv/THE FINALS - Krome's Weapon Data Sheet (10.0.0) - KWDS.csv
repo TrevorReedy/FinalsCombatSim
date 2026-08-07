@@ -1,0 +1,68 @@
+Krome's Weapon Data Sheet,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Last Update : 10.0.0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,ikrome (DM open if you need),,,,,,,,,,,,,,vs. LIGHT,,,,vs. MEDIUM,,,,vs. HEAVY,,,,,,,
+LIGHT,#,Name,Type,Firing Mode,"Damage 
+(Body)","Damage 
+(Head)",RPM,Magazine,"Damage Per Magazine
+(Body)","Damage Per Magazine
+(Head)",Tactical Reload Time ,Empty Reload Time,Shots Per Burst,Delay Until Next Burst (in seconds),TTK @ Body,STK @ Body,TTK @ Head,STK @ Head,TTK @ Body,STK @ Body,TTK @ Head,STK @ Head,TTK @ Body,STK @ Body,TTK @ Head,STK @ Head,Damage Dropoff Minimum Range,Damage Dropoff Maximum Range,Damage Dropoff Modifier @ Max Range,Notes
+,1,93R,Handgun,Burst,24,36,1000,24,576,864,1.45s,1.75s,3,0.275,0.91s,7,0.52s,5,1.43s,11,0.91s,7,1.94s,15,1.37s,10,30m,37.5m,~50%,
+,2,ARN-220,Assault Riffle,Automatic,17,25.5,725,60 (30),1020 (510),1530 (765),2.45s,2.80s (0.80s),-,-,0.66s,9,0.41s,6,1.16s,15,0.74s,10,1.66s,21,1.08s,14,37.5m,45m,~72%,"Quick reload is 0.80s long. It triggers when you have emptied a magazine, and when you have a ""quick magazine"" available (indicated by the bars near your ammo count). Otherwise, a normal reload will occur."
+,3,DAGGER,Melee,-,60,-,-,-,-,-,-,-,-,-,-,3,-,-,-,5,-,-,-,6,-,-,-,-,-,
+,3,DAGGER (ALT.),Melee,-,75,-,-,-,-,-,-,-,-,-,-,2,-,-,-,4,-,-,-,5,-,-,-,-,-,Cannot hit multiple targets in one stab.  Has an 800ms wind-up time.
+,3,DAGGER (ALT. W/ BACKSTAB),Melee,-,320,-,-,-,-,-,-,-,-,-,-,1,-,-,-,1,-,-,-,2,-,-,-,-,-,Cannot hit multiple targets in one stab.  Has an 800ms wind-up time. Backstab angle is 150 degrees.  
+,4,LH1,Marksman Riffle,Single,44,88,280,15,660,1320,1.95s,2.85s,-,-,0.64s,4,0.21s,2,1.07s,6,0.43s,3,1.5s,8,0.64s,4,50m,55m,~72%,
+,5,M11,SMG,Automatic,16,24,1000,40,640,960,1.55s,1.85s,-,-,0.54s,10,0.36s,7,0.9s,16,0.6s,11,1.26s,22,0.84s,15,10m,17.5m,~52%,
+,6,M26 MATTER,Shotgun,Single,121,-,85,8,968,-,2.05s,2.45s,-,-,0.71s,2,-,-,1.41s,3,-,-,1.41s,3,-,-,15m,25m,~64%,
+,7,RECURVE BOW (UNCHARGED),Marksman Riffle,Single,60,90,78,-,-,-,-,-,-,-,1.54s,3,0.77s,2,3.08s,5,1.54s,3,3.85s,6,2.31s,4,-,-,-,Takes ~160ms to fire the 1st shot. Various methods of optimizing TTK: https://i.imgur.com/DLfa7hv.jpeg (qm = quick melee). TTK does not account for projectile travel time. Rate of fire overall is 103 RPM. Minimum draw time is 0.08s.
+,7,RECURVE BOW (CHARGED),Marksman Riffle,Single,124,186,48,-,-,-,-,-,-,-,1.25s,2,0s,1,2.5s,3,1.25s,2,2.5s,3,1.25s,2,-,-,-,Takes ~640ms to charge a shot. Various methods of optimizing TTK: https://i.imgur.com/DLfa7hv.jpeg (qm = quick melee). TTK does not account for projectile travel time.  Damage increases from 60 to 124 (continuously) based on how long this weapon was charged.
+,8,SH1900,Shotgun,Single,180,-,80,2,360,-,2.20s,2.60s,-,-,0s,1,-,-,0.75s,2,-,-,0.75s,2,-,-,-,-,-,Damage per bullet is 12*15 = 180 damage.
+,9,SR-84,Marksman Riffle,Single,118,236,40,6,708,1416,1.95s,3.35s,-,-,1.5s,2,0s,1,3s,3,1.5s,2,3s,3,1.5s,2,80m,100m,~75%,"Bullets are hitscan up until 40m, and then converted into projectiles afterwards. Air drag on the projectile is 0.08. Initial projectile velocity is 240 m/s. Gravity multiplier on the projectile is 0.55."
+,10,SWORD,Melee,-,88,-,-,-,-,-,-,-,-,-,-,2,-,-,-,3,-,-,-,4,-,-,-,-,-,
+,10,SWORD (ALT.),Melee,-,120,-,-,-,-,-,-,-,-,-,-,2,-,-,-,3,-,-,-,3,-,-,-,-,-,Can hit multiple targets in a single lunge.
+,11,THROWING KNIVES,Miscellaneous,Automatic/Burst,60,90,545.45,-,-,-,-,-,2,0.59,0.81s,3,0.11s,2,1.62s,5,0.81s,3,1.73s,6,0.92s,4,-,-,-,"TTK does not account for projectile travel time, or the initial delay when throwing the knives.  It represents more of a ""time-to-death"" calculation, if anything."
+,11,THROWING KNIVES (ALT.),Miscellaneous,Single,140,210,27.7,-,-,-,-,-,-,-,2.17s,2,0s,1,2.17s,2,2.17s,2,4.33s,3,2.17s,2,-,-,-,"TTK does not account for projectile travel time, or the initial delay when throwing the knives.  It represents more of a ""time-to-death"" calculation, if anything."
+,12,V9S,Handgun,Single,38,57,360,20,760,1140,1.25s,1.50s,-,-,0.5s,4,0.33s,3,1s,7,0.67s,5,1.5s,10,1s,7,15m,20m,~65%,
+,13,XP-54,SMG,Automatic,16,24,880,34,544,816,2.25s,2.50s,-,-,0.61s,10,0.41s,7,1.02s,16,0.68s,11,1.43s,22,0.95s,15,22.5m,32.5m,~52%,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,vs. LIGHT,,,,vs. MEDIUM,,,,vs. HEAVY,,,,,,,
+MEDIUM,#,Name,Type,Firing Mode,"Damage 
+(Body)","Damage 
+(Head)",RPM,Magazine,"Damage Per Magazine
+(Body)","Damage Per Magazine
+(Head)",Tactical Reload Time ,Empty Reload Time,Shots Per Burst,Delay Until Next Burst (in seconds),TTK (Body),STK (Body),TTK (Head),STK (Head),TTK (Body),STK (Body),TTK (Head),STK (Head),TTK (Body),STK (Body),TTK (Head),STK (Head),Damage Dropoff Minimum Range,Damage Dropoff Maximum Range,Damage Dropoff Modifier @ Max Range,Notes
+,1,AKM,Assault Riffle,Automatic,20,30,600,34,680,1020,2.35s,2.35s,-,-,0.7s,8,0.4s,5,1.2s,13,0.8s,9,1.7s,18,1.1s,12,30m,37.5m,~55%,
+,2,CB-01 REPEATER,Marksman Riffle,Single,84,126,82,8,672,1008,(varies),5.05s,-,-,0.73s,2,0.73s,2,1.46s,3,0.73s,2,2.93s,5,1.46s,3,35m,40m,~64%,"Firing the weapon will cancel the reload animation. Aim down sights zoom time is 0.24s. Vs. Medium, Repeater is stronger than Pike for ranged duals."
+,3,CERBERUS 12GA,Shotgun,Single,104,-,100,3,312,-,(varies),2.95s,-,-,0.6s,2,-,-,1.2s,3,-,-,1.8s,4,-,-,10m,17.5m,~63%,"Deals 104 damage on hit (8 x 13 pellets), and then an extra ~31 damage from the fire DoT that last for ~2 seconds.  DoT does not stack, and it resets on every hit. "
+,4,CHIMERA-XB,Marksman Riffle,Sinle,45,67.5,260,15,675,1012.5,2.15s,2.15s,-,-,0.69s,4,0.46s,3,1.15s,6,0.69s,4,1.62s,8,1.15s,6,20m,30m,~60%,
+,5,CL-40 (DIRECT),Grenade Launcher,Single,105,-,75,5,525,-,(varies),3.95s,-,-,0.8s,2,-,-,1.6s,3,-,-,2.4s,4,-,-,-,-,-,Self damage multiplier is 1.4. Damage modifier at the edge of the inner blast radius is 75% and outer blast radius is 10%.
+,5,CL-40 (SPLASH),Grenade Launcher,Single,90,-,75,5,450,-,(varies),3.95s,-,-,0.8s,2,-,-,1.6s,3,-,-,2.4s,4,-,-,-,-,-,Inner blast radius for maximum damage is 0.6m.
+,6,DUAL BLADES,Melee,-,(notes),-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,"LMB combo = 2x50 damage, then 2x60 damage, then 100 damage.  Can swap-cancel the combo when started.  Swap-cancel will not optimize TTK, but quick melee will. Deflecting bullets deals 100% damage to the enemy, and 10% to you (30% if glancing).  Blocking melee hits will reduce their damage to 25%."
+,7,FAMAS,Assault Riffle,Burst,23,34.5,1080,27,621,931.5,2.15s,2.60s,3,0.27,0.87s,7,0.49s,5,1.37s,11,0.93s,8,2.18s,16,0.93s,11,35m,42.5m,~50%,"15 bullets deal 345 damage to the body, so a Heavy player may be killable within 5 bursts upon taking chip damage.  In that scenario, its TTK vs. Heavy @ Body = 1.64s, and its TTK vs. Heavy @ Head = 1.14s (with 10 headshots). Recoil recovery begins at 0.24s. Recoil recovery speed is 0.8."
+,8,FCAR,Assault Riffle,Automatic,23,34.5,540,25,575,862.5,2.10s,2.10s,-,-,0.67s,7,0.44s,5,1.11s,11,0.78s,8,1.67s,16,1.11s,11,35m,40m,~55%,
+,9,MODEL 1887,Shotgun,Single,108,-,69,7,756,-,(varies),4.30s,-,-,0.87s,2,-,-,1.74s,3,-,-,2.61s,4,-,-,20m,30m,~65%,Firing the weapon will cancel the reload animation. Tactical reload intro animation duration is 1.5s.
+,10,P90,SMG,Automatic,14,21,900,50,700,1050,2.45s,2.70s,-,-,0.67s,11,0.47s,8,1.13s,18,0.73s,12,1.6s,25,1.07s,17,18m,24m,~62%,
+,11,PIKE .556,Marksman Riffle,Single,49,73.5,200,12,588,882,2.10s,3.25s,-,-,0.9s,4,0.6s,3,1.5s,6,0.9s,4,2.1s,8,1.2s,5,40m,50m,~80%,"Vs. Heavy, Pike is stronger than Repeater for ranged duals."
+,12,R.357,Handgun,Single,74,148,140,6,444,888,2.20s,2.50s,-,-,0.86s,3,0.43s,2,1.29s,4,0.43s,2,1.71s,5,0.86s,3,27.5m,44m,~40%,
+,13,RIOT SHIELD,Melee,-,90,-,-,-,-,-,-,-,-,-,-,2,-,-,-,3,-,-,-,4,-,-,-,-,-,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,vs. LIGHT,,,,vs. MEDIUM,,,,vs. HEAVY,,,,,,,
+HEAVY,#,Name,Type,Firing Mode,"Damage 
+(Body)","Damage 
+(Head)",RPM,Magazine,"Damage Per Magazine
+(Body)","Damage Per Magazine
+(Head)",Tactical Reload Time ,Empty Reload Time,Shots Per Burst ,Delay Until Next Burst (in seconds),TTK (Body),STK (Body),TTK (Head),STK (Head),TTK (Body),STK (Body),TTK (Head),STK (Head),TTK (Body),STK (Body),TTK (Head),STK (Head),Damage Dropoff Minimum Range,Damage Dropoff Maximum Range,Damage Dropoff Modifier @ Max Range,Notes
+,1,.50 AKIMBO,Handgun,Single,44,88,230,14,616,1232,2.20s,3.00s,-,-,0.78s,4,0.26s,2,1.3s,6,0.52s,3,1.83s,8,0.78s,4,32m,39m,~50%,
+,2,BFR TITAN,Handgun,Single,88,132,80.5,5,440,660,(varies),5.00s,-,-,0.75s,2,0.75s,2,1.49s,3,0.75s,2,2.24s,4,1.49s,3,25m,40m,~65%,
+,3,FLAMETHROWER,Miscellaneous,Automatic,30,-,170,30,900,-,3.55s,3.55s,-,-,1.41s,5,-,-,2.82s,9,-,-,3.88s,12,-,-,-,-,-,(Need information about whether or not the fire DoT sticks to the player while dealing damage with Flamethrower ammo)
+,4,KS-23,Shotgun,Single,100,-,78,6,600,-,(varies),5.55s,-,-,0.77s,2,-,-,1.54s,3,-,-,2.31s,4,-,-,18m,23m,~70%,"Shots are hitscan within 25m, and then they become projectiles afterwards (with a projectile velocity of 280 m/s).  Firing the weapon will cancel the reload animation."
+,5,LEWIS GUN,LMG,Automatic,23,34.5,500,47,1081,1621.5,3.25s,3.55s,-,-,0.72s,7,0.48s,5,1.2s,11,0.84s,8,1.8s,16,1.2s,11,35m,40m,~67%,
+,6,M134 MINIGUN,HMG,Automatic,11,14.6,1500,300,3300,4380,5.00s,5.25s,-,-,0.52s,14,0.4s,11,0.88s,23,0.68s,18,1.24s,32,0.92s,24,30m,50m,~53%,TTK assumes a full ramp-up to maximum fire rate.  Major levels of spread make it 100% accurate only at extreme close range (within ~5m).  Spin-up time until minimum fire rate (500 RPM) is 0.90s.  Spin-up time until maximum fire rate is 1.60s.
+,7,M60,LMG,Automatic,20,30,580,70,1400,2100,3.55s,3.55s,-,-,0.72s,8,0.41s,5,1.24s,13,0.83s,9,1.76s,18,1.14s,12,25m,35m,~50%,
+,8,MGL-32,Grenade Launcher,Single,83,-,90,6,498,-,2.85s,3.10s,-,-,0.67s,2,-,-,2s,4,-,-,2.67s,5,-,-,-,-,-,Rounds detonate on impact after the 1st bounce. Maximum fuse time = 2.5s. Explosion inner radius = 2m. Damage modifier at the edge of the inner blast radius is 90% and outer blast radius is 12%.
+,9,SA1216,Shotgun,Automatic/Single,72,-,190,16 (4),1152 (288),-,2.35s,3.25s (0.80s),-,-,0.63s,3,-,-,0.95s,4,-,-,1.26s,5,-,-,12.5m,20m,~67%,"Quick reload is 0.80s long. It triggers when you have emptied a magazine, and when you have a ""quick magazine"" available (indicated by the bars near your ammo count). Otherwise, a normal reload will occur."
+,10,SHAK-50,Assault Riffle,Automatic,30,45,420,20,600,900,2.40s,3.20s,-,-,0.57s,5,0.43s,4,1.14s,9,0.71s,6,1.57s,12,1s,8,15m,25m,~67%,"Shoots 2 bullets per round, spread out horizontally, each dealing 15 damage."
+,11,SLEDGEHAMMER,Melee,-,100,-,-,-,-,-,-,-,-,-,-,2,-,-,-,3,-,-,-,4,-,-,-,-,-,
+,11,SLEDGEHAMMER (ALT.),Melee,-,175,-,-,-,-,-,-,-,-,-,-,1,-,-,-,2,-,-,-,2,-,-,-,-,-,Cannot hit multiple targets in one swing.
+,12,SPEAR,Melee,-,(notes),-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,"LMB combo = 65 damage, then 80 damage, then 90 damage.  Has a ~4.4m range on 1st attack then ~4.6m range on 2nd and 3rd attack (credit to u/beansoncrayons on reddit)."
+,12,SPEAR (ALT.),Melee,-,105,-,-,-,-,-,-,-,-,-,-,2,-,-,-,3,-,-,-,4,-,-,-,-,-,Damage is per hit in a 3-hit combo.  Has a 3m radius.
