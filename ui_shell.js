@@ -484,8 +484,11 @@
     return 0;
   }
 
+  // A version can be listed twice — 11.3.0 is both a measured sheet and a patch
+  // with stat changes. That is one moment in time with two kinds of evidence,
+  // not two moments, so it gets one slot on every axis and in every list.
   function orderedVersions() {
-    return (timeline?.versions || []).map(v => v.version).sort(compareVersions);
+    return [...new Set((timeline?.versions || []).map(v => v.version))].sort(compareVersions);
   }
 
   function newestVersion() {
@@ -530,6 +533,50 @@
     const fields = {};
     for (const key of RUNTIME_FIELDS) fields[key] = snap[key] ?? null;
     return { fields, inheritedFrom: earlier };
+  }
+
+  // ── The full timeline, version by version ────────────────────────
+  //
+  // A sheet measures every stat at once; a patch states only what it moved. To
+  // draw one continuous line across both, walk the versions in order carrying
+  // the last known state forward: a sheet replaces it wholesale, a patch
+  // overwrites only the fields it names, and a version that is neither inherits
+  // unchanged. This is the resolution rule from csv/patches/README.md, and it is
+  // what turns 22 sparse patch records into 22 plottable points.
+  //
+  // A sheet at the same version as a patch wins, because it measured the game
+  // after that patch shipped.
+  // Memoised: the ledger asks for this once per entry, and the walk is over
+  // every version on record each time.
+  const statsCache = new WeakMap();
+
+  function statsByVersion(weapon) {
+    const hit = statsCache.get(weapon);
+    if (hit) return hit;
+
+    const out = new Map();
+    let carried = null, source = null;
+
+    for (const version of orderedVersions()) {
+      const snap = weapon.snapshots[version];
+      const patch = weapon.patches?.[version];
+
+      if (hasAnyStat(snap)) {
+        carried = {};
+        for (const key of RUNTIME_FIELDS) carried[key] = snap[key] ?? null;
+        source = { version, kind: 'sheet' };
+      } else if (carried && patch && Object.keys(patch.fields || {}).length) {
+        carried = { ...carried };
+        for (const [key, value] of Object.entries(patch.fields)) {
+          if (RUNTIME_FIELDS.includes(key)) carried[key] = value;
+        }
+        source = { version, kind: 'patch' };
+      }
+
+      if (carried) out.set(version, { fields: carried, source, carried: source.version !== version });
+    }
+    statsCache.set(weapon, out);
+    return out;
   }
 
   // Builds a WEAPONS-shaped roster for a version, in the field names getStats()
@@ -658,8 +705,20 @@
     { key: 'tactical_reload', label: 'Tactical reload', unit: 's', digits: 2, get: (s) => s.tactical_reload },
     { key: 'dropoff_min', label: 'Dropoff starts at', unit: 'm', digits: 1, get: (s) => s.dropoff_min },
     { key: 'dropoff_max', label: 'Dropoff ends at', unit: 'm', digits: 1, get: (s) => s.dropoff_max },
-    { key: 'dropoff_reduction', label: 'Damage lost at max range', unit: '%', get: (s) => s.dropoff_reduction }
+    // Retained, not lost. The sheets print "~70%" for a weapon that still does
+    // 70% of its damage at max range, and the patch notes write the same figure
+    // as a 0.7 multiplier — so a bigger number is a better weapon.
+    { key: 'dropoff_reduction', label: 'Damage kept at max range', unit: '%', get: (s) => s.dropoff_reduction }
   ];
+
+  // Which direction is an improvement, per metric. Damage up is a buff; time to
+  // kill up is a nerf. Without this the chart would paint a slower reload green.
+  const METRIC_POLARITY = {
+    ttk_light: -1, ttk_medium: -1, ttk_heavy: -1,
+    stk_light: -1, stk_medium: -1, stk_heavy: -1,
+    empty_reload: -1, tactical_reload: -1
+  };
+  const metricPolarity = key => METRIC_POLARITY[key] ?? 1;
 
   let activeWeaponId = null;
   let activeVersion = null;
@@ -691,7 +750,7 @@
         document.getElementById('wp-lead').textContent =
           'csv/cleaned/weapon_timeline.json could not be loaded. Generate it with: node tools/ingest_weapon_history.mjs';
         chartEl.innerHTML = '';
-        document.getElementById('wp-snapshot').innerHTML = '';
+        document.getElementById('wp-chart-detail').innerHTML = '';
         document.getElementById('wp-changes').innerHTML = '';
         document.getElementById('wp-versions').innerHTML = '';
         return;
@@ -720,7 +779,7 @@
       nameEl.textContent = weapon.name;
       document.getElementById('wp-badges').innerHTML = `
         <span class="badge ${weapon.class}">${weapon.class} — ${HP[weapon.class]}HP</span>
-        <span class="badge">${availableVersions.length} of ${timeline.versions.length} versions</span>
+        <span class="badge">measured in ${availableVersions.length} of ${orderedVersions().length} versions</span>
         <span class="badge" title="The version the simulator is currently running on">sim: ${esc(activeDataVersion)}</span>
         <span class="badge">${(n => `${n} recorded change${n === 1 ? '' : 's'}`)(weapon.changes.filter(c => c.type === 'change').length)}</span>
       `;
@@ -728,9 +787,10 @@
         || `Tracked across the community data sheets from ${availableVersions[0]} to ${availableVersions[availableVersions.length - 1]}.`;
 
       document.getElementById('wp-metric').value = activeMetric;
+      expandedVersion = null;
       drawWeaponChart();
       renderVersionChips(weapon);
-      renderSnapshot(weapon);
+      renderLedgerFilters(weapon);
       renderChangeLog(weapon);
     });
   }
@@ -743,12 +803,43 @@
     if (!mount || !weapon) return;
 
     const metric = METRICS.find(m => m.key === activeMetric) || METRICS[0];
-    const versions = timeline.versions.map(v => v.version);
+    const versions = orderedVersions();
+    const resolved = statsByVersion(weapon);
+    const polarity = metricPolarity(metric.key);
+
+    // Every version gets a value, not just the ones a sheet measured — that is
+    // the whole point of folding the patch records in.
     const points = versions.map((v, i) => {
-      const snap = weapon.snapshots[v];
-      const value = snap ? metric.get(snap, weapon.class) : null;
-      return { version: v, i, value: Number.isFinite(value) ? value : null, disputed: !!snap?.rpm_disputed };
+      const state = resolved.get(v);
+      const value = state ? metric.get(state.fields, weapon.class) : null;
+      const landed = weapon.changes.filter(c => c.to_version === v && c.type !== 'coverage');
+      return {
+        version: v, i,
+        value: Number.isFinite(value) ? value : null,
+        carried: !!state?.carried,
+        // Stated HERE, not merely inherited from a patch further back — every
+        // version after a patch keeps pointing at it as the source.
+        stated: state?.source?.kind === 'patch' && !state.carried,
+        disputed: !!weapon.snapshots[v]?.rpm_disputed,
+        landed
+      };
     });
+
+    // What happened to THIS metric at each version, judged by the resolved line
+    // rather than by which fields the patch happened to name — a stated damage
+    // change moves DPS and TTK too, and the reader is looking at one of those.
+    let prevValue = null;
+    for (const p of points) {
+      if (p.value == null) continue;
+      if (prevValue != null && Math.abs(p.value - prevValue) > 1e-9) {
+        p.moved = true;
+        p.kind = Math.sign(p.value - prevValue) * polarity > 0 ? 'buff' : 'nerf';
+      } else if (p.landed.length) {
+        // Touched here, but nothing this metric can show.
+        p.kind = 'elsewhere';
+      }
+      prevValue = p.value;
+    }
 
     const present = points.filter(p => p.value != null);
     if (present.length === 0) {
@@ -759,7 +850,11 @@
       return;
     }
 
-    const W = 760, H = 300, pad = { l: 62, r: 24, t: 22, b: 44 };
+    // Deeper bottom padding than a plain chart needs: the version ticks sit on
+    // three alternating rows so adjacent updates do not collide, and the season
+    // band labels get a row of their own beneath them.
+    const W = 1100, H = 430, pad = { l: 64, r: 26, t: 28, b: 104 };
+    const TICK_ROWS = 3;
     const plotW = W - pad.l - pad.r, plotH = H - pad.t - pad.b;
 
     let min = Math.min(...present.map(p => p.value));
@@ -768,7 +863,29 @@
     else { const padding = (max - min) * 0.15; min -= padding; max += padding; }
     if (min > 0 && min < (max - min)) min = 0;   // keep bar-like metrics honest about zero
 
-    const x = i => pad.l + (versions.length === 1 ? plotW / 2 : (i / (versions.length - 1)) * plotW);
+    // ── Season bands ──
+    // Spacing versions by their position in a flat list makes the axis a
+    // popularity contest: season 9 shipped 15 patches and season 1 shipped 9,
+    // so a flat axis silently gives season 9 nearly twice the width and squeezes
+    // the early history into a corner. Each season instead gets an equal band
+    // with its versions spread evenly inside it. The axis is then ordinal, not a
+    // time scale — it reads as "when in the game's life", which is the question
+    // this chart is actually asked.
+    const seasonOf = v => parseInt(String(v).split('.')[0], 10) || 0;
+    const seasons = [...new Set(versions.map(seasonOf))].sort((a, b) => a - b);
+    const bandW = plotW / seasons.length;
+
+    const slotX = new Map();
+    const bandOf = new Map();
+    seasons.forEach((season, si) => {
+      const inSeason = versions.filter(v => seasonOf(v) === season);
+      bandOf.set(season, { start: pad.l + si * bandW, index: si });
+      inSeason.forEach((v, j) => {
+        slotX.set(v, pad.l + si * bandW + ((j + 0.5) / inSeason.length) * bandW);
+      });
+    });
+
+    const x = i => slotX.get(versions[i]) ?? pad.l + plotW / 2;
     const y = v => pad.t + plotH - ((v - min) / (max - min)) * plotH;
 
     const ticks = 4;
@@ -789,24 +906,86 @@
       lines += `<line class="chart-line${gap ? ' gap' : ''}" x1="${x(p1.i)}" y1="${y(p1.value)}" x2="${x(p2.i)}" y2="${y(p2.value)}" />`;
     }
 
-    const dots = present.map(p => `
-      <g class="chart-point${p.disputed ? ' disputed' : ''}">
-        <circle cx="${x(p.i)}" cy="${y(p.value)}" r="5">
-          <title>${esc(p.version)} — ${esc(fmtMetric(metric, p.value))}${p.disputed ? ' (disputed source value)' : ''}</title>
-        </circle>
-        <text class="chart-value" x="${x(p.i)}" y="${y(p.value) - 12}" text-anchor="middle">${esc(fmtMetric(metric, p.value))}</text>
+    const GLYPH = { buff: '↑', nerf: '↓', soft: '—', elsewhere: '·' };
+
+    // An update is a version where something happened to this weapon. Those get
+    // a full marker, a label and a click target; every other version stays a
+    // plain dot so the eye goes to the events rather than to the grid.
+    const dots = present.map(p => {
+      const isUpdate = p.landed.length > 0;
+      const tone = p.kind || 'soft';
+      const summary = p.landed.length
+        ? `${p.landed.length} change${p.landed.length === 1 ? '' : 's'}`
+        : 'no recorded change';
+
+      if (!isUpdate) {
+        return `<circle class="chart-dot${p.carried ? ' carried' : ''}" cx="${x(p.i)}" cy="${y(p.value)}" r="2.5">
+          <title>${esc(p.version)} — ${esc(fmtMetric(metric, p.value))} (carried forward, ${esc(summary)})</title></circle>`;
+      }
+
+      return `<g class="chart-mark ${tone}${p.version === activeVersion ? ' selected' : ''}"
+          role="button" tabindex="0" data-version="${esc(p.version)}"
+          aria-label="${esc(p.version)}: ${esc(fmtMetric(metric, p.value))}, ${esc(summary)}">
+        <circle class="hit" cx="${x(p.i)}" cy="${y(p.value)}" r="14" />
+        <circle class="ring" cx="${x(p.i)}" cy="${y(p.value)}" r="6.5" />
+        <circle class="core" cx="${x(p.i)}" cy="${y(p.value)}" r="4.5" />
+        <title>${esc(p.version)} — ${esc(fmtMetric(metric, p.value))}${p.moved ? '' : ' (unchanged on this metric)'}, ${esc(summary)}${p.disputed ? ' · disputed source value' : ''}</title>
+      </g>`;
+    }).join('');
+
+    // Direct-label only the updates that actually moved this metric, plus the
+    // endpoints. A number over all 29 versions is unreadable.
+    const labelled = new Set([present[0], present[present.length - 1], ...present.filter(p => p.moved)]);
+    const valueLabels = [...labelled].map(p => `
+      <text class="chart-value ${p.kind || ''}" x="${x(p.i)}" y="${y(p.value) - 13}"
+        text-anchor="middle">${esc(fmtMetric(metric, p.value))}</text>`).join('');
+
+    // Version ticks, only where something landed — a label per version would be
+    // mush. The trailing ".0" is dropped because it is the same on almost every
+    // version and buys nothing but width; the full number stays in the tooltip.
+    const updates = points.filter(p => p.landed.length && p.value != null);
+    const shortVersion = v => v.replace(/\.0$/, '');
+    const xLabels = updates.map((p, n) => `
+      <g class="chart-xlabel ${p.kind || 'soft'}${p.version === activeVersion ? ' selected' : ''}"
+         role="button" tabindex="0" data-version="${esc(p.version)}">
+        <text x="${x(p.i)}" y="${H - 6 - (TICK_ROWS - 1 - (n % TICK_ROWS)) * 14}" text-anchor="middle">
+          <tspan class="glyph">${GLYPH[p.kind] || GLYPH.soft}</tspan> ${esc(shortVersion(p.version))}
+          <title>${esc(p.version)}</title></text>
       </g>`).join('');
 
-    const xLabels = points.map(p => `
-      <text class="chart-axis${p.value == null ? ' muted' : ''}" x="${x(p.i)}" y="${H - 16}" text-anchor="middle">${esc(p.version)}</text>`).join('');
+    // Alternating fills rather than divider rules: a band you can see the width
+    // of tells you which season a point sits in without tracing a line down to
+    // the axis, and it stays readable behind the plot.
+    const seasonBands = seasons.map(season => {
+      const { start, index } = bandOf.get(season);
+      const hasUpdate = updates.some(p => seasonOf(p.version) === season);
+      return `
+        <g class="season-band${index % 2 ? ' alt' : ''}${hasUpdate ? ' live' : ''}">
+          <rect x="${start}" y="${pad.t}" width="${bandW}" height="${plotH}" />
+          <text x="${start + bandW / 2}" y="${H - 6}" text-anchor="middle">S${season}</text>
+        </g>`;
+    }).join('');
 
     mount.innerHTML = `
-      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(metric.label)} across versions">
+      <svg viewBox="0 0 ${W} ${H}" role="img"
+        aria-label="${esc(metric.label)} for ${esc(weapon.name)} across ${versions.length} versions in ${seasons.length} seasons, ${updates.length} of them updates">
+        ${seasonBands}
         ${grid}
         <line class="chart-axis-line" x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${pad.t + plotH}" />
         <line class="chart-axis-line" x1="${pad.l}" y1="${pad.t + plotH}" x2="${W - pad.r}" y2="${pad.t + plotH}" />
-        ${lines}${dots}${xLabels}
+        ${lines}${dots}${valueLabels}${xLabels}
       </svg>`;
+
+    // Marker and axis tick are two handles on the same thing, so both open it.
+    mount.querySelectorAll('[data-version]').forEach(el => {
+      const open = () => selectChartVersion(el.dataset.version);
+      el.addEventListener('click', open);
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+      });
+    });
+
+    renderChartDetail(weapon);
 
     const missing = points.filter(p => p.value == null).map(p => p.version);
     const first = present[0], last = present[present.length - 1];
@@ -832,26 +1011,126 @@
       ? ` Peaked at ${fmtMetric(metric, peak.value)} in ${peak.version}, lowest ${fmtMetric(metric, low.value)} in ${low.version}.`
       : '';
 
+    // The line is two kinds of evidence spliced together, and saying which is
+    // which matters more than the shape does: a measured point is somebody
+    // capturing the game, a stated one is the developers describing it.
+    const measured = present.filter(p => !p.carried && !p.stated).length;
+    const stated = present.filter(p => p.stated).length;
+
     noteEl.innerHTML = [
       headline + excursionNote,
-      missing.length ? `No data in ${missing.join(', ')} — dashed segments span a gap in sheet coverage, not a straight-line change.` : ''
+      `Plotted across ${present.length} versions — ${measured} measured from a data sheet, ${stated} stated in a patch note, the rest carried forward unchanged.`,
+      updates.length ? `${updates.length} update${updates.length === 1 ? '' : 's'} touched this weapon; click one to read what landed.` : '',
+      missing.length ? `Nothing recorded before ${first.version} (${missing.length} earlier version${missing.length === 1 ? '' : 's'}); dashed segments span a coverage gap, not a straight-line change.` : ''
     ].filter(Boolean).join(' ');
   }
 
+  // ── Update detail, expanded from the chart ───────────────────────
+  let expandedVersion = null;
+
+  function selectChartVersion(version, opts = {}) {
+    // Clicking the open one closes it, so the chart can be read unobstructed.
+    // Clicking the open one closes it — except when the click came from a
+    // version chip, where "snap to this" should never mean "close it".
+    expandedVersion = (expandedVersion === version && opts.scrollTo !== 'chart') ? null : version;
+    const weapon = timeline?.weapons[activeWeaponId];
+    if (!weapon) return;
+    drawWeaponChart();
+    // The chart, the chips and the ledger are three views of one selection, so
+    // opening an update in any of them opens it in all.
+    renderVersionChips(weapon);
+    renderChangeLog(weapon);
+    if (!expandedVersion) return;
+
+    const target = opts.scrollTo === 'chart'
+      ? document.getElementById('wp-chart')
+      : document.getElementById('wp-chart-detail');
+    target?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  // Where a version is both, the two entries carry different halves of the
+  // story — the sheet knows who measured it, the patch entry knows the date and
+  // the link — so they are merged rather than picked between.
+  function versionMeta(version) {
+    const entries = (timeline?.versions || []).filter(v => v.version === version);
+    if (!entries.length) return null;
+    const merged = Object.assign({}, ...entries);
+    merged.kind = entries.some(e => e.kind === 'sheet') ? 'sheet' : 'patch';
+    merged.alsoPatched = entries.length > 1;
+    return merged;
+  }
+
+  function renderChartDetail(weapon) {
+    const mount = document.getElementById('wp-chart-detail');
+    if (!mount) return;
+    if (!expandedVersion) { mount.innerHTML = ''; return; }
+
+    const meta = versionMeta(expandedVersion);
+    const landed = weapon.changes.filter(c => c.to_version === expandedVersion && c.type !== 'coverage');
+
+    mount.innerHTML = `
+      <div class="update-card">
+        <div class="update-head">
+          <div>
+            <span class="update-version">${esc(expandedVersion)}</span>
+            ${meta?.title ? `<span class="update-title">${esc(meta.title)}</span>` : ''}
+          </div>
+          <div class="update-meta">
+            ${meta?.date ? `<span>${esc(meta.date)}</span>` : ''}
+            ${meta?.kind === 'sheet' ? `<span>measured by ${esc(meta.author)}${meta.alsoPatched ? ', and stated in the patch notes' : ''}</span>` : ''}
+            ${meta?.url ? `<a href="${esc(meta.url)}" target="_blank" rel="noopener">patch notes ↗</a>` : ''}
+            <button class="update-close" type="button" aria-label="Close">✕</button>
+          </div>
+        </div>
+        ${tallyRow(landed)}
+        <div class="update-body">
+          ${landed.length
+            ? landed.map(changeLine).join('')
+            : `<div class="change-line coverage">Nothing recorded for ${esc(weapon.name)} in this version.</div>`}
+        </div>
+      </div>`;
+
+    mount.querySelector('.update-close')?.addEventListener('click', () => selectChartVersion(expandedVersion));
+  }
+
+  // Counts by kind. Dev notes are excluded — they explain changes, they are not
+  // changes, so counting them would inflate every tally.
+  function tallyRow(list) {
+    const counts = { buff: 0, nerf: 0, soft: 0 };
+    for (const c of list) if (c.type !== 'dev_note' && counts[c.kind] != null) counts[c.kind]++;
+    const chips = ['buff', 'nerf', 'soft']
+      .filter(k => counts[k])
+      .map(k => `<span class="tally ${k}"><span class="glyph">${KIND_MARK[k].glyph}</span>${counts[k]} ${
+        k === 'soft' ? 'soft' : k}${counts[k] === 1 || k === 'soft' ? '' : 's'}</span>`);
+    const devs = list.filter(c => c.type === 'dev_note').length;
+    if (devs) chips.push(`<span class="tally dev">${devs} dev note${devs === 1 ? '' : 's'}</span>`);
+    return chips.length ? `<div class="tally-row">${chips.join('')}</div>` : '';
+  }
+
   // ── Version chips + snapshot ─────────────────────────────────────
+  // Only the versions where something happened to THIS weapon get a chip. With
+  // 137 versions on record a full list is a wall, and a chip for a version that
+  // changed nothing snaps the chart to a point with nothing to read.
   function renderVersionChips(weapon) {
     const mount = document.getElementById('wp-versions');
-    mount.innerHTML = timeline.versions.map(v => {
-      const has = !!weapon.snapshots[v.version];
-      return `<button class="vchip${v.version === activeVersion ? ' active' : ''}${has ? '' : ' empty'}"
-        type="button" data-version="${esc(v.version)}" ${has ? '' : 'disabled'}
-        title="${has ? esc(v.author) : 'Not in this sheet'}">${esc(v.version)}</button>`;
+    const touched = orderedVersions().filter(v =>
+      weapon.snapshots[v] || weapon.changes.some(c => c.to_version === v && c.type !== 'coverage')
+    );
+
+    mount.innerHTML = touched.map(version => {
+      const measured = !!weapon.snapshots[version];
+      return `<button class="vchip${version === expandedVersion ? ' active' : ''}${measured ? ' measured' : ''}"
+        type="button" data-version="${esc(version)}"
+        title="${measured ? 'Measured by a data sheet' : 'Stated in the patch notes'}">${esc(version)}</button>`;
     }).join('');
 
+    // Snapping to a version is the same act as clicking its marker, so it runs
+    // through the same path — the chart, the detail card and the ledger all
+    // follow one selection rather than three.
     mount.querySelectorAll('.vchip').forEach(chip => {
       chip.addEventListener('click', () => {
         activeVersion = chip.dataset.version;
-        navigate('weapon', { params: [activeWeaponId, activeVersion] });
+        selectChartVersion(chip.dataset.version, { scrollTo: 'chart' });
       });
     });
   }
@@ -861,12 +1140,19 @@
       extra ? `<span class="snote">${esc(extra)}</span>` : ''}</div>`;
   }
 
-  function renderSnapshot(weapon) {
-    const mount = document.getElementById('wp-snapshot');
-    const snap = weapon.snapshots[activeVersion];
-    const meta = timeline.versions.find(v => v.version === activeVersion);
-    if (!snap) { mount.innerHTML = ''; return; }
+  /**
+   * The weapon's full stat block as of a version, for embedding in a ledger
+   * entry. It reads the RESOLVED state rather than the raw sheet row, so a
+   * patch-note version — which no sheet measured — still shows where the
+   * weapon actually stood once that patch landed.
+   */
+  function statBlock(weapon, version) {
+    const state = statsByVersion(weapon).get(version);
+    if (!state) return '';
 
+    const snap = state.fields;
+    const meta = versionMeta(version);
+    const raw = weapon.snapshots[version] || {};
     const w = toWeaponShape(snap, weapon.class);
     const dpm = snap.body_dmg != null && snap.magazine_size ? snap.body_dmg * snap.magazine_size : null;
     const dps = snap.rpm != null && snap.body_dmg != null ? sustainedDPS(w) : null;
@@ -881,75 +1167,133 @@
       </div>`;
     }).join('');
 
-    const landed = weapon.changes.filter(c => c.to_version === activeVersion && c.type === 'change');
-    const qualifiers = weapon.changes.filter(c => c.to_version === activeVersion && c.type === 'definition');
-    const blank = snap.body_dmg == null && snap.rpm == null;
-    const caveats = [...(snap.notes || []), ...(meta?.caveats || [])];
+    const qualifiers = weapon.changes.filter(c => c.to_version === version && c.type === 'definition');
+    const caveats = [...(raw.notes || []), ...(meta?.caveats || [])];
 
-    mount.innerHTML = `
-      <div class="snapshot-head">
-        <div class="snapshot-title">${esc(weapon.name)} <span class="at">at</span> ${esc(activeVersion)}</div>
-        <div class="snapshot-source">${esc(meta?.author || '')} · ${esc(meta?.method || '')}${
-          activeVersion === activeDataVersion ? ' · the version the simulator runs on' : ''}</div>
-      </div>
+    // Say where the numbers came from. Carried-forward values are the common
+    // case once patch records are in, and reading them as a fresh measurement
+    // would badly overstate how much anyone actually checked.
+    const provenance = state.carried
+      ? `Carried forward from ${esc(state.source.version)} — nothing changed these since.`
+      : state.source.kind === 'sheet'
+        ? `Measured in the ${esc(version)} sheet${meta?.author ? ` by ${esc(meta.author)}` : ''}.`
+        : `Stated in the ${esc(version)} patch notes; no sheet measured this version.`;
 
-      ${blank ? `<p class="doc-note">The ${esc(activeVersion)} sheet lists this weapon but records no damage or rate of fire for it — only shots to kill. Pick another version for a full stat block.</p>` : ''}
+    return `
+      <div class="stat-block">
+        <div class="stat-block-head">
+          <span class="section-label">Stats at ${esc(version)}</span>
+          <span class="stat-block-src">${provenance}${
+            version === activeDataVersion ? ' · the version the simulator runs on' : ''}</span>
+        </div>
 
-      <div class="ttk-grid">${ttkRows}</div>
+        <div class="ttk-grid">${ttkRows}</div>
 
-      <div class="stat-rows">
-        ${statRow('Body damage', snap.body_dmg ?? '—')}
-        ${statRow('Head damage', snap.head_dmg ?? '—')}
-        ${statRow('Rate of fire', snap.rpm != null ? snap.rpm + ' RPM'
-          : snap.rpm_source_value != null ? `<span class="withheld">${snap.rpm_source_value} RPM — withheld</span>` : '—')}
-        ${statRow('Magazine', snap.magazine_size ?? '—')}
-        ${statRow('Damage per magazine', dpm ?? '—')}
-        ${statRow('Sustained DPS', dps == null ? '—' : dps.toFixed(0))}
-        ${statRow('Empty reload', snap.empty_reload != null ? snap.empty_reload.toFixed(2) + 's' : '—',
-          snap.empty_reload != null && !snap.reload_kind_known ? 'kind unknown' : '')}
-        ${statRow('Tactical reload', snap.tactical_reload != null ? snap.tactical_reload.toFixed(2) + 's' : '—')}
-        ${snap.shots_per_burst ? statRow('Burst', `${snap.shots_per_burst} shots, ${snap.burst_delay ?? '—'}s between bursts`) : ''}
-        ${statRow('Dropoff', snap.dropoff_min != null
-          ? `${snap.dropoff_min}m → ${snap.dropoff_max ?? '?'}m${snap.dropoff_reduction != null ? ` (−${snap.dropoff_reduction}%)` : ''}`
-          : '—')}
-      </div>
+        <div class="stat-rows">
+          ${statRow('Body damage', snap.body_dmg ?? '—')}
+          ${statRow('Head damage', snap.head_dmg ?? '—')}
+          ${statRow('Rate of fire', snap.rpm != null ? snap.rpm + ' RPM'
+            : raw.rpm_source_value != null ? `<span class="withheld">${raw.rpm_source_value} RPM — withheld</span>` : '—')}
+          ${statRow('Magazine', snap.magazine_size ?? '—')}
+          ${statRow('Damage per magazine', dpm ?? '—')}
+          ${statRow('Sustained DPS', dps == null ? '—' : dps.toFixed(0))}
+          ${statRow('Empty reload', snap.empty_reload != null ? snap.empty_reload.toFixed(2) + 's' : '—',
+            snap.empty_reload != null && !raw.reload_kind_known ? 'kind unknown' : '')}
+          ${statRow('Tactical reload', snap.tactical_reload != null ? snap.tactical_reload.toFixed(2) + 's' : '—')}
+          ${snap.shots_per_burst ? statRow('Burst', `${snap.shots_per_burst} shots, ${snap.burst_delay ?? '—'}s between bursts`) : ''}
+          ${statRow('Dropoff', snap.dropoff_min != null
+            ? `${snap.dropoff_min}m → ${snap.dropoff_max ?? '?'}m${snap.dropoff_reduction != null ? ` (keeps ${snap.dropoff_reduction}% past that)` : ''}`
+            : '—')}
+        </div>
 
-      ${landed.length ? `
-        <div class="snapshot-section">
-          <div class="section-label">Changed in this version</div>
-          ${landed.map(c => `<div class="change-line">${changeText(c)}</div>`).join('')}
-        </div>` : ''}
+        ${qualifiers.length ? `
+          <div class="snapshot-section">
+            <div class="section-label">Read this before trusting the change</div>
+            ${qualifiers.map(q => `<div class="change-line coverage">${esc(q.note)}</div>`).join('')}
+          </div>` : ''}
 
-      ${qualifiers.length ? `
-        <div class="snapshot-section">
-          <div class="section-label">Read this before trusting the change</div>
-          ${qualifiers.map(q => `<div class="change-line coverage">${esc(q.note)}</div>`).join('')}
-        </div>` : ''}
-
-      ${caveats.length ? `
-        <div class="snapshot-section">
-          <div class="section-label">Source caveats</div>
-          <ul class="doc-ul">${caveats.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
-        </div>` : ''}
-    `;
+        ${caveats.length ? `
+          <div class="snapshot-section">
+            <div class="section-label">Source caveats</div>
+            <ul class="doc-ul">${caveats.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
+          </div>` : ''}
+      </div>`;
   }
 
-  // Fields where a bigger number is worse for the wielder. Colouring purely by
-  // numeric direction would paint a longer reload or a harsher dropoff green.
-  const LOWER_IS_BETTER = new Set(['empty_reload', 'tactical_reload', 'burst_delay', 'dropoff_reduction']);
+  // Buff, nerf or soft change. The ingest decides this — it knows each field's
+  // polarity and it has the numbers — so the UI only picks a glyph. Working it
+  // out again here is how the two drift apart: this used to hold its own
+  // polarity list, and that list had dropoff_reduction backwards, painting
+  // every falloff buff red.
+  const KIND_MARK = {
+    buff: { glyph: '↑', title: 'Buff — better for the wielder' },
+    nerf: { glyph: '↓', title: 'Nerf — worse for the wielder' },
+    soft: { glyph: '—', title: 'Soft change — an interaction or an untracked stat' }
+  };
+
+  function kindMark(kind) {
+    return KIND_MARK[kind] || KIND_MARK.soft;
+  }
 
   function changeText(c) {
-    const rose = c.to > c.from;
-    const buff = LOWER_IS_BETTER.has(c.field) ? !rose : rose;
-    const tone = buff ? 'buff' : 'nerf';
-    const title = buff ? 'Better for the wielder' : 'Worse for the wielder';
+    const { glyph, title } = kindMark(c.kind);
+    const flag = c.shadow_change_candidate
+      ? `<span class="conf shadow" title="${esc(c.note || '')}">unannounced</span>` : '';
+
+    // A stat recorded for the first time has a value but no direction, so it
+    // gets the arrow-free treatment rather than a made-up baseline.
+    const values = c.from == null
+      ? `<span class="chg-values ${c.kind}" title="${title}">set to ${c.to}</span>`
+      : `<span class="chg-values ${c.kind}" title="${title}">${c.from} ${glyph} ${c.to}</span>
+         <span class="chg-delta ${c.kind}">${c.delta > 0 ? '+' : ''}${c.delta}${c.delta_pct != null ? ` (${c.delta_pct > 0 ? '+' : ''}${c.delta_pct}%)` : ''}</span>`;
+
     return `<span class="chg-field">${esc(c.label)}</span>
-      <span class="chg-values ${tone}" title="${title}">${c.from} ${rose ? '↑' : '↓'} ${c.to}</span>
-      <span class="chg-delta ${tone}">${c.delta > 0 ? '+' : ''}${c.delta}${c.delta_pct != null ? ` (${c.delta_pct > 0 ? '+' : ''}${c.delta_pct}%)` : ''}</span>
-      <span class="conf ${c.confidence}">${c.confidence}</span>`;
+      ${values}
+      <span class="conf ${c.confidence}">${c.confidence}</span>${flag}`;
   }
 
-  // ── Change log ───────────────────────────────────────────────────
+  // ── Change ledger ────────────────────────────────────────────────
+  //
+  // Every recorded change for this weapon as one running list, newest first,
+  // grouped by the version it landed in. Grouping by version rather than by the
+  // old "8.3.0 → 10.0.0" transition is what lets a patch record and a sheet diff
+  // sit in the same entry: they describe the same moment, they just came from
+  // different evidence.
+  const LEDGER_FILTERS = [
+    { key: 'all', label: 'Everything' },
+    { key: 'buff', label: 'Buffs' },
+    { key: 'nerf', label: 'Nerfs' },
+    { key: 'soft', label: 'Soft' }
+  ];
+  let activeLedgerFilter = 'all';
+
+  function renderLedgerFilters(weapon) {
+    const mount = document.getElementById('wp-ledger-filters');
+    if (!mount) return;
+
+    const counts = { all: 0, buff: 0, nerf: 0, soft: 0 };
+    for (const c of weapon.changes) {
+      if (c.type === 'dev_note' || c.type === 'coverage') continue;
+      counts.all++;
+      if (counts[c.kind] != null) counts[c.kind]++;
+    }
+
+    mount.innerHTML = LEDGER_FILTERS.map(f => `
+      <button class="lfilter ${f.key}${activeLedgerFilter === f.key ? ' active' : ''}"
+        type="button" data-filter="${f.key}" ${counts[f.key] ? '' : 'disabled'}>
+        ${f.key === 'all' ? '' : `<span class="glyph">${KIND_MARK[f.key].glyph}</span>`}${esc(f.label)}
+        <span class="lcount">${counts[f.key]}</span>
+      </button>`).join('');
+
+    mount.querySelectorAll('.lfilter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeLedgerFilter = btn.dataset.filter;
+        renderLedgerFilters(weapon);
+        renderChangeLog(weapon);
+      });
+    });
+  }
+
   function renderChangeLog(weapon) {
     const mount = document.getElementById('wp-changes');
     if (!weapon.changes.length) {
@@ -961,18 +1305,69 @@
 
     const groups = new Map();
     for (const c of weapon.changes) {
-      const key = `${c.from_version} → ${c.to_version}`;
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(c);
+      if (!groups.has(c.to_version)) groups.set(c.to_version, []);
+      groups.get(c.to_version).push(c);
     }
 
-    mount.innerHTML = [...groups.entries()].reverse().map(([key, list]) => `
-      <div class="chg-group">
-        <div class="chg-head">${esc(key)}</div>
-        ${list.map(c => c.type !== 'change'
-          ? `<div class="change-line coverage">${esc(c.note)}</div>`
-          : `<div class="change-line">${changeText(c)}</div>`).join('')}
-      </div>`).join('');
+    const ordered = [...groups.keys()].sort(compareVersions).reverse();
+
+    // A dev note explains the changes beside it, so it rides along with them
+    // rather than being filtered out on its own.
+    const keep = list => activeLedgerFilter === 'all'
+      ? list
+      : list.filter(c => c.kind === activeLedgerFilter || c.type === 'dev_note');
+
+    const rows = ordered.map(version => {
+      const list = keep(groups.get(version));
+      if (!list.length || list.every(c => c.type === 'dev_note')) return '';
+
+      const meta = versionMeta(version);
+      const isSheet = meta?.kind === 'sheet';
+      // 11.3.0 is both measured and patched. Saying only "measured" would hide
+      // that its numbers were also stated outright.
+      const sourceLabel = meta?.alsoPatched ? 'measured + patch note' : isSheet ? 'measured' : 'patch note';
+
+      return `
+        <details class="ledger-entry${version === expandedVersion ? ' lit' : ''}" ${version === expandedVersion ? 'open' : ''}>
+          <summary>
+            <span class="ledger-version">${esc(version)}</span>
+            <span class="ledger-source ${isSheet ? 'sheet' : 'patch'}">${sourceLabel}</span>
+            ${meta?.date ? `<span class="ledger-date">${esc(meta.date)}</span>` : ''}
+            ${tallyRow(list)}
+          </summary>
+          <div class="ledger-body">
+            ${meta?.url ? `<a class="ledger-link" href="${esc(meta.url)}" target="_blank" rel="noopener">${esc(meta.title || 'Patch notes')} ↗</a>` : ''}
+            ${list.map(changeLine).join('')}
+            ${statBlock(weapon, version)}
+          </div>
+        </details>`;
+    }).filter(Boolean).join('');
+
+    mount.innerHTML = rows || `<div class="empty-state"><div class="empty-icon">◌</div>
+      <div class="empty-title">Nothing matches that filter</div>
+      <div class="empty-sub">No ${esc(activeLedgerFilter)} changes are recorded for ${esc(weapon.name)}.</div></div>`;
+  }
+
+  function changeLine(c) {
+    if (c.type === 'change') return `<div class="change-line">${changeText(c)}</div>`;
+
+    // Developer commentary explaining a patch. It is the "why" beside the
+    // "what", so it is never given an arrow — nothing about it is a change.
+    if (c.type === 'dev_note') {
+      return `<div class="change-line dev-note">
+        <span class="dev-label">Dev note</span><span>${esc(c.note)}</span></div>`;
+    }
+
+    // A stated change with no tracked stat behind it: the patch note's own
+    // wording is all there is, so it carries the whole line.
+    if (c.type === 'note') {
+      const { glyph, title } = kindMark(c.kind);
+      return `<div class="change-line">
+        <span class="chg-mark ${c.kind}" title="${title}">${glyph}</span>
+        <span class="chg-prose">${esc(c.note)}</span></div>`;
+    }
+
+    return `<div class="change-line coverage">${esc(c.note)}</div>`;
   }
 
   // ═════════════════════════════════════════════════════════════════

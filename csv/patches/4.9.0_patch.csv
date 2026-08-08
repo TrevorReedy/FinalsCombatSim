@@ -1,0 +1,3 @@
+weapon,field,value,note,kind
+Model 1887,body_dmg,117,"Increased pellet count from 8 to 9 by adding a center pellet, and decreased damage from 16 to 13 per pellet. Converted to the sheets' unit: 13 x 9 = 117, down from 16 x 8 = 128.",
+Model 1887,,,"Updated pellet dispersion pattern, reducing the outer radius slightly",soft

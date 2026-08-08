@@ -1,0 +1,14 @@
+weapon,field,value,note,kind
+CB-01 Repeater,,,"Increased aim down sights zoom time from 0.2s to 0.24s, making it slightly slower to aim down sights",nerf
+CB-01 Repeater,,,"Increased bullet dispersion when crouched, moving while crouched, and when standing still, making the weapon slightly less accurate",nerf
+CB-01 Repeater,,,"The CB-01 has been overperforming for a while now, compared to all other Medium weapons, and it sits as the one of the bigger outlier weapons in the game at present. Much of its power comes from it remaining effective at closer ranges when the weapon is intended to specialize at longer ranges. These changes should reduce its close range effectiveness without damaging its performance at range, but this is a weapon we'll continue to monitor closely.",dev
+FAMAS,,,"Adjusted the recoil pattern, making the weapon jump more during the initial burst and adding slightly more recoil overall",nerf
+FAMAS,,,"Increased bullet dispersion slightly, across all stances",nerf
+FAMAS,,,"Decreased the delay before recoil recovery begins from 0.7s to 0.24s, making the weapon much easier to control if the player fires in bursts",buff
+FAMAS,,,"Decreased recoil recovery speed from 0.9 to 0.8",nerf
+FAMAS,,,"We feel the FAMAS has become a little too effective at both long and close range, meaning it has very few drawbacks compared to some other Medium weapons and often fills the role that we intended for the AKM and FCAR. These changes nudge it towards being a medium-to-long ranged weapon, and make it slightly less effective up close.",dev
+Recurve Bow (uncharged),,,"Increased rate of fire from 98 RPM to 103 RPM. Held as text rather than recorded as RPM: the sheets measure the bow at 78 RPM uncharged and 48 charged, so the note's figure is a different quantity and writing it into the rate column would corrupt the series.",buff
+Recurve Bow (uncharged),,,"Decreased minimum draw time from 0.15s to 0.08s, making it faster to perform quick shots",buff
+Recurve Bow (uncharged),,,"The Bow has dropped off in usage and various other metrics over time making it one of the weaker and least popular Light weapons. These changers are aimed at bumping up its power to give it greater viability.",dev
+V9S,dropoff_max,20,"Decreased the damage fall-off end range from 25m to 20m",
+V9S,,,"We mentioned in Update 9.1 that our 9.0 buffs to the V9S had pushed it into a dominant position, especially when it came to damage output per round. Despite some adjustments in 9.1 to try and address that, the V9S still remains a significant outlier in terms of performance, largely due to its increased value in medium ranged fights since S9 launched. This change should firmly push it back towards being a more closed ranged weapon, rather than having it cannibalize the role of other Light weapons.",dev

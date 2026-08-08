@@ -1,0 +1,5 @@
+weapon,field,value,note,kind
+FCAR,body_dmg,22,"Decreased damage from 25 to 22",
+FCAR,magazine_size,25,"Increased magazine size from 20 to 25",
+FCAR,dropoff_reduction,55,"Increased the fall-off damage multiplier at max range from 50% to 55%, meaning the weapon does slightly more damage at range. The note gives the prior value as 50% where 2.0.0 had set it to 55%.",
+FCAR,,,"Our data shows us that the FCAR is very strong in the hands of good players but harder to use for newer players. These changes hopefully rein in the weapon's power at higher skill levels, while making it slightly more forgiving to use for newer players",dev

@@ -1,0 +1,34 @@
+weapon,field,value,note,kind
+93R,,,"Increased fire rate from 210 RPM to 220 RPM. Held as text rather than recorded as RPM: the 93R is a burst weapon and the sheets measure it at ~1000 RPM of bullets, so the note's figure counts burst cycles.",buff
+93R,,,"Smoothed the vertical recoil to avoid having sharp jumps in intensity, which could previously cause an inconsistent feel",buff
+93R,,,"Updated firing animation when aiming down sights to give greater visibility",buff
+93R,,,"Decreased bullet dispersion when firing 'from the hip' when crouching, crouch moving, standing still, running, and in 'uncontrolled' states such as falling or sliding",buff
+93R,,,"Decreased the rate at which bullet dispersion builds up over time when firing for a sustained period",buff
+93R,,,"Increased the bullet dispersion recovery speed from 0.45 to 0.65",buff
+93R,,,"The 93R has been a difficult weapon for us to balance due to it being a burst fire weapon. These changes focus on making it more effective when fired 'from the hip' rather than aiming down sights.",dev
+AKM,magazine_size,32,"Decreased magazine size from 36 to 32",
+CL 40,body_dmg,117,"Increased max damage from 93 to 117",
+CL 40,rpm,210,"Decreased fire rate from 275 RPM to 210 RPM",
+CL 40,,,"Increased the max damage radius from 9cm to 30cm",buff
+CL 40,,,"This change keeps it at two shots for Light, three for Medium and four for Heavy, instead of five.",dev
+Dagger (Alt. w/ Backstab),,,"The Dagger's backstab secondary attack can now be held, only triggering when button release occurs, rather than automatically",buff
+Lewis Gun,,,"Smoothed the recoil pattern, reducing horizontal recoil while maintaining the overall pattern",buff
+LH1,dropoff_min,50,"Decreased the damage fall-off start range from 80m to 50m",
+LH1,dropoff_max,55,"Decreased the damage fall-off end range from 100m to 55m",
+M60,rpm,580,"Increased fire rate from 560 RPM to 580 RPM",
+M60,,,"Smoothed the recoil pattern, reducing horizontal recoil",buff
+MGL-32,,,"Decreased reload time from 3.1s to 2.8s",buff
+Recurve Bow (uncharged),body_dmg,60,"Increased damage at minimum draw from 55 to 60",
+Recurve Bow (uncharged),,,"Decreased damage ramp-up start time from 0.2s to 0.15s",buff
+Recurve Bow (charged),,,"Decreased the time taken to reach maximum draw from 0.585s to 0.49s",buff
+Riot Shield,body_dmg,90,"Increased damage from 84 to 90",
+SH1900,,,"Decreased reload time from 2.5s to 2.125s",buff
+Spear (Alt.),,,"Increased run speed modifier during secondary spin attack from 65% to 75%",buff
+SR-84,,,"Updated to fire hit-scan rounds up to 40m range only; beyond 40m it becomes a projectile with bullet drop",soft
+SR-84,,,"This change limits frustration from very long-range harassment in Terminal Attack and Power Shift.",dev
+Sword,,,"Updated attack sweeps to be more centered on the crosshair",buff
+Sword (Alt.),lunge_distance,6,"Increased the range of the secondary lunge from approximately 5m to 6m",
+Sword (Alt.),,,"Secondary lunge attack now maintains top speed for slightly longer",buff
+Throwing Knives (Alt.),,,"The secondary attack can now be held, triggering on button release rather than automatically",buff
+XP-54,body_dmg,16,"Decreased damage from 18 to 16",
+XP-54,,,"Increased the magnification of the XP-54's sight slightly",buff

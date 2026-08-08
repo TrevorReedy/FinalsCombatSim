@@ -1,0 +1,21 @@
+weapon,field,value,note,kind
+93R,body_dmg,26,"Increased damage from 24 to 26",
+93R,dropoff_min,28,"Increased the damage fall-off start range from 23m to 28m",
+93R,dropoff_reduction,55,"Increased the damage fall-off multiplier at max range from 45% to 55%, meaning the weapon will do more damage at a longer range",
+93R,,,"Decreased horizontal recoil after the third burst, making the gun easier to control",buff
+93R,,,"Decreased vertical recoil slightly, to make the gun easier to control",buff
+93R,,,"After being somewhat cautious in our buffs of the 93R in previous releases due to some earlier internal testing of higher damage values, we've decided to go for a more 'nuclear' buff. We hope this finally brings the 93R into the meta in a good way, but we'll be keeping a close eye on it.",dev
+KS-23,tactical_reload,3.85,"Reduced reload duration of full tactical reload from 4.6s to 3.85s (roughly 16%)",
+KS-23,empty_reload,4.36,"Reduced reload duration of full empty reload from 5.13s to 4.36s (roughly 15%)",
+Dual Blades,,,"Basic attack: increased the speed and duration of the lunge for each attack animation, making it easier to reach targets that are just out of range",buff
+Dual Blades,,,"Deflect: decreased the dispersion angle of deflected bullets from 2.5 to 1, meaning deflected bullets are now more accurate",buff
+Dual Blades,,,"Deflect: decreased the damage modifier for direct hits from enemy bullets from 0.2 to 0.1, meaning players will now take less damage when deflecting hits at the center of the Blades' deflection angle",buff
+Dual Blades,,,"Deflect: decreased the damage modifier for glancing hits from enemy bullets from 0.4 to 0.3, meaning players will now take less damage when deflecting hits at the edge of the Blades' deflection angle",buff
+Dual Blades,,,"Deflect: increased deflection angle from 25 degrees to 35 degrees, making it easier to block and deflect bullets",buff
+Dual Blades,,,"Deflect: decreased incoming melee damage modifier from 0.33 to 0.25, meaning players will take less damage from melee attacks when trying to deflect",buff
+R.357,,,"Decreased bullet dispersion when firing from the hip by approximately 20%, making the weapon more accurate",buff
+Spear,lunge_distance,7.5,"Basic attack: increased the lunge distance from 6m to 7.5m on basic attacks, making it easier to hit enemies",
+Spear,,,"Basic attack: increased the lunge speed by approximately 15%",buff
+Spear,,,"Basic attack: increased the lunge cancel on basic attacks, causing the player to come to rest earlier once they hit the target",buff
+Spear (Alt.),body_dmg,105,"Secondary attack: increased the damage of each swing from 100 to 105",
+XP-54,magazine_size,34,"Increased ammo count from 30 to 34",

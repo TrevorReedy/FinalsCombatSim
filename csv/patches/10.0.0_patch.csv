@@ -1,0 +1,18 @@
+weapon,field,value,note,kind
+AKM,magazine_size,34,"Increased magazine size from 32 to 34",
+Chimera-XB,,,"Added the Chimera-XB semi-automatic crossbow to the Medium archetype",soft
+CL 40,body_dmg,105,"Increased max damage from 100 to 105",
+CL 40,,,"Increased self-damage multiplier from 1.35 to 1.4",nerf
+CL 40,,,"Decreased damage modifier at the edge of the inner blast radius from 90% to 75%",nerf
+CL 40,,,"Increased damage modifier at the edge of the outer blast radius from 0% to 10%",buff
+FCAR,rpm,540,"Increased fire rate from 520 RPM to 540 RPM",
+M134 Minigun,magazine_size,300,"Increased magazine size from 250 to 300",
+M26 Matter,,,"Decreased pellet pattern radius by approximately 10%, making the weapon more accurate",buff
+M26 Matter,,,"Increased environmental damage per pellet from 5 to 9 (total from 55 to 99). Environmental damage is not a stat any data sheet records.",buff
+MGL-32,,,"Decreased damage modifier at the edge of the inner blast radius from 100% to 90%",nerf
+MGL-32,,,"Increased damage modifier at the edge of the outer blast radius from 0% to 12%",buff
+MGL-32,,,"Increased the inner blast radius from 1.84m to 2m",buff
+Pike-556,,,"Updated the weapon's recoil pattern to make it slightly less erratic and smoother to use",buff
+SR-84,,,"Decreased the air drag on the projectile from 0.4 to 0.08, allowing bullets to retain more velocity",buff
+SR-84,,,"Decreased initial projectile velocity from 260m/s to 240m/s",nerf
+SR-84,,,"Decreased gravity multiplier on the projectile from 0.6 to 0.55",buff

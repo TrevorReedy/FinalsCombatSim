@@ -1,0 +1,7 @@
+weapon,field,value,note,kind
+Pike-556,body_dmg,47,"Decreased damage from 52 to 47",
+Pike-556,dropoff_reduction,85,"Increased damage falloff multiplier at max range from 75% to 85%, increasing the damage at longer ranges",
+Pike-556,,,"We felt the Pike-556 still remained too strong in close-range encounters despite the previous damage adjustments. With these changes we make the weapon less effective at closer ranges while maintaining its effectiveness at longer ranges",dev
+Sword (Alt.),lunge_distance,6,"Decreased lunge duration of the secondary attack from 0.4 to 0.3 seconds, resulting in ~1m reduction in distance, from roughly 7m to 6m. The note gives the prior distance as ~7m where 4.0.0 had set it to ~6m.",nerf
+Sword (Alt.),,,"Decreased the length of the secondary attack's hit sweep by 55cm",nerf
+Sword (Alt.),,,"These changes should decrease the effective range of the lunge attack by ~1.5m, hopefully making the Sword slightly less oppressive for players facing it.",dev

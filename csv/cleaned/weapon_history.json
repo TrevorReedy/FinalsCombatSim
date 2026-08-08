@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-07",
+  "generated": "2026-08-08",
   "generator": "tools/ingest_weapon_history.mjs",
   "note": "Derived from community data sheets only. Every event is a measured difference between two sheets, not a quoted patch note. verified_against_patch_notes is false everywhere until the patch-note source is ingested; a change with no matching patch note is a shadow-change candidate.",
   "versions": [
@@ -32,7 +32,8 @@
       "caveats": [
         "Headerless dump; column meanings are inferred. Column 4 is absolute head damage on some rows, a headshot multiplier on others, and alt-attack damage on melee rows.",
         "The rate column matches independently-known RPM for 14 of 21 comparable weapons and is far off for the rest, so it is treated as low-confidence and individual outliers are flagged.",
-        "The single reload column has no stated kind (tactical vs empty) and is 0 on several rows; it is never diffed."
+        "The single reload column has no stated kind (tactical vs empty) and is 0 on several rows; it is never diffed.",
+        "This sheet appears to have been captured BEFORE patch 5.8.0 shipped, despite its name. Four weapons the 5.8.0 notes changed still read at their pre-patch values here: the Cerberus at 108 rather than the stated 120, the Model 1887 at 117 rather than 99, the SR-84 at 115 rather than 118, and the LH1 at 48 rather than 46. Treat it as roughly 5.7, and read any 5.8.0 stated-vs-measured disagreement as the labelling being off rather than a shadow change."
       ]
     },
     {
@@ -118,6 +119,8 @@
     }
   ],
   "alias_notes": {
+    "dual_blades_alt": "Cross Slash, the secondary attack 11.0.0 added to the Dual Blades. It has its own damage and lunge distance, so it gets its own row for the same reason sword_alt does. No data sheet records it — everything known about it comes from the 11.0.0 patch notes.",
+    "riot_shield_alt": "Shield Bash, the secondary attack 11.0.0 added to the Riot Shield. Fixed 40 damage and a knockback; it does not use Precision, so it has no precise-hit damage. No data sheet records it — everything known about it comes from the 11.0.0 patch notes.",
     "cl_40_direct": "Sheets 1.5 and 5.8 list a single 'CL-40' row. Later sheets split it into Direct and Splash, and 11.3.0 renames those to Inner Radius and Outer Radius. The pre-split row is mapped to cl_40_direct so the damage series stays continuous; cl_40_splash therefore first appears at the split, which is a sheet-format change, not a balance change.",
     "cl_40_splash": "Called 'Splash' through 10.0.0 and 'Outer Radius' from 11.3.0. Direct/Inner Radius damage is identical across that rename (105), but the second number is not obviously the same quantity — see the re-scope note on its 11.3.0 change.",
     "mgl_32": "Written 'MGL32' in sheets 1.5 and 5.8, 'MGL-32' from 7.3.0 onward. Same weapon.",
@@ -218,6 +221,8 @@
       "delta": -5,
       "delta_pct": -33.3,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (1.5: derived, 2.4.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -234,6 +239,8 @@
       "delta": -10,
       "delta_pct": -20,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (1.5: derived, 2.4.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -263,6 +270,8 @@
       "delta": 260,
       "delta_pct": 185.7,
       "confidence": "low",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (1.5: derived, 2.4.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -292,6 +301,8 @@
       "delta": -5,
       "delta_pct": -33.3,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (1.5: derived, 2.4.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -308,6 +319,8 @@
       "delta": -10,
       "delta_pct": -40,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (1.5: derived, 2.4.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -324,6 +337,8 @@
       "delta": -10,
       "delta_pct": -12.5,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (1.5: derived, 2.4.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -366,6 +381,8 @@
       "delta": -8,
       "delta_pct": -10.7,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (1.5: derived, 2.4.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -382,6 +399,8 @@
       "delta": -10,
       "delta_pct": -6.7,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (1.5: derived, 2.4.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -411,6 +430,8 @@
       "delta": -5,
       "delta_pct": -16.7,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (1.5: derived, 2.4.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -427,6 +448,8 @@
       "delta": -13,
       "delta_pct": -14.3,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -443,6 +466,8 @@
       "delta": -25,
       "delta_pct": -11.1,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (1.5: derived, 2.4.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -459,6 +484,8 @@
       "delta": -25,
       "delta_pct": -21.7,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -488,6 +515,8 @@
       "delta": 10,
       "delta_pct": 25,
       "confidence": "low",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (2.4.0: measured, 5.8: derived).",
       "verified_against_patch_notes": false
     },
@@ -504,6 +533,8 @@
       "delta": -340,
       "delta_pct": -85,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (2.4.0: measured, 5.8: derived).",
       "verified_against_patch_notes": false
     },
@@ -520,6 +551,8 @@
       "delta": -1,
       "delta_pct": -2,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -536,6 +569,8 @@
       "delta": -2,
       "delta_pct": -2,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (2.4.0: measured, 5.8: derived).",
       "verified_against_patch_notes": false
     },
@@ -552,6 +587,8 @@
       "delta": -20,
       "delta_pct": -6.7,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (2.4.0: measured, 5.8: derived).",
       "verified_against_patch_notes": false
     },
@@ -568,6 +605,8 @@
       "delta": 45,
       "delta_pct": 30,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -584,6 +623,8 @@
       "delta": 4,
       "delta_pct": 11.1,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -600,6 +641,8 @@
       "delta": 6,
       "delta_pct": 11.1,
       "confidence": "low",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (2.4.0: measured, 5.8: derived).",
       "verified_against_patch_notes": false
     },
@@ -616,6 +659,8 @@
       "delta": -70,
       "delta_pct": -16.3,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (2.4.0: measured, 5.8: derived).",
       "verified_against_patch_notes": false
     },
@@ -632,6 +677,8 @@
       "delta": -2,
       "delta_pct": -11.1,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -648,6 +695,8 @@
       "delta": -3,
       "delta_pct": -11.1,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (2.4.0: measured, 5.8: derived).",
       "verified_against_patch_notes": false
     },
@@ -664,6 +713,8 @@
       "delta": 4,
       "delta_pct": 13.3,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -680,6 +731,8 @@
       "delta": 4,
       "delta_pct": 16.7,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -696,6 +749,8 @@
       "delta": 6,
       "delta_pct": 16.7,
       "confidence": "low",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (2.4.0: measured, 5.8: derived).",
       "verified_against_patch_notes": false
     },
@@ -712,6 +767,8 @@
       "delta": 15,
       "delta_pct": 2.5,
       "confidence": "low",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (2.4.0: measured, 5.8: derived).",
       "verified_against_patch_notes": false
     },
@@ -728,6 +785,8 @@
       "delta": -4,
       "delta_pct": -11.1,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -757,6 +816,8 @@
       "delta": -11,
       "delta_pct": -8.6,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -773,6 +834,8 @@
       "delta": 5,
       "delta_pct": 7.5,
       "confidence": "low",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (2.4.0: measured, 5.8: derived).",
       "verified_against_patch_notes": false
     },
@@ -789,6 +852,8 @@
       "delta": -10,
       "delta_pct": -7.1,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (2.4.0: measured, 5.8: derived).",
       "verified_against_patch_notes": false
     },
@@ -805,6 +870,8 @@
       "delta": -10,
       "delta_pct": -9.1,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -821,6 +888,8 @@
       "delta": 2,
       "delta_pct": 2.9,
       "confidence": "low",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (2.4.0: measured, 5.8: derived).",
       "verified_against_patch_notes": false
     },
@@ -837,6 +906,8 @@
       "delta": 1,
       "delta_pct": 25,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -853,6 +924,8 @@
       "delta": -3,
       "delta_pct": -12,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -869,6 +942,8 @@
       "delta": -5,
       "delta_pct": -13.2,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (2.4.0: measured, 5.8: derived).",
       "verified_against_patch_notes": false
     },
@@ -885,6 +960,8 @@
       "delta": 5,
       "delta_pct": 25,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -901,6 +978,8 @@
       "delta": 6,
       "delta_pct": 7.1,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -943,6 +1022,8 @@
       "delta": -3,
       "delta_pct": -12,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -959,6 +1040,8 @@
       "delta": -5,
       "delta_pct": -13.2,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (2.4.0: measured, 5.8: derived).",
       "verified_against_patch_notes": false
     },
@@ -975,6 +1058,8 @@
       "delta": -3,
       "delta_pct": -13.6,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -991,6 +1076,8 @@
       "delta": -4.5,
       "delta_pct": -13.6,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (2.4.0: measured, 5.8: derived).",
       "verified_against_patch_notes": false
     },
@@ -1007,6 +1094,8 @@
       "delta": 20,
       "delta_pct": 3.6,
       "confidence": "low",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (2.4.0: measured, 5.8: derived).",
       "verified_against_patch_notes": false
     },
@@ -1036,6 +1125,8 @@
       "delta": 25,
       "delta_pct": 27.8,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1156,6 +1247,8 @@
       "delta": -2,
       "delta_pct": -7.1,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1172,6 +1265,8 @@
       "delta": -3,
       "delta_pct": -7.1,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (5.8: derived, 7.3.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -1188,6 +1283,8 @@
       "delta": 3,
       "delta_pct": 14.3,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1217,6 +1314,8 @@
       "delta": 10,
       "delta_pct": 20,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1246,6 +1345,8 @@
       "delta": -6,
       "delta_pct": -12.5,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1262,6 +1363,8 @@
       "delta": -12,
       "delta_pct": -12.5,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (5.8: derived, 7.3.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -1317,6 +1420,8 @@
       "delta": 3,
       "delta_pct": 2.6,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1333,6 +1438,8 @@
       "delta": 6,
       "delta_pct": 2.6,
       "confidence": "low",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (5.8: derived, 7.3.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -1349,6 +1456,8 @@
       "delta": -10,
       "delta_pct": -20,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (5.8: derived, 7.3.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -1378,6 +1487,8 @@
       "delta": 485.45,
       "delta_pct": 809.1,
       "confidence": "low",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (5.8: derived, 7.3.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -1407,6 +1518,8 @@
       "delta": -15,
       "delta_pct": -2.4,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (5.8: derived, 7.3.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -1436,6 +1549,8 @@
       "delta": -9,
       "delta_pct": -8.3,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1452,6 +1567,8 @@
       "delta": 3,
       "delta_pct": 4.2,
       "confidence": "low",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (5.8: derived, 7.3.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -1494,6 +1611,8 @@
       "delta": -9,
       "delta_pct": -7.7,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1510,6 +1629,8 @@
       "delta": -3,
       "delta_pct": -4.2,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (5.8: derived, 7.3.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -1526,6 +1647,8 @@
       "delta": 10,
       "delta_pct": 7.7,
       "confidence": "low",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (5.8: derived, 7.3.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -1542,6 +1665,8 @@
       "delta": 5,
       "delta_pct": 6.8,
       "confidence": "low",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (5.8: derived, 7.3.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -1571,6 +1696,8 @@
       "delta": 1,
       "delta_pct": 5.3,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1587,6 +1714,8 @@
       "delta": 1.5,
       "delta_pct": 5.3,
       "confidence": "low",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (5.8: derived, 7.3.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -1603,6 +1732,8 @@
       "delta": -6,
       "delta_pct": -7.7,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1619,6 +1750,8 @@
       "delta": -10,
       "delta_pct": -5,
       "confidence": "low",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": "At least one endpoint is a derived or low-confidence value (5.8: derived, 7.3.0: measured).",
       "verified_against_patch_notes": false
     },
@@ -1635,6 +1768,8 @@
       "delta": -15,
       "delta_pct": -13,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1677,6 +1812,8 @@
       "delta": 2,
       "delta_pct": 4.8,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1693,6 +1830,8 @@
       "delta": 4,
       "delta_pct": 4.8,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1709,6 +1848,8 @@
       "delta": 14,
       "delta_pct": 18.9,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1725,6 +1866,8 @@
       "delta": 15,
       "delta_pct": 14.3,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1741,6 +1884,8 @@
       "delta": 4,
       "delta_pct": 4.8,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1757,6 +1902,8 @@
       "delta": 6,
       "delta_pct": 4.8,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1773,6 +1920,8 @@
       "delta": 1,
       "delta_pct": 16.7,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1802,6 +1951,8 @@
       "delta": -2,
       "delta_pct": -4,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1818,6 +1969,8 @@
       "delta": -3,
       "delta_pct": -4,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1834,6 +1987,8 @@
       "delta": -5,
       "delta_pct": -11.1,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1844,12 +1999,14 @@
       "to_version": "8.3.0",
       "type": "change",
       "field": "dropoff_reduction",
-      "label": "Dropoff reduction",
+      "label": "Damage kept at max range",
       "from": 75,
       "to": 80,
       "delta": 5,
       "delta_pct": 6.7,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1866,6 +2023,8 @@
       "delta": -3,
       "delta_pct": -8.6,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1882,6 +2041,8 @@
       "delta": -3,
       "delta_pct": -7.1,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1911,6 +2072,8 @@
       "delta": 21,
       "delta_pct": 13.6,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1927,6 +2090,8 @@
       "delta": -2,
       "delta_pct": -7.7,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1943,6 +2108,8 @@
       "delta": -3,
       "delta_pct": -7.7,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1959,6 +2126,8 @@
       "delta": -2,
       "delta_pct": -6.3,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1975,6 +2144,8 @@
       "delta": -4.5,
       "delta_pct": -10.7,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -1985,12 +2156,14 @@
       "to_version": "10.0.0",
       "type": "change",
       "field": "dropoff_reduction",
-      "label": "Dropoff reduction",
+      "label": "Damage kept at max range",
       "from": 40,
       "to": 50,
       "delta": 10,
       "delta_pct": 25,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2020,6 +2193,8 @@
       "delta": -15,
       "delta_pct": -7.7,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2036,6 +2211,8 @@
       "delta": -2,
       "delta_pct": -5,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2052,6 +2229,8 @@
       "delta": -3,
       "delta_pct": -5,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2068,6 +2247,8 @@
       "delta": 5,
       "delta_pct": 50,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2084,6 +2265,8 @@
       "delta": 5,
       "delta_pct": 33.3,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2100,6 +2283,8 @@
       "delta": 20,
       "delta_pct": 2.3,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2116,6 +2301,8 @@
       "delta": 2,
       "delta_pct": 6.3,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2132,6 +2319,8 @@
       "delta": -4,
       "delta_pct": -4.5,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2148,6 +2337,8 @@
       "delta": -6,
       "delta_pct": -4.5,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2164,6 +2355,8 @@
       "delta": -5,
       "delta_pct": -12.5,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2180,6 +2373,8 @@
       "delta": -5,
       "delta_pct": -11.1,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2190,12 +2385,14 @@
       "to_version": "10.0.0",
       "type": "change",
       "field": "dropoff_reduction",
-      "label": "Dropoff reduction",
+      "label": "Damage kept at max range",
       "from": 69,
       "to": 64,
       "delta": -5,
       "delta_pct": -7.2,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2212,6 +2409,8 @@
       "delta": 5,
       "delta_pct": 5.1,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2241,6 +2440,8 @@
       "delta": 5,
       "delta_pct": 5,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2257,6 +2458,8 @@
       "delta": 1,
       "delta_pct": 4.5,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2273,6 +2476,8 @@
       "delta": 1.5,
       "delta_pct": 4.5,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2289,6 +2494,8 @@
       "delta": 8,
       "delta_pct": 80,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2305,6 +2512,8 @@
       "delta": 4,
       "delta_pct": 20,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2321,6 +2530,8 @@
       "delta": 1,
       "delta_pct": 2.1,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2337,6 +2548,8 @@
       "delta": 1.5,
       "delta_pct": 2.1,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2353,6 +2566,8 @@
       "delta": -2,
       "delta_pct": -2.2,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2369,6 +2584,8 @@
       "delta": -3,
       "delta_pct": -2.2,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2385,6 +2602,8 @@
       "delta": 5.5,
       "delta_pct": 7.3,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2401,6 +2620,8 @@
       "delta": -5,
       "delta_pct": -16.7,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2417,6 +2638,8 @@
       "delta": -5,
       "delta_pct": -11.1,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2427,12 +2650,14 @@
       "to_version": "10.0.0",
       "type": "change",
       "field": "dropoff_reduction",
-      "label": "Dropoff reduction",
+      "label": "Damage kept at max range",
       "from": 70,
       "to": 65,
       "delta": -5,
       "delta_pct": -7.1,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2449,6 +2674,8 @@
       "delta": 1,
       "delta_pct": 4.5,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2465,6 +2692,8 @@
       "delta": 1.5,
       "delta_pct": 4.5,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2481,6 +2710,8 @@
       "delta": 50,
       "delta_pct": 20,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2497,6 +2728,8 @@
       "delta": 3,
       "delta_pct": 12.5,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2513,6 +2746,8 @@
       "delta": 2.5,
       "delta_pct": 14.3,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2523,12 +2758,14 @@
       "to_version": "11.3.0",
       "type": "change",
       "field": "dropoff_reduction",
-      "label": "Dropoff reduction",
+      "label": "Damage kept at max range",
       "from": 52,
       "to": 45,
       "delta": -7,
       "delta_pct": -13.5,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2545,6 +2782,8 @@
       "delta": 7,
       "delta_pct": 9,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2561,6 +2800,8 @@
       "delta": 1,
       "delta_pct": 2.1,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2577,6 +2818,8 @@
       "delta": -2,
       "delta_pct": -10,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2593,6 +2836,8 @@
       "delta": 2,
       "delta_pct": 5.9,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2609,6 +2854,8 @@
       "delta": -7,
       "delta_pct": -8.5,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2625,6 +2872,8 @@
       "delta": 0.05,
       "delta_pct": 2.3,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2641,6 +2890,8 @@
       "delta": -0.15,
       "delta_pct": -7,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2657,6 +2908,8 @@
       "delta": -2.5,
       "delta_pct": -12.5,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2673,6 +2926,8 @@
       "delta": -2.5,
       "delta_pct": -8.3,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2683,12 +2938,14 @@
       "to_version": "11.3.0",
       "type": "change",
       "field": "dropoff_reduction",
-      "label": "Dropoff reduction",
+      "label": "Damage kept at max range",
       "from": 60,
       "to": 53,
       "delta": -7,
       "delta_pct": -11.7,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2705,6 +2962,8 @@
       "delta": -11.25,
       "delta_pct": -12.5,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2721,6 +2980,8 @@
       "delta": 1,
       "delta_pct": 4.3,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2737,6 +2998,8 @@
       "delta": 1.5,
       "delta_pct": 4.3,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2753,6 +3016,8 @@
       "delta": 9,
       "delta_pct": 8.3,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2769,6 +3034,8 @@
       "delta": 0.3,
       "delta_pct": 7,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2785,6 +3052,8 @@
       "delta": 12.25,
       "delta_pct": 16.7,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2801,6 +3070,8 @@
       "delta": 2,
       "delta_pct": 4.5,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2817,6 +3088,8 @@
       "delta": 4,
       "delta_pct": 4.5,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2833,6 +3106,8 @@
       "delta": 2,
       "delta_pct": 2.3,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2849,6 +3124,8 @@
       "delta": 3,
       "delta_pct": 2.3,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2865,6 +3142,8 @@
       "delta": -6.5,
       "delta_pct": -8.1,
       "confidence": "high",
+      "kind": "nerf",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },
@@ -2881,6 +3160,8 @@
       "delta": 4,
       "delta_pct": 4,
       "confidence": "high",
+      "kind": "buff",
+      "kind_source": "derived from the values",
       "note": null,
       "verified_against_patch_notes": false
     },

@@ -1,0 +1,8 @@
+weapon,field,value,note,kind
+93R,body_dmg,25,"Increased damage from 24 to 25",
+93R,magazine_size,21,"Decreased ammo count from 24 to 21",
+93R,,,"Believe it or not, the 93R is now the least picked Light weapon across all modes. These changes are aimed to increase its viability and desirability, without tipping it back to the dominant place it had in the meta a few seasons ago.",dev
+FAMAS,,,"Slightly decreased recoil when aiming down sights (ADS), making the weapon more accurate at range when using ADS",buff
+FAMAS,,,"The FAMAS has gradually drifted out of serious viability for the Medium Build as other weapons have been buffed, so this small quality of life improvement is aimed to put it back on a similar footing to the other Medium ARs.",dev
+XP-54,magazine_size,36,"Increased ammo count from 34 to 36",
+XP-54,,,"We've struggled for a few seasons now to find a sweet spot for the XP-54 where it's desirable for Lights but not overpowered compared to other Light weapons. With each change, the weapon has swung from one state to the other, unfortunately never quite settling in a good place. This latest change is another attempt to get that balance right",dev

@@ -1,0 +1,18 @@
+weapon,field,value,note,kind
+BFR Titan,body_dmg,88,"Decreased damage from 90 to 88",
+BFR Titan,rpm,80.5,"Increased manual action duration from 0.73s to 0.745s, causing the gun to fire slower. This change effectively decreases the BFR's fire rate from 82RPM to 80.5RPM.",
+BFR Titan,dropoff_min,25,"Decreased damage falloff minimum range from 30m to 25m, giving the weapon a slightly shorter effective range",
+BFR Titan,dropoff_max,40,"Decreased damage falloff max range from 45m to 40m, giving the weapon a slightly shorter effective range",
+BFR Titan,dropoff_reduction,65,"Decreased damage falloff multiplier from 0.7 to 0.65, reducing the weapon's damage at range. Recorded as a retained-damage percentage to match the sheets' column.",
+BFR Titan,,,"These changes are aimed at reducing the Heavy's ability to 'poke' at ranged compared to the Medium and especially the Light, as we feel the 'poke' meta has become a bit too possible for the non-Light archetypes. With a low ammo weapon like the BFR, there's little room to balance here, but we believe these changes should weaken the Heavy's ability to 'poke'. This and the CB-01 change were originally planned for 9.7, but held back for further testing.",dev
+CB-01 Repeater,body_dmg,84,"Decreased damage from 88 to 84",
+CB-01 Repeater,rpm,82,"Increased lever action duration from 0.71s to 0.73s, causing the gun to fire slower. This change effectively decreases the CB-01's fire rate from 84.5RPM to 82RPM.",
+CB-01 Repeater,dropoff_min,35,"Decreased damage falloff minimum range from 40m to 35m, giving the weapon a slightly shorter effective range",
+CB-01 Repeater,dropoff_max,40,"Decreased damage falloff max range from 45m to 40m, giving the weapon a slightly shorter effective range",
+CB-01 Repeater,dropoff_reduction,64,"Decreased damage falloff multiplier from 0.7 to 0.64, reducing the weapon's damage at range. Recorded as a retained-damage percentage to match the sheets' column.",
+CB-01 Repeater,,,"As with the BFR changes above, these changes are aimed at reducing the 'poke' strength of the Medium, while also making the Pike-335 a more comparable weapon choice for long-ranged Medium players",dev
+Cerberus 12GA,body_dmg,104,"Increased pellet count from 11 to 13 and decreased damage from 9 to 8 per pellet. Converted to the sheets' unit: total per-shot damage goes from 99 to 104, as the patch note's own dev comment states.",
+Cerberus 12GA,,,"Updated pellet pattern to fit the new pellet count and normalize distribution, making the weapon more consistent",buff
+Cerberus 12GA,,,"Decreased the heat generated per pellet to account for the extra pellets. The ignition point for players/objects catching fire should remain the same as before",soft
+Cerberus 12GA,,,"These changes are aimed at bringing the Cerberus back to viability, without it becoming as overpowered as it has been in some previous seasons. To get the right level of overall damage, we needed to increase the pellet count to give us more room to work with. The damage per pellet was reduced to offset this a little, but the change effectively results in a buff from 99 damage per shot to 104, excluding fire damage.",dev
+LH1,,,"Reduced camera shake from firing the weapon by approximately 50%, increasing readability between shots",buff

@@ -1,0 +1,34 @@
+weapon,field,value,note,kind
+BFR,body_dmg,90,"Increased damage from 88 to 90",
+BFR,,,"The BFR lags quite a bit behind the bulk of the other Heavy weapons at present, on various efficacy metrics. This change is to hopefully nudge it back into relevance slightly",dev
+
+Dagger,lunge_distance,5,"Increased lunge distance on primary and secondary attacks from 4.5m to 5m",
+Dagger,,,"Increased max lunge speed slightly to support the increased lunge distance",buff
+Dagger,,,"As expected, following the 11.0 melee re-work a bunch of the melee weapons needed additional tweaks and changes once we saw how they performed in the real world. In the case of the Dagger, one of the initial issues we saw were issues pertaining to getting onto targets and being able to hit them reliably, these changes aim to address that",dev
+Dagger (Alt.),lunge_distance,5,"Increased lunge distance on primary and secondary attacks from 4.5m to 5m",
+Dagger (Alt.),,,"Increased the secondary attack's sweep time slightly, to help ensure that backstabs can more reliably hit targets at max lunge distance",buff
+
+Dual Blades,precision_angle,9,"Increased Precision zone angle from 8 to 9 degrees, making it slightly easier to land precise strikes",
+Dual Blades,lunge_distance,5,"Increased lunge distance on primary attacks from 4.5m to 5m",
+Dual Blades,,,"Increased max lunge speed slightly to support the increased lunge distance",buff
+Dual Blades,,,"Increased player movement speed when using the Deflect stance by 25%",buff
+Dual Blades,,,"Our previous changes to the Dual Blades lunge distances were a little too aggressive, so we've nudged the lunge distances back up again as well as giving the Blades a slightly more generous Precision Angle. The 11.0 reduction to movement speed while Deflecting, of 50%, was also too aggressive so we've dialed that back with these changes. There is also a quality of life change here how the Cross Slash attack's lunge works to make it slightly more reliable",dev
+Dual Blades (Cross Slash),,,"Updated the Cross Slash attack to always lunge forwards when at full stamina, even when stationary. Previously the attack required some forward input to trigger the lunge",buff
+
+FAMAS,body_dmg,24,"Increased damage from 23 to 24",
+FAMAS,,,"Similar to the BFR, the FAMAS lags a little behind a fairly tight cluster of Medium weapons in terms of effectiveness. This change is a nudge to try and close that gap",dev
+
+KS-23,body_dmg,104,"Reduced damage from 110 to 104",
+KS-23,dropoff_reduction,67.5,"Increased damage falloff multiplier from 0.64 to 0.675, to keep the weapon's damage at max range consistent despite the damage reduction. Recorded as a retained-damage percentage to match the sheets' column.",
+KS-23,,,"Prior to 11.0, and despite its high utility, the KS-23 lagged behind a lot of other Heavy weapons and we wanted to address that. There were worries that the weapon was being 'slept on', but we felt it was time for a change to try and help the weapon regardless. Sometimes, making a change is the only way to find 'the truth' of why it performs as it does across all the different modes, skill tiers and so on. We can see from the last few weeks on live that the increase to 110 damage was too much, so we're reducing it to 104 with this update to break some of the attack combo breakpoints and lower DPS. We do still think the pre-11.0 KS-23 needed a small buff, hence not returning to 100 damage per shot immediately, but we'll continue to monitor how it plays at 104 damage and will adjust it again in later updates if we feel it's needed",dev
+
+Riot Shield,precision_angle,10,"Increased Precision zone angle from 9 to 10 degrees, making it slightly easier to land precise strikes",
+Riot Shield,lunge_distance,5,"Increased lunge distance on primary attacks from 4.25m to 5m. Note that 11.0.0 set this to 4m; this patch note gives the prior value as 4.25m.",
+Riot Shield,head_dmg,83,"Increased primary attack damage from 82 to 83. 82 was the precise-hit value set in 11.0.0, so this is a change to precise-hit damage.",
+Riot Shield,,,"We've seen feedback from some players who feel the Riot Shield has lost a lot of its power with the 11.0 update and the changes here to the Precision angle, lunge distance and damage are to address that to some extent. That said, we want to state that the changes made to Riot Shield in 11.0 were very deliberately aimed at giving it a new style of play and role, one that more reliably allows tanking of damage as well as acting as an 'anchor' for team fights and objective defense. On Medium, we want Dual Blades to be the more aggressive push-forwards brawling melee weapon, while the Riot Shield is more defensive and about stalling opposing players or anchoring fights, and we think the Riot Shield is definitely able to fill that role more now than it could prior to 11.0. We'll continue to monitor how it performs as the season goes on and will adjust as we need to",dev
+Riot Shield (Shield Bash),,,"Updated the Shield Bash attack to always lunge forwards when at full stamina, even when stationary. Previously the attack required some forward input to trigger the lunge",buff
+
+Spear,head_dmg,82,"Increased precise hit damage of primary attacks from 74 to 82",
+Spear,body_dmg,57,"Increased base damage of primary attacks 55 to 57",
+Spear,,,"The damage adjustments made to the Spear with 11.0 have proven to be more severe than we intended. The changes made here aim to address that",dev
+Spear (Alt.),,,"Increased the damage of the three swing secondary attack sequence from 75/100/125 to 75/125/150. The first spin is unchanged at 75, so the tracked damage value does not move.",buff

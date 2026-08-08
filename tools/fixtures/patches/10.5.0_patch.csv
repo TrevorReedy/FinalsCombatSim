@@ -1,0 +1,3 @@
+weapon,field,value,note
+FLAMETHROWER,body_dmg,25,"Damage reduced from 30 to 25"
+FLAMETHROWER,,,"Improved hip-fire spread while moving"

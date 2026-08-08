@@ -1,0 +1,8 @@
+weapon,field,value,note,kind
+Model 1887,dropoff_reduction,60,"Decreased damage falloff multiplier from 65% to 60%, causing the weapon to do less damage at range",
+Model 1887,,,"Increased inner pellet radius from 0.45 to 0.65, making the weapon less accurate at longer ranges",nerf
+Model 1887,,,"Increased outer pellet radius from 1.3 to 1.7, making the weapon less accurate at longer ranges",nerf
+Model 1887,,,"One way we investigate the balance of weapons is to look at effectiveness in gameplay (i.e. stats like damage, kill rates, headshot rates, and accuracy), in addition to stats like usage and win rates. Looking at this data alone, the Model 1887 is good but not exceptional when it comes to effectiveness during play. However, we've seen a large uptick in usage, mostly in higher-skill tiers which has led to the gun being very prevalent in matches and leading to a somewhat stale meta. This 'nudge' to the effective range will hopefully disrupt this trend, without making the weapon weaker than its nearest competitors when it comes to effectiveness (i.e. the AKM, Famas and Pike-556).",dev
+XP-54,dropoff_min,20,"Increased damage falloff start distance from 15m to 20m, making the weapon more impactful at range",
+XP-54,dropoff_max,30,"Increased damage falloff end distance from 25m to 30m, making the weapon more impactful at range",
+XP-54,dropoff_reduction,62,"Decreased damage falloff multiplier from 65% to 62%",

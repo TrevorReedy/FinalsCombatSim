@@ -1,0 +1,3 @@
+weapon,field,value,note,kind
+Riot Shield,,,"Reverted latest collision update on the Riot Shield",soft
+Riot Shield,,,"We have noticed that the last update to the collision of the Riot Shield came with a few issues so we have now gone back to the previous iteration while we figure out why the update didn't work as expected. The updates to the blocking of steals is unaffected by this.",dev

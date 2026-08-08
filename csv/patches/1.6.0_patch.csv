@@ -1,0 +1,9 @@
+weapon,field,value,note,kind
+Dagger,,,"Fixed an exploit where melee weapons could be swung faster than intended",nerf
+Dual Blades,,,"Fixed an exploit where melee weapons could be swung faster than intended",nerf
+Sledgehammer,,,"Fixed an exploit where melee weapons could be swung faster than intended",nerf
+Spear,,,"Fixed an exploit where melee weapons could be swung faster than intended",nerf
+Sword,,,"Fixed an exploit where melee weapons could be swung faster than intended",nerf
+Riot Shield,,,"Fixed an exploit where melee weapons could be swung faster than intended",nerf
+CL 40,,,"Increased the size of various grenade projectiles, to make them easier to see in combat",soft
+MGL-32,,,"Fixed some issues where AoE damage could be wrongly invalidated, causing no damage to be done",buff

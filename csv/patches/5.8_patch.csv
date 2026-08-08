@@ -1,0 +1,19 @@
+weapon,field,value,note,kind
+Cerberus 12GA,body_dmg,120,"Increased damage from 9 to 10 per pellet. Converted to the sheets' unit: 12 pellets at the time, so 10 x 12 = 120, the figure 6.6.0 later gives as the prior value.",
+Cerberus 12GA,,,"Slightly decreased the size of the pellet distribution, making the weapon more accurate",buff
+Cerberus 12GA,,,"Decreased the reload time for reloading one cartridge from 2.2s to 2.1s, two from 2.4s to 2.25s, and three from 2.6s to 2.45s",buff
+CL 40,,,"Decreased the radius of the weapon's projectile from 10cm to 5cm, making it easier to avoid accidentally hitting nearby surfaces",buff
+CL 40,,,"Decreased self-damage multiplier from 1.6 to 1.25, meaning it will now do less damage to the player using it should they accidentally hit themselves",buff
+CL 40,,,"While the CL-40 has been in a much better place recently than in the past, we feel these small 'quality of life' changes will improve the experience of using it",dev
+Dagger,,,"Added a slight adjustment to FoV when charging up for a secondary attack, to make it clearer when the attack is at maximum charge",buff
+FAMAS,body_dmg,23,"Decreased damage per bullet from 24 to 23",
+FAMAS,,,"Decreased the fire rate from 230 RPM to 220 RPM. Held as text rather than recorded as RPM: the FAMAS is a burst weapon and the sheets measure it at ~1080 RPM of bullets, so the note's figure counts burst cycles.",nerf
+LH1,body_dmg,46,"Decreased damage from 48 to 46",
+LH1,rpm,270,"Decreased rate of fire from 280 RPM to 270 RPM",
+Model 1887,body_dmg,99,"Decreased damage from 13 to 11 per pellet. Converted to the sheets' unit: the Model fires 9 pellets, so 11 x 9 = 99.",
+Model 1887,dropoff_reduction,70,"Increased min damage falloff multiplier from 0.6 to 0.7, meaning the Model 1887 retains the same damage at max range as in update 5.7. Recorded as a retained-damage percentage to match the sheets' column.",
+Pike-556,body_dmg,50,"Increased damage from 47 to 50",
+SR-84,body_dmg,118,"Increased damage from 115 to 118",
+SR-84,,,"Decreased the bolt action animation duration from 1.25s to 1.05s, slightly increasing the SR-84's rate of fire",buff
+Sword,,,"Increased the length of the Sword's secondary attack hit sweep by 55cm",buff
+Sword,,,"This change reverts the change made in 4.6 and should mean the primary and secondary attacks of the Sword now have a more consistent length",dev

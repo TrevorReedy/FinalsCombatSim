@@ -1,0 +1,3 @@
+weapon,field,value,note,kind
+V9S,body_dmg,38,"Decreased damage from 40 to 38",
+V9S,,,"In the 9.0 update we buffed the effective range of the V9S to give it more viability, in an effort to increase how desirable it is to use. We can tell from early feedback and data that this range increase, combined with damage buffs, has been enough to quickly push it into a dominant position. This change will offset that. We'll continue to monitor this closely over the next few weeks",dev

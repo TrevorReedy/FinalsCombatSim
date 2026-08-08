@@ -1,0 +1,8 @@
+weapon,field,value,note,kind
+R.357,dropoff_min,23,"Reduced damage fall-off start range to 23m from 35m",
+R.357,dropoff_max,40,"Reduced damage fall-off end range to 40m from 50m",
+R.357,,,"Decreased bullet dispersion when aiming down sights",buff
+CL 40,body_dmg,110,"Increased player damage to 110 from 100",
+FCAR,body_dmg,25,"Decreased damage to 25 from 26",
+MGL-32,body_dmg,83,"Increased player damage to 83 from 80",
+Throwing Knives,,,"Decreased projectile dispersion when falling and sprinting",buff

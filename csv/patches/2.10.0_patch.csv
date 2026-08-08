@@ -1,0 +1,5 @@
+weapon,field,value,note,kind
+Throwing Knives,body_dmg,63,"Increased the primary attack damage from 60 to 63",
+Throwing Knives,,,"Reduced the delay before the first projectile spawns from 0.22s to 0.11s to make the attacks more responsive",buff
+Throwing Knives,,,"Reduced the delay between the first and second projectile spawning from 0.15s to 0.11s to make it easier to land both knives on a moving target",buff
+Throwing Knives,,,"Increased the initial projectile speed from 138m/s to 166m/s, increasing the weapon's precision",buff

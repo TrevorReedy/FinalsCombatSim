@@ -1,0 +1,25 @@
+weapon,field,value,note,kind
+Dagger,,,"Primary Attack: increased the outer width of the hit sweeps by ~40% to better match the animation",buff
+Dagger,,,"Primary Attack: decreased the inner width nearest the camera to prevent hitting objects outside the field of view",soft
+Dagger,,,"Primary Attack: increased hit sweep duration from 0.07s to 0.1s, improving reliability",buff
+Dual Blades,,,"Increased hit sweep range by ~40cm to align with other melee weapons",buff
+Dual Blades,,,"Increased hit sweep height by ~5cm",buff
+Dual Blades,,,"Decreased the inner width nearest the camera, improving reliability",soft
+KS-23,,,"Converted the KS-23 from a projectile weapon to a hybrid hitscan-projectile weapon: hitscan up to 25m, projectile beyond 25m",buff
+KS-23,,,"Reduced projectile velocity from 300m/s to 280m/s",nerf
+KS-23,,,"This new approach to the KS-23 should make it more reliable at the close-to-medium ranges it is intended for",dev
+Riot Shield,,,"Updated hit sweeps for reliability and increased range by ~50cm",buff
+Riot Shield,,,"Increased hit sweep lifetime from 0.04s to 0.12s",buff
+Riot Shield,,,"Increased outer width by ~70% and decreased the inner width nearest the camera",buff
+Riot Shield,,,"Decreased attack duration from 0.9s to 0.81s, a 10% speed increase",buff
+Sledgehammer,,,"Primary Attack: increased outer width by ~80%; decreased the inner width nearest the camera for reliability",buff
+Spear,,,"Decreased the inner width nearest the camera to prevent hitting objects outside the field of view",soft
+Sword,body_dmg,88,"Primary Attack: increased damage from 74 to 88",
+Sword,,,"Primary Attack: increased attack duration from 0.55s to 0.6s",nerf
+Sword,,,"Primary Attack: increased height by ~5cm and adjusted the hit sweeps; decreased the inner width",buff
+Sword (Alt.),body_dmg,120,"Secondary Attack: increased damage from 105 to 120",
+Sword (Alt.),,,"Secondary Attack: decreased duration from 1s to 0.75s, a speed increase",buff
+Sword (Alt.),,,"Introduced rotation clamping to the Sword's secondary lunge attack, preventing players from swinging 360 degrees while travelling. Clamped to a 40 degree forward angle.",nerf
+Sword (Alt.),lunge_distance,7,"Increased lunge range from 5.5m to 7m. Note that 11.0.0 later gives the prior value as ~9m, so at least one unrecorded change sits between the two.",
+Sword (Alt.),,,"Increased lunge speed from 1500 to 1750",buff
+Sword (Alt.),,,"New system controls 'Super Dash' stacking; average distance is now 17-20m, previously 16-19m",buff

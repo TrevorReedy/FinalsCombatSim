@@ -1,0 +1,24 @@
+weapon,field,value,note,kind
+93R,body_dmg,24,"Decreased damage from 26 to 24",
+93R,dropoff_min,30,"Decreased the damage fall-off start range from 32m to 30m",
+93R,dropoff_max,37.5,"Decreased the damage fall-off end range from 40m to 37.5m. The note gives the prior value as 40m; the 8.3.0 sheet measured 42m.",
+93R,dropoff_reduction,50,"Increased the damage fall-off multiplier at max range from 40% to 50%, meaning it does slightly more damage at long-range",
+93R,,,"For much of the last season the 93R has outperformed the second and third placed weapons on damage and eliminations per round by almost 10%, that's above the acceptable range. These changes are aimed at bringing it in line with the other top weapons.",dev
+BFR Titan,rpm,82,"Decreased the rate of fire from 85 RPM to 82 RPM. The note gives the prior value as 85 RPM; the 8.3.0 sheet measured 75 RPM.",
+BFR Titan,,,"Decreased environmental damage from 130 to 95. Environmental damage is not a stat any data sheet records.",nerf
+BFR Titan,,,"The BFR is the very definition of a 'love it or hate it' weapon, where its top end performance is very good but where its parameters put it very close to feeling clunky and ineffective to use. As a result, it makes this weapon quite hard to balance. We want to give it a fair power level without making it feel awkward to use. We hope the RPM change here brings it to the right place, but we'll continue to monitor how it performs.",dev
+Dual Blades,,,"Increased the damage of the third attack in the attack sequence from 65 to 100. No data sheet records the Dual Blades' per-attack sequence, so this is held as text; 11.0.0 later removed this third attack entirely.",buff
+Dual Blades,,,"We feel like the Dual Blades' full attack combo hasn't been offering the pay-off it deserves. This adjustment should address that.",dev
+KS-23,,,"Decreased bullet dispersion across all stances when aiming down sights (ADS) by approximately 30%, making the weapon more precise",buff
+KS-23,,,"After the positive feedback that the feel of the BFR has received, we've decided to push the KS-23's dispersion in a similar direction, without making the two items too similar.",dev
+Lewis Gun,body_dmg,23,"Increased damage from 22 to 23",
+Lewis Gun,,,"Both Heavy LMGs have been somewhat ineffective compared to other options available to the Heavy. This slight nudge aims to push the Lewis Gun towards greater viability.",dev
+M134 Minigun,,,"Decreased bullet dispersion slightly when crouching or standing still and aiming down sights (ADS), making the weapon more precise",buff
+M134 Minigun,,,"Seasoned players are already able to get solid performances out of the Minigun, but we've noticed some casual players can sometimes struggle with it. This change is an attempt to bridge that gap, making the Minigun slightly easier to use, hopefully without buffing its top end power too much.",dev
+M60,,,"Decreased the amount of vertical recoil during the first 8 bullets of the firing sequence, making the M60 slightly easier to control",buff
+M60,,,"Slightly increased the amount of vertical recoil after the 30th bullet in the firing sequence, making the M60 slightly harder to control during sustained firing",nerf
+Model 1887,,,"Decreased tactical reload intro animation duration from 2.2s to 1.5s, meaning the weapon reloads faster. This is the intro animation only, not the full tactical reload the sheets time.",buff
+Model 1887,,,"We know that some of the Model's reload animations have been a cause of frustration for players. We're not done with the Model yet, it's one of a number of guns that would benefit from a 'reload checkpoint' system, and it's still our intent to introduce a system like that sometime in the next year.",dev
+V9S,dropoff_min,15,"Increased the damage fall-off start range from 10m to 15m",
+V9S,dropoff_max,25,"Increased the damage fall-off end range from 15m to 25m",
+V9S,dropoff_reduction,65,"Increased the damage fall-off multiplier at max range from 62% to 65%, meaning it does slightly more damage at long-range. The note gives the prior value as 62%; the 8.3.0 sheet measured 67%.",

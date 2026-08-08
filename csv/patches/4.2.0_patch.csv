@@ -1,0 +1,11 @@
+weapon,field,value,note,kind
+CL 40,body_dmg,100,"Decreased damage from 117 to 100",
+CL 40,magazine_size,5,"Increased ammo from 4 to 5",
+CL 40,,,"Increased self-damage multiplier from 0.75 to 1.6",nerf
+CL 40,,,"Updated damage fall-off curve so that damage drops to 90% at the edge of the 30cm inner radius, with damage falling off linearly from that point to 0 at the outer edge of the blast radius",soft
+CL 40,,,"We felt our buff of the CL-40 in 4.0 was too much and made the weapon very oppressive in certain combos or when stacked. We've now dialed the damage back to a level closer to what we had before 4.0, while retaining the increased size of the max damage inner radius. To prevent the weapon from returning to a time where it took 100% accuracy to take down a Heavy, we've given it one additional ammo. As always, we'll continue to monitor the impacts of this change and adjust further if needed",dev
+Pike-556,body_dmg,52,"Decreased damage from 59 to 52",
+Pike-556,,,"On reviewing data it's become apparent that the Pike was fairly overturned in our 4.0 release and this adjustment is intended to move it to a more reasonable place. We suspect it may still be too effective in too many different use cases, so we'll continue to review the impact of this change and adjust in later patches if we feel more balancing is needed.",dev
+V9S,rpm,360,"Decreased fire rate from 430 RPM to 360 RPM",
+V9S,body_dmg,40,"Increased damage from 37 to 40",
+V9S,,,"These changes have been made to prevent various methods where players could ensure they got the effective maximum fire rate from the weapon through use of specific binds, causing it to be highly effective compared to its intended baseline. The damage increase has been applied to offset some of the 'effective DPS' the weapon lost with the decreased fire rate. Overall, the effectiveness of the weapon for regular players should not be massively different",dev

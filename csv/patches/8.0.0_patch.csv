@@ -1,0 +1,20 @@
+weapon,field,value,note,kind
+.50 Akimbo,dropoff_min,32,"Decreased damage falloff minimum range from 35m to 32m, giving the weapon a slightly shorter effective range",
+.50 Akimbo,dropoff_max,39,"Decreased damage falloff max range from 42.5m to 39m, giving the weapon a slightly shorter effective range. The note gives the prior value as 42.5m; the 7.3.0 sheet measured 42m.",
+.50 Akimbo,,,"We feel the akimbo pistols are performing slightly too well at longer ranges, so this is a small nudge to bring them more into their intended niche.",dev
+CB-01 Repeater,body_dmg,88,"Increased damage from 84 to 88",
+CB-01 Repeater,,,"The CB-01 has struggled to perform well across most modes and sees a very low pick rate. This change is intended to improve viability.",dev
+Dual Blades,,,"Increased how quickly sprinting is re-enabled after the second attack animation begins by 25%",buff
+Dual Blades,,,"Increased how quickly sprinting is re-enabled after the third attack animation begins by 15%",buff
+Dual Blades,,,"This change is mostly to correct some inconsistencies between attacks, which made the second animation in the attack sequence more aggressively slow the player than it should have.",dev
+LH1,body_dmg,44,"Increased damage from 42 to 44",
+LH1,,,"We're still trying to get the LH1 to a place where it's viable but not dominant. Previous changes have seen it really bottom out in both usage and performance, so we're nudging it in an effort to improve viability and desirability.",dev
+Pike-556,body_dmg,48,"Decreased damage from 50 to 48",
+Pike-556,dropoff_min,40,"Decreased damage falloff minimum range from 45m to 40m, giving the weapon a slightly shorter effective range",
+Pike-556,dropoff_reduction,80,"Increased damage falloff multiplier from 0.75 to 0.8, meaning the weapon now does slightly more damage at range. Recorded as a retained-damage percentage to match the sheets' column.",
+Pike-556,,,"Increased the size of bullet dispersion when firing from the hip, especially while crouching, making the weapon less accurate when not aiming down sights",nerf
+Pike-556,,,"We feel the Pike currently has too much utility, being both good at long range but also very viable at close range. These changes aim to get it to where it should be, a medium-to-long range rifle that is less effective when fighting at close quarters.",dev
+Riot Shield,,,"Decreased maximum speed of an attack's lunge to the target from 10m/s to 7m/s",nerf
+Riot Shield,,,"Decreased minimum speed of an attack's lunge to the target from 7m/s to 5.5m/s",nerf
+Riot Shield,,,"Decreased the trigger range of the attack's lunge from 4m to 2.5m. This is the range at which the lunge triggers, not the distance travelled, so it is kept separate from the lunge_distance series.",nerf
+Riot Shield,,,"The recent buffs to melee, including the Riot Shield, exposed some pre-existing issues, including its ability to too reliably keep attackers on top of enemies once they reached them. These changes should address that.",dev

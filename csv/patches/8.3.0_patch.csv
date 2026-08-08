@@ -1,0 +1,3 @@
+weapon,field,value,note,kind
+BFR Titan,body_dmg,90,"Decreased damage from 98 to 90. The BFR Titan is absent from the 7.3.0 sheet, so the stated prior of 98 has no measurement to check against.",
+BFR Titan,,,"This change is mostly aimed at removing the Winch Claw plus BFR headshot attack combo on Lights which, now that the data is in, has proven to be more rapid and easier to execute than we expected. The change shouldn't negatively impact most other 'shots to kill' breakpoints, so for the most part the weapon should feel as it did before.",dev

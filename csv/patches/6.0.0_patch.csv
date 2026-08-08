@@ -1,0 +1,38 @@
+weapon,field,value,note,kind
+AKM,,,"Improved recoil interpolation, making the weapon feel slightly smoother when it recoils. This does not change the underlying recoil pattern, only some of the first-person camera movement",buff
+CL 40,,,"Increased the size of the inner blast radius from 30cm to 60cm, meaning it should now be easier to do maximum damage",buff
+CL 40,,,"Increased the speed of the grenade projectile from 35m/s to 42m/s",buff
+CL 40,,,"Decreased the projectile gravity modifier from 1 to 0.9, giving projectiles a slightly flatter arc",buff
+CL 40,,,"The CL-40 feels slightly underused to us compared to other weapons, so this is a small buff in its effectiveness to try and make it more desirable.",dev
+Dagger,body_dmg,60,"Increased damage of regular attacks from 50 to 60",
+Dagger (Alt.),body_dmg,75,"Increased the damage of non-backstab secondary attacks from 50 to 75",
+Dagger (Alt. w/ Backstab),,,"Damage with backstab secondary attacks remains at 320 damage",soft
+Dagger,,,"This small buff to base damage is intended to make the weapon's attacks, other than backstab, slightly more viable for combat in certain situations.",dev
+FAMAS,,,"Improved recoil interpolation, making the weapon feel slightly smoother when it recoils. This does not change the underlying recoil pattern, only some of the first-person camera movement",buff
+FCAR,,,"Decreased recoil intensity for bullets 5-7 in the firing sequence, making the weapon slightly more stable",buff
+KS-23,rpm,85,"Decreased pump-action duration from 0.82s to 0.7s, allowing the gun to fire faster. This change effectively increases the KS-23's fire rate from 73RPM to 85RPM.",
+KS-23,,,"This small buff is aimed at improving the usability and competitiveness of the weapon.",dev
+LH1,body_dmg,40,"Decreased damage from 46 to 40",
+LH1,,,"The LH1 has been a very strong performer this season, even at closer ranges, which we didn't fully intend it to be. This change to its damage is aimed at addressing that and also bringing it more in line with other weapons' performance.",dev
+M11,dropoff_max,17.5,"Increased damage falloff max range from 15m to 17.5m, giving the weapon a slightly longer effective range",
+M11,dropoff_reduction,52,"Decreased damage falloff multiplier from 0.62 to 0.52, meaning the weapon now does slightly less damage at range. Recorded as a retained-damage percentage to match the sheets' column.",
+M11,,,"The M11 has been outperforming a number of longer ranged weapons, which was not intended. This small adjustment should make it slightly less effective at longer ranges, but increase the 'effective range' slightly.",dev
+M60,body_dmg,20,"Increased damage from 19 to 20",
+M60,dropoff_max,35,"Increased damage falloff max range from 32m to 35m, giving the weapon a slightly longer effective range",
+M60,dropoff_reduction,50,"Increased damage falloff multiplier from 0.4 to 0.5, meaning the weapon now does slightly more damage at range. Recorded as a retained-damage percentage to match the sheets' column.",
+M60,,,"Compared to the Lewis Gun and ShAK-50, the M60 has been underperforming. These buffs aim to hopefully bring it closer to those weapons in its effectiveness.",dev
+Pike-556,dropoff_min,45,"Decreased damage falloff minimum range from 50m to 45m, giving the weapon a slightly shorter effective range",
+Pike-556,dropoff_max,50,"Decreased damage falloff max range from 55m to 50m, giving the weapon a slightly shorter effective range",
+Pike-556,dropoff_reduction,75,"Decreased damage falloff multiplier from 0.85 to 0.75, meaning the weapon now does slightly less damage at range. Recorded as a retained-damage percentage to match the sheets' column.",
+Pike-556,,,"Significantly reduced the amount of visual recoil experienced when aiming-down-sights, causing the bullets to land closer to where your reticle indicates",buff
+Pike-556,,,"We want to bring it back in line with other weapons and we feel these reductions to its effective range should help achieve that. We also noticed it had a stronger visual recoil than other weapons, which has been reduced to make playing the weapon feel slightly nicer.",dev
+SA1216,body_dmg,72,"Decreased pellet count from 13 to 12, so total damage per shot decreased from 78 to 72. Recorded as the per-shot total to match the sheets' column, as the note's own wording gives it.",
+SA1216,dropoff_min,12.5,"Increased damage falloff minimum range from 10m to 12.5m, giving the weapon a slightly longer effective range",
+SA1216,dropoff_max,20,"Increased damage falloff max range from 15m to 20m, giving the weapon a slightly longer effective range",
+SA1216,,,"Pellet pattern has been adjusted, to move it towards a better closer-range role after the removal of a pellet",soft
+SA1216,,,"The SA1216 has been a strong performer for some time now, including being effective at slightly longer ranges than we'd intended. This changes lower the overall damage potential of the weapon, especially at range, but to preserve some of the feel of the weapon we've slightly extended the effective range to somewhat offset the damage reduction",dev
+XP-54,body_dmg,17,"Increased damage from 16 to 17",
+XP-54,dropoff_min,22.5,"Increased damage falloff minimum range from 20m to 22.5m, giving the weapon a slightly longer effective range",
+XP-54,dropoff_max,32.5,"Increased damage falloff max range from 30m to 32.5m, giving the weapon a slightly longer effective range",
+XP-54,dropoff_reduction,52,"Decreased damage falloff multiplier from 0.62 to 0.52, meaning the weapon now does slightly less damage at range. Recorded as a retained-damage percentage to match the sheets' column.",
+XP-54,,,"In Season 5 the XP-54 has underperformed compared to weapons like the M11, this change aims to address that.",dev

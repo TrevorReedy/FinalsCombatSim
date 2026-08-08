@@ -1,0 +1,111 @@
+weapon,field,value,note,kind
+.50 Akimbo,body_dmg,46,"Increased damage from 44 to 46",
+.50 Akimbo,,,"Despite some players swearing by the Akimbos, they're generally one of the least used and a slightly under-performing weapon for Heavies. We feel this buff will nudge up their desirability and viability.",dev
+93R,body_dmg,24,"Decreased damage from 25 to 24",
+93R,magazine_size,27,"Increased ammo count from 21 to 27",
+93R,,,"Since its last buff, the 93R has been a very strong outlier compared to all other Light weapons, by a considerable margin. We believe this power comes from the damage additions we made in 10.3, when a buff was warranted but took the weapon to its current state.",dev
+FCAR,rpm,530,"Decreased fire rate from 540RPM to 530RPM",
+FCAR,,,"Our previous buff to the FCAR pushed it well above most other Medium weapons in performance metrics, making it a significant outlier. This change is 'splitting the difference' on our last buff and its prior state to try and get the FCAR to a more balanced spot.",dev
+KS-23,body_dmg,110,"Increased damage from 100 to 110",
+KS-23,dropoff_reduction,64,"Decreased damage falloff multiplier from 0.7 to 0.64, meaning the weapon now does slightly less damage at range. Recorded as a retained-damage percentage to match the sheets' column.",
+KS-23,,,"While the KS has good utility, it still lags on a bunch of performance metrics compared to the Heavies many better combat focused options.",dev
+M134 Minigun,,,"Decreased dispersion in all aim states by 10%",buff
+M134 Minigun,,,"Decreased how aggressively dispersion scales-up when the player is moving the camera around quickly",buff
+M134 Minigun,,,"Increased environmental damage from 30 to 35. Environmental damage is not a stat any data sheet records.",buff
+M134 Minigun,,,"We'd really like the Minigun to have its chance to shine in the meta and we feel this change will bump up its effectiveness enough to allow that to happen.",dev
+Model 1887,body_dmg,117,"Increased pellet damage from 12 to 13. Converted to the sheets' unit: the sheets record total per-shot damage across all 9 pellets, so 13 x 9 = 117.",
+Model 1887,,,"The Model's viability has struggled for some time now, and we'd really like to see it find its place in the meta, we think this damage boost will help it get here.",dev
+Pike-556,head_dmg,85.75,"Increased headshot damage multiplier from 1.5 to 1.75. Converted to the sheets' unit: the sheets record absolute head damage, so 49 x 1.75 = 85.75.",
+Pike-556,,,"The Pike has been something of a problem child, constantly bouncing between just too under-powered and being fairly over-powered.",dev
+
+Dagger,head_dmg,60,"Set damage for precise hits to 60, replacing the old flat damage value of 60. Precision is the melee crit zone, so precise-hit damage is recorded in the head damage column.",soft
+Dagger,body_dmg,42,"Set base damage to 42, this damage value is used for 'glancing blows'",
+Dagger,stamina_regen,2,"Added Stamina regeneration time of 2s",soft
+Dagger,precision_angle,9,"Set Precision zone angle to 9 degrees",soft
+Dagger,lunge_distance,4.5,"Increased lunge distance from 3m to 4.5m",buff
+Dagger,lunge_angle,20,"Decreased lunge target angle from 25 to 20 degrees, meaning players need to be more precise with their aim to get the benefits of the lunge",nerf
+Dagger,,,"Added Stamina and Precision",soft
+Dagger,,,"Decreased max movement speed during an attack from sprint speed to run speed",nerf
+Dagger,,,"Decreased sweep range by ~0.5m, to make it more accurately match the animation",nerf
+Dagger (Alt.),lunge_distance,4.5,"Increased lunge distance from 3m to 4.5m",buff
+Dagger (Alt.),lunge_angle,20,"Decreased lunge target angle from 25 to 20 degrees, meaning players need to be more precise with their aim to get the benefits of the lunge",nerf
+Dagger (Alt.),,,"Reduced charge up time from 0.8s to 0.65s",buff
+Dagger (Alt.),,,"Added a small pushback to opponents when hit by the secondary attack",buff
+Dagger (Alt.),,,"This attack does not use Precision",soft
+Dagger (Alt. w/ Backstab),,,"Increased backstab damage multiplier from 4.26 to 4.5 to offset the decrease in Quick Melee damage. The multiplier itself is not a stat any data sheet records.",buff
+
+Dual Blades,head_dmg,114,"Set damage for precise hits to 57 x 2. Recorded as the combined 114 damage of one full double-swipe, since the sheets record damage per attack rather than per blade.",soft
+Dual Blades,body_dmg,78,"Set base damage to 39 x 2, this damage value is used for 'glancing blows'. Recorded as the combined 78 damage of one full double-swipe.",soft
+Dual Blades,stamina_regen,3,"Added Stamina regeneration time of 3s",soft
+Dual Blades,precision_angle,8,"Set Precision zone angle to 8 degrees",soft
+Dual Blades,lunge_distance,4.5,"Lunge distance remains at 4.5m",soft
+Dual Blades,lunge_angle,20,"Decreased lunge target angle from 25 to 20 degrees, meaning players need to be more precise with their aim to get the benefits of the lunge",nerf
+Dual Blades,,,"Added Stamina and Precision",soft
+Dual Blades,,,"Removed the cross-swipe attack from the end of the three-attack strike sequence, leaving two double-swipes. Replaced the old attack sequence damage values of 50 x 2, 60 x 2, then 100.",nerf
+Dual Blades,,,"Deflect: decreased movement speed while deflecting by 50%",nerf
+Dual Blades,,,"Deflect: increased damage multiplier while deflecting from 0.1 to 0.2, meaning enemies now do slightly more chip damage through Dual Blades' deflection",nerf
+Dual Blades (Cross Slash),head_dmg,140,"Set damage for precise hits to 140",soft
+Dual Blades (Cross Slash),body_dmg,84,"Set base damage to 84, this damage value is used for 'glancing blows'",soft
+Dual Blades (Cross Slash),lunge_distance,5,"Set lunge distance to 5m",soft
+Dual Blades (Cross Slash),precision_angle,8,"Set Precision zone angle to 8 degrees",soft
+Dual Blades (Cross Slash),,,"Added a new Cross Slash attack that can be executed by pressing the Primary Fire button while in the Deflect stance. This triggers a fixed distance lunge attack (no target required) followed by a cross-slash attack for high damage",buff
+Dual Blades (Cross Slash),,,"Added a small pushback to opponents when hit by the Cross Slash attack",buff
+
+Riot Shield,head_dmg,82,"Set damage for precise hits to 82, replacing the old flat damage value of 90",soft
+Riot Shield,body_dmg,57,"Set base damage to 57, this damage value is used for 'glancing blows'",
+Riot Shield,stamina_regen,3,"Added Stamina regeneration time of 3s",soft
+Riot Shield,precision_angle,9,"Set Precision zone angle to 9 degrees",soft
+Riot Shield,lunge_distance,4,"Increased lunge distances from 3m to 4m",buff
+Riot Shield,lunge_angle,20,"Decreased lunge target angle from 40 to 20 degrees, meaning players need to be more precise with their aim to get the benefits of the lunge",nerf
+Riot Shield,,,"Added Stamina and Precision",soft
+Riot Shield,,,"Decreased sweep range by 0.5m, to make it more accurately match the animation",nerf
+Riot Shield,,,"Shield Block: updated the Shield's collision when blocking to now provide full frontal protection to the user",buff
+Riot Shield,,,"Shield Block: decreased movement speed while blocking by 25%",nerf
+Riot Shield,,,"Shield Block: increased reliability when blocking incoming melee attacks",buff
+Riot Shield (Shield Bash),body_dmg,40,"Set damage to 40",soft
+Riot Shield (Shield Bash),lunge_distance,3,"Set lunge distance to ~3m",soft
+Riot Shield (Shield Bash),,,"Added a new Shield Bash attack that can be executed by pressing the Primary Fire button while in the Shield Block stance. This triggers a fixed distance lunge attack (no target required, forward input required) that will knockback any opponents it strikes",buff
+Riot Shield (Shield Bash),,,"Set knockback distance to ~5m",soft
+Riot Shield (Shield Bash),,,"This attack does not use Precision",soft
+
+Sledgehammer,head_dmg,120,"Set damage for precise hits to 120, replacing the old flat damage value of 100",soft
+Sledgehammer,body_dmg,90,"Set base damage to 90, this damage value is used for 'glancing blows'",
+Sledgehammer,stamina_regen,2,"Added Stamina regeneration time of 2s",soft
+Sledgehammer,precision_angle,10,"Set Precision zone angle to 10 degrees",soft
+Sledgehammer,lunge_distance,5,"Increased lunge distances from 4.5m to 5m",buff
+Sledgehammer,lunge_angle,20,"Decreased lunge target angle from 25 to 20 degrees, meaning players need to be more precise with their aim to get the benefits of the lunge",nerf
+Sledgehammer,,,"Added Stamina and Precision",soft
+Sledgehammer (Alt.),head_dmg,200,"Set damage for precise hits to 200, replacing the old flat damage value of 175",soft
+Sledgehammer (Alt.),body_dmg,150,"Set base damage to 150, this damage value is used for 'glancing blows'",soft
+Sledgehammer (Alt.),precision_angle,10,"Set Precision zone angle to 10 degrees",soft
+Sledgehammer (Alt.),lunge_distance,5,"Increased lunge distances from 4.5m to 5m",buff
+Sledgehammer (Alt.),lunge_angle,20,"Decreased lunge target angle from 25 to 20 degrees, meaning players need to be more precise with their aim to get the benefits of the lunge",nerf
+Sledgehammer (Alt.),,,"Added a small pushback to opponents when hit by the secondary attack",buff
+
+Spear,head_dmg,74,"Set damage for precise hits to 74, replacing the old scaling attack damage sequence of 65, 80 then 90 damage",soft
+Spear,body_dmg,55,"Set base damage to 55, this damage value is used for 'glancing blows'",soft
+Spear,stamina_regen,3,"Added Stamina regeneration time of 3s",soft
+Spear,precision_angle,8,"Set Precision zone angle to 8 degrees",soft
+Spear,lunge_distance,5,"Decreased lunge distance from 7.5m to 5m",nerf
+Spear,lunge_angle,20,"Decreased lunge target angle from 30 to 20 degrees, meaning players need to be more precise with their aim to get the benefits of the lunge",nerf
+Spear,,,"Added Stamina and Precision",soft
+Spear,,,"Removed first attack from the three-attack animation sequence, going down to two and making the weapon more responsive",soft
+Spear (Alt.),body_dmg,75,"New three-spin sequence does 75 / 100 / 126 damage, replacing the old spin attack that did 100 damage per spin for three spins over 2.66s. Recorded as the first spin, the only one guaranteed to land; the later two need Stamina. Note that 11.3.0's patch note restates this sequence as 75/100/125.",soft
+Spear (Alt.),precision_angle,0,"Set Spin Attack Precision zone angle to 0 (it does not use Precision)",soft
+Spear (Alt.),,,"Set spin durations as: first spin 0.8s, second spin 0.75s, third spin 1.1s, replacing three spins over 2.66s",buff
+Spear (Alt.),,,"Setup Spin Attack such that each spin requires stamina to perform",nerf
+Spear (Alt.),,,"Setup Spin Attack such that when a spin hits an opponent, stamina is immediately regenerated. If the player is already holding the Spin Attack button or presses it again, this allows the second or third spin to immediately trigger",buff
+Spear (Alt.),,,"Spin Attack will now end after a single spin attack if the player fails to trigger the next attack or has no Stamina with which to trigger it",nerf
+
+Sword,head_dmg,110,"Set damage for precise hits to 110, replacing the old flat damage value of 88",soft
+Sword,body_dmg,71,"Set base damage to 71, this damage value is used for 'glancing blows'",
+Sword,stamina_regen,2,"Added Stamina regeneration time of 2s",soft
+Sword,precision_angle,9,"Set Precision zone angle to 9 degrees",soft
+Sword,lunge_distance,4.25,"Increased lunge distances from 3m to 4.25m",buff
+Sword,lunge_angle,20,"Decreased lunge target angle from 25 to 20 degrees, meaning players need to be more precise with their aim to get the benefits of the lunge",nerf
+Sword,,,"Added Stamina and Precision",soft
+Sword,,,"Updated the primary attack sweep to make it more accurately match the animation",soft
+Sword (Alt.),lunge_distance,10,"Lunge distance with stamina increased from ~9m to ~10m",buff
+Sword (Alt.),,,"Lunge attack now requires Stamina to achieve the maximum range",nerf
+Sword (Alt.),,,"Lunge distance without stamina set to ~5m",nerf
+Sword (Alt.),,,"Decreased rotation clamping on the lunge attack by increasing the forward clamp angle from 40 to 110 degrees",buff

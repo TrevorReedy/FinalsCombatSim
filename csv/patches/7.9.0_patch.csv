@@ -1,0 +1,10 @@
+weapon,field,value,note,kind
+93R,,,"Decreased rate of fire from 220 to 210, making the weapon slightly slower. Held as text rather than recorded as RPM: the sheets measure the 93R at ~1000 RPM, so the note's figure counts burst cycles rather than bullets and writing it into the rate column would corrupt the series.",nerf
+93R,,,"We've been monitoring the 93R since buffing it in update 7.0. The buff improved the weapon considerably, and even made it a touch too strong. We think this small change will better align it with other Light weapons.",dev
+Cerberus 12GA,,,"Decreased the radius of the pellet distribution by approximately 10%, making the weapon more accurate",buff
+Cerberus 12GA,,,"Increased the heat applied to world objects by the Cerberus from 2.5 to 7.5, meaning it will now ignite toxic gas clouds in a single shot",buff
+Cerberus 12GA,,,"Since our last round of Cerberus changes the weapon has dropped dramatically in usage across all modes and skill tiers. We want to buff its viability, without returning to its previous overpowered state and we hope these changes will have that effect.",dev
+Model 1887,magazine_size,7,"Increased maximum ammo capacity from 6 to 7",
+Model 1887,,,"The Model is in a very similar place to the Cerberus, with very low usage and poor performance metrics right now. This subtle change should buff its viability without over-tuning its power.",dev
+Sledgehammer (Alt.),body_dmg,175,"Secondary attack damage increased from 154 to 175",
+Sword (Alt.),,,"Increased the vertical component of the secondary attack's rotation clamping from 40 degrees to 90 degrees",buff

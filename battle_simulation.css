@@ -8,6 +8,11 @@
   --tie: #fcfcfc;
   --red: #e84040;
   --green: #39d974;
+  /* Soft-change amber. Pulled warmer than a true yellow because yellow sits on
+     top of green under deuteranopia — at #e5b33c the pair separated by only
+     ΔE 6.4, and in the ospuze theme's yellow-green it fell to 12.6 for normal
+     vision too. This value clears both. */
+  --soft: #e08a1e;
   --blue: #4a9eff;
   --purple: #9d7fff;
 
@@ -63,6 +68,7 @@ body.ospuze-mode {
   --tie: rgb(251, 255, 0);
   --red: #e84040;
   --green: #8ddc57;
+  --soft: #e08a1e;
   --blue: #4a9eff;
   --purple: #c89b2b;
 
@@ -1780,11 +1786,98 @@ td {
   border-bottom-color: var(--accent);
 }
 
+/* The chart carries 137 versions across 11 season bands, so it takes the space
+   the snapshot panel used to hold. The hero card beside it is short by design —
+   identity and a jump list, not a stat dump. */
 .weapon-grid {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-columns: minmax(0, 4fr) minmax(0, 1.5fr);
   gap: var(--space-4);
   align-items: start;
+}
+
+.page-head.slim {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: var(--space-3);
+}
+
+.hero-panel .page-title {
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  line-height: 1.05;
+}
+
+.hero-panel .page-lead {
+  margin-top: var(--space-2);
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.hero-section {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--border-w) solid var(--border);
+}
+
+.hero-section .section-label {
+  margin-bottom: var(--space-2);
+}
+
+/* ── Season bands on the chart ─────────────────────────────────── */
+.season-band rect {
+  fill: transparent;
+}
+
+.season-band.alt rect {
+  fill: var(--surface);
+  opacity: 0.55;
+}
+
+.season-band text {
+  fill: var(--muted);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08rem;
+  opacity: 0.5;
+}
+
+/* A season this weapon was touched in earns a brighter label than one it sat
+   out — the axis then shows at a glance where its history actually happened. */
+.season-band.live text {
+  fill: var(--text);
+  opacity: 0.85;
+}
+
+/* ── Stat block inside a ledger entry ──────────────────────────── */
+.stat-block {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: var(--border-w) solid var(--border);
+}
+
+.stat-block-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.stat-block-src {
+  font-size: var(--fs-micro);
+  color: var(--muted);
+}
+
+.vchip.measured {
+  border-color: var(--muted);
+  color: var(--text);
+}
+
+.vchip.active {
+  border-color: var(--accent);
+  color: var(--text);
 }
 
 .panel {
@@ -1854,19 +1947,6 @@ td {
 .chart-line.gap {
   stroke-dasharray: 5 5;
   opacity: 0.55;
-}
-
-.chart-point circle {
-  fill: var(--accent);
-  stroke: var(--bg);
-  stroke-width: 2;
-  cursor: pointer;
-}
-
-.chart-point.disputed circle {
-  fill: var(--bg);
-  stroke: var(--accent);
-  stroke-dasharray: 3 2;
 }
 
 .chart-value {
@@ -2071,8 +2151,286 @@ td {
   color: var(--red);
 }
 
+/* A soft change moved something the sheets do not measure, so it gets a flat
+   line rather than an arrow — there is a change, but no direction to point. */
+.chg-values.soft,
+.chg-delta.soft {
+  color: var(--soft);
+}
+
 .chg-delta {
   font-size: var(--fs-micro);
+}
+
+/* Marker for a change carried entirely by prose: the glyph does the work the
+   from → to numbers do on a stat line. */
+.chg-mark {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: var(--fs-ui);
+  font-weight: 700;
+  min-width: 1.2rem;
+  text-align: center;
+}
+
+.chg-mark.buff { color: var(--green); }
+.chg-mark.nerf { color: var(--red); }
+.chg-mark.soft { color: var(--soft); }
+
+.chg-prose {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.change-line.dev-note {
+  color: var(--muted);
+  font-style: italic;
+  align-items: flex-start;
+}
+
+.dev-label {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.08rem;
+  padding: 0.1em 0.5em;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+/* ── Timeline chart: dots, update markers, axis ticks ───────────── */
+
+/* A version nothing happened in. Small and recessive so the eye lands on the
+   updates rather than counting the grid. */
+.chart-dot {
+  fill: var(--muted);
+  opacity: 0.45;
+}
+
+.chart-mark { cursor: pointer; }
+.chart-mark .hit { fill: transparent; }
+
+/* The 2px surface ring keeps a marker legible where it overlaps the line. */
+.chart-mark .ring { fill: var(--card); }
+.chart-mark .core { fill: var(--muted); }
+
+.chart-mark.buff .core { fill: var(--green); }
+.chart-mark.nerf .core { fill: var(--red); }
+.chart-mark.soft .core { fill: var(--soft); }
+
+/* Touched in this update, but not in a way this metric can show. Hollow, so it
+   reads as "something happened here" without claiming a movement. */
+.chart-mark.elsewhere .core { fill: var(--card); stroke: var(--muted); stroke-width: 2; }
+
+.chart-mark:hover .ring,
+.chart-mark:focus-visible .ring { stroke: var(--text); stroke-width: 2; }
+.chart-mark.selected .ring { stroke: var(--text); stroke-width: 2.5; }
+.chart-mark:focus-visible { outline: none; }
+
+.chart-value.buff { fill: var(--green); }
+.chart-value.nerf { fill: var(--red); }
+.chart-value.soft { fill: var(--soft); }
+
+.chart-xlabel { cursor: pointer; }
+
+.chart-xlabel text {
+  fill: var(--muted);
+  font-size: 0.62rem;
+  letter-spacing: 0.04rem;
+}
+
+.chart-xlabel .glyph { font-weight: 700; }
+.chart-xlabel.buff .glyph { fill: var(--green); }
+.chart-xlabel.nerf .glyph { fill: var(--red); }
+.chart-xlabel.soft .glyph,
+.chart-xlabel.elsewhere .glyph { fill: var(--soft); }
+
+.chart-xlabel:hover text,
+.chart-xlabel:focus-visible text { fill: var(--text); }
+.chart-xlabel.selected text { fill: var(--text); font-weight: 700; }
+.chart-xlabel:focus-visible { outline: none; }
+
+/* ── The update card expanded from a chart marker ───────────────── */
+.update-card {
+  margin-top: var(--space-3);
+  border: var(--border-w) solid var(--border);
+  background: var(--surface);
+}
+
+.update-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-w) solid var(--border);
+}
+
+.update-version {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: var(--fs-ui);
+  font-weight: 700;
+  letter-spacing: 0.04rem;
+}
+
+.update-title {
+  margin-left: var(--space-2);
+  color: var(--muted);
+}
+
+.update-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-micro);
+  color: var(--muted);
+}
+
+.update-meta a { color: var(--accent); }
+
+.update-close {
+  background: none;
+  border: var(--border-w) solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0.1em 0.45em;
+  font-size: var(--fs-micro);
+}
+
+.update-close:hover { color: var(--text); border-color: var(--muted); }
+
+.update-body { padding: 0 var(--space-3) var(--space-2); }
+.update-body .change-line:last-child { border-bottom: none; }
+
+/* ── Tally chips ────────────────────────────────────────────────── */
+.tally-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+}
+
+.tally {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06rem;
+  padding: 0.1em 0.5em;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.tally .glyph { font-weight: 700; }
+.tally.buff .glyph { color: var(--green); }
+.tally.nerf .glyph { color: var(--red); }
+.tally.soft .glyph { color: var(--soft); }
+.tally.dev { font-style: italic; }
+
+/* ── Ledger ─────────────────────────────────────────────────────── */
+.ledger-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.lfilter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  background: none;
+  border: var(--border-w) solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0.2em 0.6em;
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06rem;
+}
+
+.lfilter:hover:not(:disabled) { color: var(--text); border-color: var(--muted); }
+.lfilter.active { color: var(--text); border-color: var(--text); }
+.lfilter:disabled { opacity: 0.35; cursor: default; }
+
+.lfilter .glyph { font-weight: 700; }
+.lfilter.buff .glyph { color: var(--green); }
+.lfilter.nerf .glyph { color: var(--red); }
+.lfilter.soft .glyph { color: var(--soft); }
+
+.lcount {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ledger-entry {
+  border-bottom: var(--border-w) solid var(--border);
+}
+
+.ledger-entry > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.ledger-entry > summary::-webkit-details-marker { display: none; }
+
+.ledger-entry > summary::before {
+  content: '▸';
+  color: var(--muted);
+  font-size: 0.7em;
+}
+
+.ledger-entry[open] > summary::before { content: '▾'; }
+
+/* Opened from the chart rather than by clicking the row — worth marking so the
+   connection between the two is visible. */
+.ledger-entry.lit > summary { background: var(--card); }
+
+.ledger-version {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: var(--fs-ui);
+  font-weight: 700;
+  min-width: 4.5rem;
+}
+
+.ledger-source,
+.ledger-date {
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06rem;
+  color: var(--muted);
+}
+
+.ledger-source.sheet { color: var(--blue); }
+
+.ledger-entry > summary .tally-row {
+  padding: 0;
+  margin-left: auto;
+}
+
+.ledger-body { padding: 0 0 var(--space-2) var(--space-3); }
+.ledger-body .change-line:last-child { border-bottom: none; }
+
+.ledger-link {
+  display: inline-block;
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-micro);
+  color: var(--accent);
+}
+
+/* A measured change that the patch notes for that interval never mention. */
+.conf.shadow {
+  color: var(--soft);
+  border-color: var(--soft);
+  border-style: dashed;
+  margin-left: var(--space-2);
 }
 
 .conf {

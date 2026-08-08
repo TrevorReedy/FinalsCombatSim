@@ -1,0 +1,4 @@
+weapon,field,value,note,kind
+FAMAS,,,"Increased recoil curve recovery delay from 0.68 to 0.8",nerf
+FAMAS,,,"Increased recoil recovery time from 0.8 to 1",nerf
+FAMAS,,,"These changes cause automatic recoil recovery to kick in slightly later than before a player finishes firing. It helps prevent an issue where players who pressed the fire button slightly slower than other players felt they saw a very different recoil pattern for the gun",dev

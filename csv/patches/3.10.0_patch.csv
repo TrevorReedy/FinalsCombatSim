@@ -1,0 +1,3 @@
+weapon,field,value,note,kind
+Throwing Knives,rpm,107,"Decreased the fire rate of the primary fire from 125rpm to 107rpm",
+Throwing Knives,,,"Throwing Knives have become quite an oppressive weapon! We'll monitor this change closely and likely make more involved changes if this adjustment doesn't do enough to address that feeling.",dev

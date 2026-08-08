@@ -1,0 +1,3 @@
+weapon,field,value,note,kind
+SA1216,rpm,200,"Decreased fire rate from 230RPM to 200RPM",
+SA1216,body_dmg,78,"Decreased damage per pellet from 7 to 6. Converted to the sheets' unit: 13 pellets at the time, so 6 x 13 = 78, the figure 6.0.0 later gives as the prior value.",

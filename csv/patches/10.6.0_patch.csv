@@ -1,0 +1,21 @@
+weapon,field,value,note,kind
+.50 Akimbo,,,"Decreased max bullet dispersion from 8 to 7.5",buff
+.50 Akimbo,,,"Decreased hip fire dispersion while standing from 2 to 1.8",buff
+.50 Akimbo,,,"Decreased dispersion while moving from 2.6 to 2.2",buff
+.50 Akimbo,,,"Despite being fairly popular, the Akimbo Pistols tend to underperform compared to most Heavy weapons. This change is a small nudge to try and help their viability a little.",dev
+Chimera-XB,dropoff_min,17.5,"Decreased damage falloff minimum range from 20m to 17.5m",
+Chimera-XB,dropoff_max,27.5,"Decreased damage falloff max range from 30m to 27.5m",
+Chimera-XB,dropoff_reduction,53,"Decreased damage falloff multiplier from 0.6 to 0.53. Recorded as a retained-damage percentage to match the sheets' column.",
+Chimera-XB,,,"Now that we've had a solid period of time to see the Chimera settle in the meta, it's outperforming some of the longer ranged weapons at distance, which was not intended. These adjustments should nudge it more towards the mid-range bracket.",dev
+KS-23,,,"Disabled trigger-hold delay on pump action",buff
+KS-23,,,"When the player holds down the trigger after firing a manual action or pump action weapon, like a number of other FPS games, this blocks the action until the trigger is released, allowing some additional control for the player. We feel this is something that is rarely being used intentionally though, and it can have a hidden negative impact on players who are slower at pressing the fire button as it slightly slows their rate of fire due to briefly blocking the action. We've removed this blocking on all pump action shotguns to give a smoother and more consistent experience.",dev
+M11,dropoff_max,20,"Increased damage falloff max range from 17.5m to 20m",
+M11,dropoff_reduction,45,"Decreased damage falloff multiplier from 0.52 to 0.45. Recorded as a retained-damage percentage to match the sheets' column.",
+M11,,,"The M11 is performing a little too well at medium to long ranges, causing it to cannibalize the roles of weapons like the XP-54 and LH1. These changes bring down its damage a little at those longer ranges, but with a small extension to its optimal range to offset that.",dev
+M26 Matter,,,"Disabled trigger-hold delay on pump action",buff
+Model 1887,,,"Disabled trigger-hold delay on pump action",buff
+Spear,,,"Increased cap on player targets in spin attack from 8 to 24",buff
+Spear,,,"Increased cap on non-player targets in spin attack from 20 to 60",buff
+Spear,,,"This is a small quality of life change to the Spear's secondary attack that has been pending for a little while. In light of the S11 melee rework, the Spear's secondary may yet change in how it functions, but we don't see that as a reason not to release this change in the meantime.",dev
+V9S,magazine_size,18,"Decreased magazine size from 20 to 18",
+V9S,,,"Among Light weapons, the V9S still slightly over-performs where it should be relative to other weapons available to the Light. This change is to bring it more inline with the other guns",dev

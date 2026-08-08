@@ -1,0 +1,3 @@
+weapon,field,value,note,kind
+LH1,body_dmg,48,"Decreased damage from 52 to 48",
+Throwing Knives,body_dmg,60,"Decreased damage from 63 to 60",

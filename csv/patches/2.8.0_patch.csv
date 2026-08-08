@@ -1,0 +1,11 @@
+weapon,field,value,note,kind
+Dagger (Alt. w/ Backstab),,,"Improved backstab validation",buff
+Dagger (Alt. w/ Backstab),,,"Fixed so that the aim assist for backstabs now synchronizes with the swing, rather than triggering at the start of the charge-up",buff
+Dagger,,,"Improved hit validation for all melee weapons; the aim assist and lunge range are slightly more generous for quick melee",buff
+Dual Blades,,,"Improved hit validation for all melee weapons; the aim assist and lunge range are slightly more generous for quick melee",buff
+Sledgehammer,,,"Improved hit validation for all melee weapons; the aim assist and lunge range are slightly more generous for quick melee",buff
+Spear,,,"Improved hit validation for all melee weapons; the aim assist and lunge range are slightly more generous for quick melee",buff
+Sword,,,"Improved hit validation for all melee weapons; the aim assist and lunge range are slightly more generous for quick melee",buff
+Riot Shield,,,"Improved hit validation for all melee weapons; the shield can now be raised more quickly after performing an attack",buff
+Riot Shield,,,"Sprint blocking now occurs only during the swing portions rather than the entire attack duration, and the sprint toggle is no longer cancelled by melee attacks",buff
+SR-84,,,"Is now correctly marked as a Marksman Rifle instead of a Melee Weapon in the menus",soft

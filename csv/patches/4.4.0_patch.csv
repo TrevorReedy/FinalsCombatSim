@@ -1,0 +1,5 @@
+weapon,field,value,note,kind
+Sledgehammer (Alt.),,,"Decreased the sweep duration of the secondary attack by 25%",nerf
+Sledgehammer (Alt.),,,"Decreased the sweep width of the secondary attack from 30cm to 25cm",nerf
+Sledgehammer,,,"Increased the sweep width of the primary attack from 12cm to 15cm",buff
+Sledgehammer,,,"These changes make the Sledgehammer's hit sweeps more accurately match the attack animations which hopefully makes the weapon feel more reliable for its victims. We noticed that in some cases players would be hit despite the Sledgehammer's model not passing near to them at all, which could cause a lot of confusion.",dev

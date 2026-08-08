@@ -1,0 +1,6 @@
+weapon,field,value,note,kind
+Model 1887,body_dmg,108,"Increased damage from 11 to 12 per pellet. Converted to the sheets' unit: the Model fires 9 pellets, so 12 x 9 = 108.",
+Model 1887,rpm,75,"Decreased the duration of the lever-action animation from 0.85s to 0.8s, effectively increasing the weapon's fire rate from 70RPM to 75RPM",
+Model 1887,,,"Having now had time to analyse the Model's performance on live, following our last round of balance changes, we feel we've maybe weakened the weapon a little too much. These changes should nudge it back to a better place.",dev
+Recurve Bow (charged),body_dmg,124,"Increased damage per shot, when the bow is at max draw, from 120 to 124",
+Recurve Bow (uncharged),,,"The base damage per shot remains at 60 damage",soft

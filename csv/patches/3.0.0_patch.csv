@@ -1,0 +1,36 @@
+weapon,field,value,note,kind
+93R,dropoff_min,23,"Increased the damage fall-off start distance from 15m to 23m, meaning the weapon will do max damage at longer ranges now",
+93R,dropoff_max,35,"Increased the damage fall-off max distance from 22m to 35m, increasing the range before damage fall-off is fully applied",
+93R,dropoff_reduction,45,"Decreased the damage fall-off multiplier at max range from 65% to 45%, meaning the weapon will do less damage at longer ranges now",
+93R,,,"Decreased fire rate from 260 RPM to 210 RPM. Held as text rather than recorded as RPM: the 93R is a burst weapon and the sheets measure it at ~1000 RPM of bullets, so the note's figure counts burst cycles.",nerf
+93R,,,"Updated recoil pattern, making the weapon much easier to control and hopefully making headshots easier to achieve",buff
+93R,,,"Decreased automatic recoil recovery duration from 0.72s to 0.7s, making the weapon easier to control",buff
+93R,,,"To increase viability for the 93R, we've made it considerably more precise but lowered the DPS slightly to offset that. Our aim is to make the weapon more effective when using precise aim and going for headshots, and we'll continue to monitor its performance following these changes.",dev
+CL 40,body_dmg,93,"Decreased damage from 110 to 93",
+CL 40,rpm,275,"Increased fire rate from 250 RPM to 275 RPM",
+CL 40,,,"Decreased pump-action duration from 0.7s to 0.65s",buff
+CL 40,,,"Decreased self-damage multiplier from 1 to 0.75, reducing how much damage the grenades do to the player using them",buff
+FAMAS,body_dmg,24,"Increased damage from 23 to 24",
+FAMAS,,,"Decreased automatic recoil recovery duration from 1s to 0.8s, making the weapon easier to control",buff
+FAMAS,,,"Decreased the delay before recoil recovery begins from 0.8s to 0.7s, making the weapon easier to control",buff
+KS-23,,,"Decreased pump-action duration from 0.7s to 0.575s",buff
+Lewis Gun,body_dmg,22,"Decreased damage from 25 to 22",
+Lewis Gun,,,"Further updated recoil pattern, making the weapon easier to control for the first few bullets in the sequence, but making the weapon recoil more the longer the trigger is held",soft
+LH1,body_dmg,52,"Increased player damage from 49 to 52",
+LH1,rpm,280,"Decreased fire rate from 300 RPM to 280 RPM",
+LH1,,,"Updated firing animation, which should make the weapon easier to use",buff
+LH1,,,"Decreased bullet dispersion when crouching and standing still, making the weapon more precise",buff
+LH1,,,"Overall the effective damage of the LH1 should remain roughly the same, but it should now be easier to use, less nauseating, and more precise when standing still, as well as incentivizing headshots. The lower RPM should help make it feel distinct and make it easier to maintain targets in sights",dev
+M60,body_dmg,19,"Decreased damage from 22 to 19",
+M60,,,"Updated recoil pattern, making the weapon recoil more during the first few bullets, but making it easier to control for the rest of the sequence",soft
+SH1900,body_dmg,195,"Increased damage from 10 to 13 per pellet. Converted to the sheets' unit: the SH1900 fires 15 pellets, so 13 x 15 = 195, up from 10 x 15 = 150.",
+SH1900,rpm,80,"Decreased fire rate from 100 RPM to 80 RPM",
+SH1900,,,"Increased the size of the pellet dispersion pattern, making the weapon less accurate at range",nerf
+SH1900,,,"We've wanted for a while to make the SH1900 more effective against Heavies without making it oppressive for Lights. With higher pellet dispersion the SH1900 is now optimized for very close range only, which has allowed us to buff the damage, hopefully making Heavies easier to kill. This is a change we will be monitoring closely to measure its impact",dev
+Sledgehammer,,,"Updated camera animation when sprinting, which should reduce motion sickness for some players",soft
+Throwing Knives,,,"Decreased projectile speed of primary attacks from 16.5 m/s to 14.75 m/s",nerf
+Throwing Knives,,,"Decreased projectile air drag of primary attacks from 7.5 to 7, allowing the projectile to travel farther",buff
+Throwing Knives (Alt.),,,"Increased projectile speed of secondary attacks from 13.8 m/s to 18.5 m/s",buff
+Throwing Knives (Alt.),,,"Increased projectile air drag of secondary attacks from 4 to 5.5, increasing the speed at which the projectile slows down",nerf
+Throwing Knives,,,"Our last balance changes on the Throwing Knives pushed them in the right direction but ultimately felt too powerful, changing the weapon's character too much. We have here dialed down the velocity of the regular projectiles so that leading your throws becomes a requirement again, but not to the same extent as before the last changes. Similarly we sped up the secondary projectiles so that they become a more long-range option with a focus on timing rather than leading.",dev
+V9S,body_dmg,37,"Increased damage from 36 to 37",

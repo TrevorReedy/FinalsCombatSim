@@ -1,0 +1,8 @@
+weapon,field,value,note,kind
+CL 40,,,"Decreased minimum damage applied at outer edge of explosions to 0",nerf
+CL 40,,,"Increased damage radius from 2.6m to 3m",buff
+CL 40,,,"Set damage fall-off to scale linearly from the max damage radius to the outer radius",soft
+MGL-32,,,"Decreased minimum damage applied at outer edge of explosions to 0",nerf
+MGL-32,,,"Increased damage radius from 3.75m to 4m",buff
+MGL-32,,,"Set damage fall-off to scale linearly from the max damage radius to the outer radius",soft
+MGL-32,,,"As with the AoE Gadgets, our AoE weapons have also been updated to get more consistent feeling damage fall-off. The same change was applied to the RPG-7, which this weapons-only schema does not carry.",dev

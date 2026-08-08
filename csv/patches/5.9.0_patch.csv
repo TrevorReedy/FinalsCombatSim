@@ -1,0 +1,6 @@
+weapon,field,value,note,kind
+Dagger (Alt. w/ Backstab),,,"Decreased the backstab angle on the Dagger's secondary attack from 180 degrees to 150",nerf
+Dagger (Alt. w/ Backstab),,,"This change addresses concerns about the Dagger's backstab being inaccurate and the frustration around how easily it can land backstabs, seemingly from the side.",dev
+KS-23,dropoff_reduction,70,"Increased min damage falloff multiplier from 0.6 to 0.7. Recorded as a retained-damage percentage to match the sheets' column.",
+KS-23,,,"Decreased bullet dispersion when aiming down sights",buff
+KS-23,,,"The KS-23 has been struggling after the recent fixes to 'manual actions' in Update 5.8. These adjustments are made to improve viability, with continued monitoring planned.",dev

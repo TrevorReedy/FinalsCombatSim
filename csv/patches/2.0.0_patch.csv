@@ -1,0 +1,14 @@
+weapon,field,value,note,kind
+AKM,dropoff_min,30,"Decreased damage falloff minimum range from 35m to 30m",
+AKM,dropoff_max,37.5,"Decreased damage falloff max range from 40m to 37.5m",
+AKM,dropoff_reduction,55,"Decreased damage falloff modifier at max range from 67% to 55%",
+FCAR,dropoff_reduction,55,"Decreased damage falloff modifier at max range from 67% to 55%",
+Lewis Gun,,,"Updated weapon recoil pattern to be slightly less accurate over time during sustained firing",nerf
+M11,,,"Increased accuracy by decreasing bullet dispersion when firing from the hip",buff
+M60,,,"Updated weapon recoil pattern to be slightly more accurate over time during sustained firing",buff
+M60,,,"Increased accuracy by decreasing bullet dispersion while moving when firing from the hip",buff
+M60,,,"Increased accuracy by decreasing bullet dispersion while moving when firing while aiming down sights",buff
+M60,,,"Decreased accuracy slightly by increasing bullet dispersion while standing still when firing while aiming down sights",nerf
+R.357,dropoff_reduction,45,"Increased damage falloff modifier at max range from 33% to 45%",
+Throwing Knives,,,"Increased projectile speed from 120m/s to 138m/s",buff
+XP-54,,,"Decreased accuracy by increasing bullet dispersion when firing from the hip in most movement states",nerf

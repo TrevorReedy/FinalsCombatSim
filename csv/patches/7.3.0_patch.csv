@@ -1,0 +1,28 @@
+weapon,field,value,note,kind
+93R,,,"Decreased the weapon equip time from 0.2s to 0.15s, and the unequip time from 0.2s to 0.15s",buff
+AKM,,,"Increased the weapon equip time from 0.23s to 0.3s",nerf
+AKM,,,"Decreased the weapon unequip time from 0.23s to 0.2s",buff
+ARN-220,,,"Increased the weapon equip time from 0.2s to 0.3s",nerf
+CB-01 Repeater,,,"Increased the weapon equip time from 0.2s to 0.3s",nerf
+Cerberus 12GA,,,"Increased the weapon equip time from 0.2s to 0.3s",nerf
+CL 40,,,"Increased self-damage multiplier from 1.25 to 1.35",nerf
+CL 40,,,"Decreased inner blast radius from 60cm to 50cm",nerf
+CL 40,,,"Usage has increased since the Healing Emitter arrived, and the CL-40 is too effective at close range without demanding accuracy.",dev
+FAMAS,,,"Increased the weapon equip time from 0.2s to 0.3s",nerf
+FAMAS,,,"Decreased the weapon unequip time from 0.23s to 0.2s",buff
+FCAR,,,"Increased the weapon equip time from 0.2s to 0.3s",nerf
+FCAR,,,"Decreased the weapon unequip time from 0.23s to 0.2s",buff
+KS-23,,,"Increased the weapon equip time from 0.2s to 0.3s",nerf
+Lewis Gun,,,"Increased the weapon equip time from 0.23s to 0.35s",nerf
+Lewis Gun,,,"Decreased the weapon unequip time from 0.3s to 0.25s",buff
+LH1,,,"Increased the weapon equip time from 0.15s to 0.3s, and the unequip time from 0.15s to 0.2s",nerf
+M134 Minigun,,,"Increased the weapon unequip time from 0.2s to 0.25s",nerf
+Model 1887,,,"Increased the weapon equip time from 0.15s to 0.3s, and the unequip time from 0.15s to 0.2s",nerf
+Pike-556,,,"Increased the weapon equip time from 0.2s to 0.3s",nerf
+SA1216,,,"Increased the weapon equip time from 0.15s to 0.3s, and the unequip time from 0.15s to 0.2s",nerf
+SH1900,,,"Increased the weapon equip time from 0.15s to 0.2s, and the unequip time from 0.15s to 0.2s",nerf
+ShAK-50,,,"Increased the weapon equip time from 0.2s to 0.3s",nerf
+SR-84,,,"Increased the weapon equip time from 0.15s to 0.3s, and the unequip time from 0.15s to 0.2s",nerf
+XP-54,,,"Decreased the weapon equip time from 0.23s to 0.2s, and the unequip time from 0.23s to 0.2s",buff
+Sledgehammer,,,"Increased the height of the primary attack hit sweep from 15cm to 25cm",buff
+Sledgehammer,,,"Melee hit detection has been a concern, related to first-person depth perception and mismatches between the sweep and the animation.",dev

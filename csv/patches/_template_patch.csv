@@ -1,0 +1,7 @@
+weapon,field,value,note,kind
+FLAMETHROWER,body_dmg,25,"Damage reduced from 30 to 25",
+FLAMETHROWER,dropoff_max,10,"Effective range extended",
+FLAMETHROWER,,,"Improved hip-fire spread while moving",
+FLAMETHROWER,,,"The Flamethrower has been over-performing at close range since 10.2. This brings it back in line.",dev
+93R,magazine_size,30,"Magazine increased from 27",
+93R,,,"Decreased sweep range slightly, to better match the animation",nerf

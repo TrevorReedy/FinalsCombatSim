@@ -1,0 +1,27 @@
+weapon,field,value,note,kind
+.50 Akimbo,dropoff_min,35,"Decreased damage falloff minimum range from 37.5m to 35m, giving the weapon a slightly shorter effective range",
+.50 Akimbo,dropoff_max,42,"Decreased damage falloff max range from 47.5m to 42m, giving the weapon a slightly shorter effective range",
+93R,dropoff_min,32,"Increased damage falloff minimum range from 28m to 32m, giving the weapon a slightly longer effective range",
+93R,dropoff_max,40,"Increased damage falloff max range from 35m to 40m, giving the weapon a slightly longer effective range",
+93R,dropoff_reduction,40,"Decreased damage falloff multiplier from 0.55 to 0.4, meaning the weapon now does slightly less damage at range. Recorded as a retained-damage percentage to match the sheets' column.",
+ARN-220,,,"Decreased the length of the quick reload animation from 0.95s to 0.75s",buff
+ARN-220,,,"This is a small buff to the ARN, partially to boost its power but mostly aimed at making it feel a little less clunky.",dev
+Cerberus 12GA,body_dmg,110,"Decreased pellet count from 12 to 11, effectively lowering the max damage per shot (minus fire damage) from 120 to 110. Recorded as the per-shot total to match the sheets' column, as the note's own wording gives it.",
+Cerberus 12GA,,,"Updated pellet pattern to retain a similar coverage per shot, despite the removal of one pellet, meaning the weapon should retain a similar accuracy to before",soft
+Cerberus 12GA,,,"The Cerberus has been performing very well this season and we've decided we need to bring it back in line with other weapons. This small reduction in damage should help achieve that while still keeping the weapon viable.",dev
+FAMAS,dropoff_min,35,"Decreased damage falloff minimum range from 37.5m to 35m, giving the weapon a slightly shorter effective range",
+FAMAS,dropoff_max,42.5,"Decreased damage falloff max range from 47.5m to 42.5m, giving the weapon a slightly shorter effective range",
+M134 Minigun,,,"We have seen your feedback on how easy it is for players to keep the M134 'spun up' while moving, juggling the spin-up state and making it quite powerful in the right hands. This is something we're monitoring and are likely to adjust the balance of in an up-coming patch, but the changes we're considering aren't ready in time for 6.6.",dev
+Model 1887,rpm,77,"Decreased the pump-action duration from 0.8s to 0.78s, effectively increasing the fire rate from 75RPM to 77RPM. The sheets measure the Model at 69 RPM either side of this patch, so the stated figure and the measurement disagree — both are kept.",
+Model 1887,dropoff_min,20,"Increased damage falloff minimum range from 15m to 20m, giving the weapon a slightly longer effective range",
+Model 1887,dropoff_max,30,"Increased damage falloff max range from 25m to 30m, giving the weapon a slightly longer effective range",
+Model 1887,dropoff_reduction,65,"Decreased damage falloff multiplier from 0.7 to 0.65, meaning the weapon now does slightly less damage at range. Recorded as a retained-damage percentage to match the sheets' column.",
+Model 1887,,,"Since our last round of changes to the Model, it has performed slightly worse than we would have expected. These changes are aimed at buffing it ever so slightly while increasing its effective range to give it a more unique feel compared to the other shotguns. We're mindful that we don't want to nudge it too far in a single change, as we'd prefer to not go back to a meta where this versatile weapon is overly effective.",dev
+R.357,dropoff_min,27.5,"Increased damage falloff minimum range from 23m to 27.5m, giving the weapon a slightly longer effective range",
+R.357,dropoff_max,44,"Increased damage falloff max range from 40m to 44m, giving the weapon a slightly longer effective range",
+R.357,dropoff_reduction,40,"Decreased damage falloff multiplier from 0.45 to 0.4, meaning the weapon now does slightly less damage at range. Recorded as a retained-damage percentage to match the sheets' column.",
+SA1216,rpm,190,"Decreased rate of fire from 200RPM to 190RPM",
+SA1216,,,"Decreased the length of the magazine rotation animation from 1.1s to 0.8s, effectively speeding up the weapon's fire rate when firing more than four shots",buff
+SA1216,,,"Updated magazine rotation animation so it's a little easier to see",soft
+SA1216,,,"Updated recoil pattern slightly, to retain approximately the same recoil behavior prior to the rate of fire reduction",soft
+SA1216,,,"This is a small nudge to reduce the power of the SA1216, which remains one of the most effective weapons in the game. The decrease in the length of the magazine rotation animation, as well as the updated animation, are quality of life changes that hopefully improve the readability of the weapon and make it more accessible to a wider audience. The animation change also effectively increases the weapon's fire rate in scenarios where the player takes more than four shots",dev

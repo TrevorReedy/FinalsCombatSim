@@ -357,34 +357,37 @@
          ══════════════════════════════════════════════════════════ -->
     <section class="view view-doc" id="view-weapon" hidden>
       <div class="doc-inner wide">
-        <div class="page-head">
+        <div class="page-head slim">
           <button class="linkish back-link" type="button" data-route="stats">← All weapons</button>
-          <h1 class="page-title" id="wp-name">—</h1>
-          <div class="weapon-badge" id="wp-badges"></div>
-          <p class="page-lead" id="wp-lead"></p>
         </div>
 
         <div class="weapon-grid">
-          <section class="panel">
+          <section class="panel chart-panel">
             <div class="panel-head">
               <h2>Stat history</h2>
               <select id="wp-metric" aria-label="Metric to plot"></select>
             </div>
             <div class="chart-wrap" id="wp-chart"></div>
+            <div id="wp-chart-detail"></div>
             <p class="doc-note" id="wp-chart-note"></p>
           </section>
 
-          <section class="panel">
-            <div class="panel-head">
-              <h2>Snapshot</h2>
+          <aside class="panel hero-panel">
+            <h1 class="page-title" id="wp-name">—</h1>
+            <div class="weapon-badge" id="wp-badges"></div>
+            <p class="page-lead" id="wp-lead"></p>
+            <div class="hero-section">
+              <div class="section-label">Jump to a version</div>
               <div class="version-chips" id="wp-versions"></div>
             </div>
-            <div id="wp-snapshot"></div>
-          </section>
+          </aside>
         </div>
 
         <section class="panel">
-          <div class="panel-head"><h2>Change log</h2></div>
+          <div class="panel-head">
+            <h2>Change ledger</h2>
+            <div class="ledger-filters" id="wp-ledger-filters" role="group" aria-label="Filter changes"></div>
+          </div>
           <div id="wp-changes"></div>
         </section>
       </div>

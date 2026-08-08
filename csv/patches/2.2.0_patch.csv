@@ -1,0 +1,14 @@
+weapon,field,value,note,kind
+KS-23,rpm,73,"Increased fire rate from 55 to 73 RPM",
+KS-23,body_dmg,100,"Decreased player damage from 120 to 100",
+KS-23,dropoff_min,18,"Increased damage fall-off start range from 15m to 18m",
+KS-23,dropoff_max,23,"Decreased damage fall-off end range from 50m to 23m",
+KS-23,dropoff_reduction,60,"Increased damage fall-off multiplier at max range from 0.4 to 0.6, meaning more damage at range. Recorded as a retained-damage percentage to match the sheets' column.",
+KS-23,,,"Increased environmental damage from 600 to 700",buff
+KS-23,,,"Decreased pump-action animation delay from 0.2s to 0s, and increased pump-action animation duration from 0.6s to 0.7s",soft
+KS-23,,,"Increased projectile speed from 200m/s to 300m/s, requiring less lead",buff
+KS-23,,,"Reduced hip-fire dispersion when crouching, standing and running",buff
+FCAR,dropoff_reduction,50,"Decreased damage fall-off multiplier at max range from 0.67 to 0.5, reducing long-range damage. Recorded as a retained-damage percentage to match the sheets' column.",
+FCAR,,,"Adjusted the recoil pattern, making it slightly harder to control",nerf
+FAMAS,,,"Adjusted the recoil pattern, making it slightly easier to control",buff
+93R,,,"Increased fire rate from 240 to 260 RPM. Held as text rather than recorded as RPM: the 93R is a burst weapon and the sheets measure it at ~1000 RPM of bullets, so the note's figure counts burst cycles.",buff

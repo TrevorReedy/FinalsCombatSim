@@ -1,0 +1,17 @@
+weapon,field,value,note,kind
+ARN-220,,,"Updated the recoil pattern to be the same for both magazines, making the weapon feel more consistent to aim",buff
+FAMAS,,,"Decreased the amount of visual recoil when firing the FAMAS, making it slightly less shaky",buff
+KS-23,,,"Increased accuracy by decreasing bullet dispersion when firing from the hip and when aiming down sights, while crouch moving, standing still and running",buff
+KS-23,,,"These changes make the KS-23 much more accurate while in various movement states, hopefully increasing its viability",dev
+M11,,,"Decreased the jitter at the end of the weapon's recoil pattern, making it smoother and easier to use at the end of long bursts of firing",buff
+M11,,,"Decreased the amount of visual recoil when firing the M11, making it slightly less shaky",buff
+Dagger,,,"Improved hit sweeps across all melee weapons, to make them more reliable. As a result, it should feel like fewer sweeps get lost to collision with world objects or geometry",buff
+Dual Blades,,,"Improved hit sweeps across all melee weapons, to make them more reliable. As a result, it should feel like fewer sweeps get lost to collision with world objects or geometry",buff
+Riot Shield,,,"Improved hit sweeps across all melee weapons, to make them more reliable. As a result, it should feel like fewer sweeps get lost to collision with world objects or geometry",buff
+Sledgehammer,,,"Improved hit sweeps across all melee weapons, to make them more reliable. As a result, it should feel like fewer sweeps get lost to collision with world objects or geometry",buff
+Spear,,,"Improved hit sweeps across all melee weapons, to make them more reliable. As a result, it should feel like fewer sweeps get lost to collision with world objects or geometry",buff
+Sword,,,"Improved hit sweeps across all melee weapons, to make them more reliable. As a result, it should feel like fewer sweeps get lost to collision with world objects or geometry",buff
+Sword,,,"We believe this change significantly improves the reliability of melee combat, but we'll continue to monitor melee and make further improvements based on what we see.",dev
+XP-54,body_dmg,16,"Decreased damage from 17 to 16",
+XP-54,rpm,860,"Increased rate of fire from 850RPM to 860RPM",
+XP-54,,,"XP-54 has been performing exceptionally well since our last buff, with its effectiveness sitting well above all other weapons now. To bring it back in line with most of the other weapons, we want to try to get it to a place somewhere between what it was before and what it has been most recently. To do this we've lowered the damage back to its old value, but increased the fire rate slightly to offset that",dev

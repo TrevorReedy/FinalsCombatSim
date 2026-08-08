@@ -1,0 +1,14 @@
+weapon,field,value,note,kind
+FCAR,body_dmg,23,"Increased damage from 22 to 23",
+FCAR,rpm,520,"Decreased rate of fire from 540 RPM to 520 RPM",
+FCAR,,,"We've seen both 'poke' (long ranged, high damage) and 'brawl' (short ranged, high damage) weapons increasingly becoming the top weapons in the meta over the last season or so, and this was never really intentional. It's left a lot of automatic weapons struggling performance wise by comparison, so we're making various small nudges to a range of automatic weapons in 9.7 to help them out. This FCAR change, a small buff in overall DPS for the weapon, is one of those.",dev
+M60,,,"Decreased dispersion when aiming down sights while standing and moving, making the weapon more accurate",buff
+M60,,,"Decreased dispersion when firing from the hip, in some stances, where the dispersion level could reach unintended extreme values",buff
+M60,,,"These changes should make the M60 feel easier to use, hopefully bringing it closer to the Lewis Gun in usage.",dev
+P90,dropoff_min,18,"Increased damage falloff minimum range from 16m to 18m, giving the weapon a slightly longer effective range. The note gives the prior value as 16m; the 8.3.0 sheet measured 10m.",
+P90,dropoff_max,24,"Increased damage falloff max range from 22m to 24m, giving the weapon a slightly longer effective range. The note gives the prior value as 22m; the 8.3.0 sheet measured 20m.",
+P90,,,"Similar to the FCAR change above, this is to increase the P90's viability.",dev
+Pike-556,body_dmg,49,"Increased damage from 48 to 49",
+Pike-556,,,"Our last round of changes to the Pike-556, along with the CB-01's overall performance, have really hurt the Pike's popularity in a serious way. This small tweak should bump its viability.",dev
+XP-54,rpm,880,"Increased rate of fire from 860 RPM to 880 RPM",
+XP-54,,,"Another FCAR-like change, hopefully boosting the XP-54's viability.",dev

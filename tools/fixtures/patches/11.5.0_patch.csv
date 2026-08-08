@@ -1,0 +1,8 @@
+weapon,field,value,note,kind
+FCAR,body_dmg,26,"Damage increased from 24",
+FCAR,empty_reload,2.5,"Reload slowed",
+FCAR,dropoff_reduction,70,"Falloff multiplier raised from 0.55 to 0.7",
+FCAR,,,"Improved hip-fire spread while moving",
+FCAR,,,"Decreased sweep range slightly",nerf
+FCAR,,,"The FCAR has been an outlier for two seasons. This trades raw damage for sustain.",dev
+SWORD,lunge_distance,5,"Lunge extended",

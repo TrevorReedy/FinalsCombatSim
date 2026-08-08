@@ -22,7 +22,7 @@
 //     unchanged weapon should not produce a phantom balance change.
 // ═══════════════════════════════════════════════════════════════════
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 import { inflateRawSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -472,7 +472,8 @@ const SOURCE_DEFINITIONS = [
     caveats: [
       'Headerless dump; column meanings are inferred. Column 4 is absolute head damage on some rows, a headshot multiplier on others, and alt-attack damage on melee rows.',
       'The rate column matches independently-known RPM for 14 of 21 comparable weapons and is far off for the rest, so it is treated as low-confidence and individual outliers are flagged.',
-      'The single reload column has no stated kind (tactical vs empty) and is 0 on several rows; it is never diffed.'
+      'The single reload column has no stated kind (tactical vs empty) and is 0 on several rows; it is never diffed.',
+      "This sheet appears to have been captured BEFORE patch 5.8.0 shipped, despite its name. Four weapons the 5.8.0 notes changed still read at their pre-patch values here: the Cerberus at 108 rather than the stated 120, the Model 1887 at 117 rather than 99, the SR-84 at 115 rather than 118, and the LH1 at 48 rather than 46. Treat it as roughly 5.7, and read any 5.8.0 stated-vs-measured disagreement as the labelling being off rather than a shadow change."
     ]
   },
   {
@@ -535,6 +536,471 @@ const SOURCES = [...SOURCE_DEFINITIONS].sort((a, b) => compareVersions(a.version
     if (seen.has(s.version)) throw new Error(`two sources declare version ${s.version}`);
     seen.add(s.version);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PATCH RECORDS
+//
+// csv/patches/<version>_patch.csv holds only what that patch changed, as
+// the value AFTER the change. Sparse and absolute: nothing is repeated
+// from the full sheets, no record is expressed relative to another, and a
+// patch you never ingest cannot corrupt anything — it just leaves the
+// nearest earlier record in force.
+//
+// See csv/patches/README.md for the format and the resolution rules.
+// ═══════════════════════════════════════════════════════════════════
+// Fields recorded only by patch notes. No data sheet publishes them, so they
+// never take part in the sheet-to-sheet diff and never have a measured value to
+// be checked against — but the 11.0.0 melee rework is stated almost entirely in
+// terms of them, so without these the whole rework would collapse into
+// untyped prose.
+const PATCH_ONLY_FIELDS = [
+  { key: 'precision_angle', label: 'Precision zone angle', polarity: 1 },
+  { key: 'lunge_distance', label: 'Lunge distance', polarity: 1 },
+  { key: 'lunge_angle', label: 'Lunge target angle', polarity: 1 },
+  { key: 'stamina_regen', label: 'Stamina regeneration', polarity: -1 }
+];
+
+const PATCH_FIELDS = new Set([
+  'body_dmg', 'head_dmg', 'rpm', 'magazine_size',
+  'empty_reload', 'tactical_reload', 'shots_per_burst', 'burst_delay',
+  'dropoff_min', 'dropoff_max', 'dropoff_reduction',
+  ...PATCH_ONLY_FIELDS.map(f => f.key)
+]);
+
+// ── Buff, nerf, or soft change ──
+//
+// Which direction is *good* is not the same as which direction is *up*, and it
+// differs per field: more damage is a buff, more reload time is a nerf. So the
+// classification is derived from the numbers plus this polarity, rather than
+// hand-tagged in the CSV — a hand-written label can silently disagree with the
+// value sitting next to it, and this one cannot.
+//
+//   +1  higher is better for the player holding the weapon
+//   -1  lower is better
+//
+// `dropoff_reduction` is the trap. Despite the name it stores damage RETAINED
+// at max range (the sheets print "~70%", the patch notes write it as a 0.7
+// multiplier), so higher is a buff. Getting this backwards would mislabel every
+// falloff change ever recorded.
+const FIELD_POLARITY = {
+  body_dmg: 1, head_dmg: 1, rpm: 1, magazine_size: 1, shots_per_burst: 1,
+  dropoff_min: 1, dropoff_max: 1, dropoff_reduction: 1,
+  empty_reload: -1, tactical_reload: -1, burst_delay: -1,
+  ...Object.fromEntries(PATCH_ONLY_FIELDS.map(f => [f.key, f.polarity]))
+};
+
+const KINDS = new Set(['buff', 'nerf', 'soft', 'dev']);
+
+/**
+ * A change with no tracked stat behind it is a soft change by definition —
+ * that is what "changed an interaction, not a number we hold" means here. So is
+ * a stat with no earlier value to compare against: the first time a field is
+ * ever recorded there is no direction, only a starting point.
+ */
+function classifyChange(field, from, to) {
+  if (!field || from == null || to == null) return 'soft';
+  const polarity = FIELD_POLARITY[field];
+  if (!polarity) return 'soft';
+  const direction = Math.sign(to - from) * polarity;
+  return direction > 0 ? 'buff' : direction < 0 ? 'nerf' : 'soft';
+}
+
+function fieldLabel(field) {
+  return FIELDS.find(f => f.key === field)?.label
+    || PATCH_ONLY_FIELDS.find(f => f.key === field)?.label
+    || field;
+}
+
+// Hand-authored files should not have to remember the internal names.
+const FIELD_ALIASES = {
+  'body damage': 'body_dmg', 'body': 'body_dmg', 'damage': 'body_dmg',
+  'head damage': 'head_dmg', 'head': 'head_dmg', 'headshot damage': 'head_dmg',
+  'rate of fire': 'rpm', 'fire rate': 'rpm',
+  'magazine': 'magazine_size', 'magazine size': 'magazine_size', 'mag': 'magazine_size',
+  'empty reload': 'empty_reload', 'empty reload time': 'empty_reload',
+  'tactical reload': 'tactical_reload', 'tactical reload time': 'tactical_reload',
+  'shots per burst': 'shots_per_burst', 'burst size': 'shots_per_burst',
+  'burst delay': 'burst_delay', 'delay between bursts': 'burst_delay',
+  'dropoff min': 'dropoff_min', 'dropoff minimum range': 'dropoff_min',
+  'dropoff max': 'dropoff_max', 'dropoff maximum range': 'dropoff_max',
+  'dropoff reduction': 'dropoff_reduction', 'damage reduction': 'dropoff_reduction',
+  'falloff multiplier': 'dropoff_reduction', 'damage falloff multiplier': 'dropoff_reduction',
+  'precise damage': 'head_dmg', 'precise hit damage': 'head_dmg',
+  'base damage': 'body_dmg', 'glancing damage': 'body_dmg',
+  'precision angle': 'precision_angle', 'precision zone angle': 'precision_angle',
+  'lunge distance': 'lunge_distance',
+  'lunge angle': 'lunge_angle', 'lunge target angle': 'lunge_angle',
+  'stamina regen': 'stamina_regen', 'stamina regeneration': 'stamina_regen',
+  'stamina regeneration time': 'stamina_regen'
+};
+
+function canonicalField(raw) {
+  const key = String(raw || '').trim();
+  if (!key) return null;                       // a change with no number attached
+  const lower = key.toLowerCase();
+  if (PATCH_FIELDS.has(lower)) return lower;
+  if (FIELD_ALIASES[lower]) return FIELD_ALIASES[lower];
+  return undefined;                            // unknown — caller reports it
+}
+
+function readPatchIndex(dir) {
+  const path = join(dir, 'index.csv');
+  if (!existsSync(path)) return new Map();
+
+  const [header, ...rows] = parseCSV(readFileSync(path, 'utf8'));
+  if (!header) return new Map();
+  const column = name => header.findIndex(h => h.trim().toLowerCase() === name);
+  const at = (row, name) => { const i = column(name); return i >= 0 ? (row[i] || '').trim() : ''; };
+
+  const index = new Map();
+  for (const row of rows) {
+    const version = at(row, 'version');
+    if (!version) continue;
+    index.set(version, { date: at(row, 'date'), title: at(row, 'title'), url: at(row, 'url') });
+  }
+  return index;
+}
+
+/**
+ * Every patch file in `dir`, validated. Unknown weapons and unknown field
+ * names stop the ingest with the file and line rather than being skipped
+ * quietly — a hand-authored file that silently loses a row is worse than
+ * one that refuses to load.
+ */
+function readPatchRecords(dir) {
+  if (!existsSync(dir)) return { patches: [], index: new Map() };
+
+  const index = readPatchIndex(dir);
+  const files = readdirSync(dir)
+    .filter(name => name.toLowerCase().endsWith('.csv'))
+    .filter(name => !name.startsWith('_') && name.toLowerCase() !== 'index.csv')
+    .sort();
+
+  const patches = [];
+
+  for (const file of files) {
+    const version = file.replace(/_patch\.csv$/i, '').replace(/\.csv$/i, '');
+    const rows = parseCSV(readFileSync(join(dir, file), 'utf8'));
+    const header = rows.shift() || [];
+    const column = name => header.findIndex(h => h.trim().toLowerCase() === name);
+    const weaponCol = column('weapon'), fieldCol = column('field');
+    const valueCol = column('value'), noteCol = column('note');
+    const kindCol = column('kind');
+
+    if (weaponCol < 0) throw new Error(`${file}: no "weapon" column`);
+
+    const entries = [];
+    rows.forEach((row, i) => {
+      const line = i + 2;                        // 1-indexed, plus the header
+      const rawWeapon = (row[weaponCol] || '').trim();
+      if (!rawWeapon) return;                    // blank spacer row
+
+      const id = resolveId(rawWeapon);
+      if (!id) throw new Error(`${file}:${line}: unknown weapon "${rawWeapon}" — add it to tools/weapon_aliases.json`);
+
+      const field = canonicalField(fieldCol >= 0 ? row[fieldCol] : '');
+      if (field === undefined) {
+        throw new Error(`${file}:${line}: unknown field "${row[fieldCol]}" — expected one of ${[...PATCH_FIELDS].join(', ')}`);
+      }
+
+      const note = noteCol >= 0 ? (row[noteCol] || '').trim() : '';
+      const rawValue = valueCol >= 0 ? (row[valueCol] || '').trim() : '';
+
+      // Blank means "work it out from the numbers", which is the normal case.
+      // An explicit kind is an override for where the arithmetic misleads, and
+      // `dev` marks developer commentary — context attached to the weapon, not
+      // a change to it.
+      const kind = (kindCol >= 0 ? (row[kindCol] || '').trim().toLowerCase() : '') || null;
+      if (kind && !KINDS.has(kind)) {
+        throw new Error(`${file}:${line}: unknown kind "${kind}" — expected one of ${[...KINDS].join(', ')}`);
+      }
+
+      if (kind === 'dev') {
+        if (!note) throw new Error(`${file}:${line}: a dev-note row needs the note text`);
+        if (field) throw new Error(`${file}:${line}: a dev-note row cannot also set ${field} — split it into two rows`);
+        entries.push({ id, field: null, value: null, note, kind: 'dev' });
+        return;
+      }
+
+      if (field === null) {
+        if (!note) throw new Error(`${file}:${line}: a row with no field needs a note saying what changed`);
+        entries.push({ id, field: null, value: null, note, kind: kind || 'soft' });
+        return;
+      }
+
+      const value = num(rawValue);
+      if (value == null) {
+        throw new Error(`${file}:${line}: "${rawWeapon}" ${field} has no usable value ("${rawValue}") — record the value AFTER the patch, not the change`);
+      }
+      entries.push({ id, field, value, note, kind });
+    });
+
+    patches.push({
+      version,
+      file,
+      entries,
+      // A file with only a header is a patch that was read and changed no
+      // weapon stats — which is different from a patch nobody has looked at.
+      confirmedNoChanges: entries.length === 0,
+      ...(index.get(version) || {})
+    });
+  }
+
+  return { patches, index };
+}
+
+/**
+ * Turns a weapon's patch records into change events for its history.
+ *
+ * "What did this patch change it from" is the newest earlier statement of
+ * that same field, whether that came from a measured sheet or from an
+ * earlier patch. A field nobody has recorded before simply has no previous
+ * value, which is reported rather than guessed at.
+ */
+function patchChangeEvents(id, patchRecords, snapshots) {
+  const events = [];
+  const name = ALIASES.weapons[id]?.name || id;
+
+  const versionsInOrder = [
+    ...Object.keys(snapshots).map(v => ({ version: v, kind: 'sheet' })),
+    ...Object.keys(patchRecords).map(v => ({ version: v, kind: 'patch' }))
+  ].sort((a, b) => compareVersions(a.version, b.version));
+
+  const valueAt = (entry, field) => entry.kind === 'sheet'
+    ? snapshots[entry.version]?.[field] ?? null
+    : patchRecords[entry.version]?.fields?.[field] ?? null;
+
+  // Sheets that come AFTER a patch are what turns a stated change into a
+  // verified one. See shadowCheck below.
+  const sheetVersionsAsc = Object.keys(snapshots).sort(compareVersions);
+
+  /**
+   * Did the change the developers announced actually show up when somebody
+   * next measured the game?
+   *
+   * A stated value that the next sheet contradicts is the signature of a
+   * shadow change — either the patch note was wrong, or something else moved
+   * the stat and nobody said so. Either way it is reported, never silently
+   * resolved in favour of one side.
+   *
+   * Only the LAST patch to state a field before a given sheet can be checked
+   * against it. 10.3.0 put the 93R at 25 damage and 11.0.0 took it back to 24;
+   * the 11.3.0 sheet reading 24 confirms 11.0.0 and says nothing at all about
+   * 10.3.0. Checking a superseded value would report every re-tuned stat in the
+   * game as a shadow change.
+   */
+  function shadowCheck(field, version, stated) {
+    // A sheet at the SAME version counts: it measures the game as that patch
+    // shipped it, so it is the most direct confirmation a stated value can get.
+    const measured = sheetVersionsAsc
+      .filter(v => compareVersions(v, version) >= 0)
+      .map(v => ({ version: v, value: snapshots[v]?.[field] ?? null }))
+      .find(s => s.value != null);
+    if (!measured) return null;
+
+    const supersededBy = Object.keys(patchRecords).find(v =>
+      compareVersions(v, version) > 0 &&
+      compareVersions(v, measured.version) <= 0 &&
+      patchRecords[v].fields[field] != null
+    );
+    if (supersededBy) return null;
+
+    const spec = FIELDS.find(f => f.key === field);
+    const tolerance = spec == null ? 0
+      : spec.relTol != null ? Math.max(Math.abs(stated), Math.abs(measured.value)) * spec.relTol
+      : (spec.tol ?? 0);
+
+    // How much the sheet doing the checking is worth on this field. The 1.5 and
+    // 5.8 sheets reconstruct several columns rather than measuring them, so a
+    // stated value "disagreeing" with one of them is weak evidence about the
+    // game and strong evidence about the sheet.
+    const trust = SOURCES.find(s => s.version === measured.version)?.trust?.[field] || null;
+
+    return {
+      version: measured.version,
+      measured: measured.value,
+      agrees: Math.abs(measured.value - stated) <= tolerance,
+      measurement_trust: trust === M ? 'measured' : trust === D ? 'derived' : trust === U ? 'untrusted' : 'unknown'
+    };
+  }
+
+  for (const [version, record] of Object.entries(patchRecords)) {
+    for (const [field, value] of Object.entries(record.fields)) {
+      const earlier = versionsInOrder
+        .filter(e => compareVersions(e.version, version) < 0)
+        .reverse()
+        .map(e => ({ ...e, value: valueAt(e, field) }))
+        .find(e => e.value != null);
+
+      const meta = record.meta[field] || {};
+      const from = earlier ? earlier.value : null;
+      const confirmed = shadowCheck(field, version, value);
+
+      const provenance = [
+        earlier?.kind === 'sheet' ? `Previous value measured in the ${earlier.version} sheet.` : null,
+        earlier ? null : 'No earlier record of this stat, so there is nothing to compare against — the patch note states where it landed, not where it came from.',
+        confirmed && !confirmed.agrees
+          ? `Stated as ${value}, but the ${confirmed.version} sheet measures ${confirmed.measured}.`
+            + (confirmed.measurement_trust === 'measured'
+              ? ' Shadow-change candidate: either the note is wrong or something else moved this stat unannounced.'
+              : ` That sheet's ${fieldLabel(field).toLowerCase()} is ${confirmed.measurement_trust} rather than measured, so this says more about the sheet than about the game.`)
+          : null,
+        confirmed?.agrees ? `Confirmed by the ${confirmed.version} sheet.` : null
+      ].filter(Boolean);
+
+      events.push({
+        weapon: id, name,
+        from_version: earlier ? earlier.version : null,
+        to_version: version,
+        type: 'change',
+        source: 'patch note',
+        field, label: fieldLabel(field),
+        from,
+        to: value,
+        delta: earlier ? +(value - earlier.value).toFixed(3) : null,
+        delta_pct: earlier && earlier.value
+          ? +(((value - earlier.value) / earlier.value) * 100).toFixed(1)
+          : null,
+        // Stated by the developer rather than measured off the game, which
+        // is the strongest provenance available here.
+        confidence: 'stated',
+        kind: meta.kind || classifyChange(field, from, value),
+        // An override that agrees with the arithmetic is not really an
+        // override, and calling it one would overstate how much of this was
+        // hand-decided.
+        kind_source: meta.kind && meta.kind !== classifyChange(field, from, value)
+          ? 'set by hand in the patch record'
+          : 'derived from the values',
+        patch_text: meta.note || null,
+        stated_vs_measured: confirmed,
+        note: provenance.join(' ') || null,
+        verified_against_patch_notes: true
+      });
+    }
+
+    for (const { note, kind } of record.notes) {
+      events.push({
+        weapon: id, name,
+        from_version: null, to_version: version,
+        type: 'note', source: 'patch note',
+        field: null, from: null, to: null,
+        confidence: 'stated',
+        kind: kind || 'soft',
+        patch_text: note,
+        note,
+        verified_against_patch_notes: true
+      });
+    }
+
+    // Developer commentary. Not a change, so it carries no kind and never
+    // draws an arrow — it is the "why" printed alongside the "what".
+    for (const note of record.devNotes) {
+      events.push({
+        weapon: id, name,
+        from_version: null, to_version: version,
+        type: 'dev_note', source: 'patch note',
+        field: null, from: null, to: null,
+        confidence: 'stated', kind: null,
+        note,
+        verified_against_patch_notes: true
+      });
+    }
+  }
+
+  return events;
+}
+
+/**
+ * Sheet-to-sheet diffs and patch records describe overlapping ground, and once
+ * the patches for an interval are in, they describe it better.
+ *
+ * The 10.0.0 and 11.3.0 sheets show the KS-23 going 100 → 104 and call it a
+ * buff. The patch notes show it went 100 → 110 → 104, which is a buff followed
+ * by a larger nerf. Keeping both would double-count the change and print the
+ * misleading version next to the accurate one, so a diff whose field is
+ * accounted for by a patch inside the same interval gives way.
+ *
+ * A diff NOT accounted for is the opposite case and is kept and promoted: the
+ * stat moved across an interval whose patch notes were read and mention no such
+ * change, which is precisely the shadow-change signature.
+ */
+function reconcileSheetEvents(sheetEvents, patchRecords, snapshots, ingestedVersions) {
+  const patchVersions = Object.keys(patchRecords);
+
+  // Head damage is a fixed multiple of body damage for most weapons, so a
+  // stated body-damage change drags it along. That is an announced change
+  // showing its arithmetic, not an unannounced one — worth telling apart from
+  // a stat that genuinely moved on its own.
+  function isMultiplierConsequence(event, inInterval) {
+    if (event.field !== 'head_dmg') return false;
+    if (!inInterval.some(v => patchRecords[v].fields.body_dmg != null)) return false;
+    const bodyFrom = snapshots[event.from_version]?.body_dmg;
+    const bodyTo = snapshots[event.to_version]?.body_dmg;
+    if (!bodyFrom || !bodyTo || !event.from || !event.to) return false;
+    return Math.abs(event.from / bodyFrom - event.to / bodyTo) <= 0.01;
+  }
+
+  return sheetEvents.flatMap(event => {
+    if (event.type !== 'change' || !event.field) return [event];
+
+    const inInterval = patchVersions.filter(v =>
+      compareVersions(v, event.from_version) > 0 &&
+      compareVersions(v, event.to_version) <= 0
+    );
+
+    if (inInterval.some(v => patchRecords[v].fields[event.field] != null)) return [];
+
+    // Whether anyone READ the patch notes for this stretch, which is not the
+    // same question as whether any of them touched this weapon. A stat that
+    // moved across an interval whose notes were all read and none of which so
+    // much as name the weapon is the strongest shadow-change signal there is —
+    // scoping this to the weapon's own records made exactly that case silent.
+    const read = ingestedVersions.filter(v =>
+      compareVersions(v, event.from_version) > 0 &&
+      compareVersions(v, event.to_version) <= 0
+    );
+    if (!read.length) return [event];
+
+    // A row the alias file declares as re-scoped changed what it MEASURES at
+    // this version, so a value moving is expected and no patch note would ever
+    // have announced it. Calling that a shadow change would be crying wolf.
+    const rescoped = (ALIASES.rescoped || []).some(
+      r => r.id === event.weapon && r.version === event.to_version
+    );
+    if (rescoped) return [event];
+
+    // A diff whose endpoints are not both trustworthy on this field cannot
+    // support the claim "the game changed and nobody said so" — it might just
+    // be two authors measuring differently. The 1.5 and 5.8 sheets reconstruct
+    // rate of fire rather than capturing it, which is why the same weapons'
+    // RPM appears to oscillate across those versions and settle afterwards.
+    if (event.confidence === 'low') return [event];
+
+    if (isMultiplierConsequence(event, inInterval)) {
+      return [{
+        ...event,
+        note: [
+          event.note,
+          `Follows the stated body-damage change in this interval at an unchanged headshot multiplier, so it is that change showing through rather than a separate one.`
+        ].filter(Boolean).join(' ')
+      }];
+    }
+
+    const missed = read.length - inInterval.length;
+    return [{
+      ...event,
+      shadow_change_candidate: true,
+      note: [
+        event.note,
+        `Measured between the ${event.from_version} and ${event.to_version} sheets, but none of the ${read.length} patch notes read for that interval mention ${event.label.toLowerCase()}`
+          + (inInterval.length
+            ? ` — ${inInterval.length} of them touched this weapon and changed something else.`
+            : `, and ${missed === read.length ? 'not one of them names this weapon at all' : 'none name this weapon'}.`)
+          + ' Either it changed unannounced, or a patch in the gap has not been ingested yet.'
+      ].filter(Boolean).join(' ')
+    }];
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -720,7 +1186,8 @@ const FIELDS = [
   { key: 'burst_delay', label: 'Burst delay', tol: 0.05 },
   { key: 'dropoff_min', label: 'Dropoff min range', tol: 0.5 },
   { key: 'dropoff_max', label: 'Dropoff max range', tol: 0.5 },
-  { key: 'dropoff_reduction', label: 'Dropoff reduction', tol: 3 }
+  // Damage RETAINED at max range, not lost — see FIELD_POLARITY.
+  { key: 'dropoff_reduction', label: 'Damage kept at max range', tol: 3 }
 ];
 
 // Values reconstructed from a multiplier carry rounding error (25 x 1.5 = 37.5
@@ -774,6 +1241,10 @@ function diffVersions(prev, next) {
         delta: +(b - a).toFixed(3),
         delta_pct: a ? +(((b - a) / a) * 100).toFixed(1) : null,
         confidence: derived ? 'low' : 'high',
+        // Measured differences get classified the same way stated ones do, so
+        // the timeline reads consistently whichever source a change came from.
+        kind: classifyChange(field.key, a, b),
+        kind_source: 'derived from the values',
         note: derived
           ? `At least one endpoint is a derived or low-confidence value (${prev.version}: ${trustA}, ${next.version}: ${trustB}).`
           : null,
@@ -992,10 +1463,34 @@ function main() {
   // plus that weapon's changes. Derived metrics (DPS, TTK) are deliberately
   // NOT baked in — the page computes them with the same functions the stats
   // table uses, so there is one implementation of the timing model in the UI.
+  // Patch records live alongside the sheets in one timeline. `--patches <dir>`
+  // lets the tests point at fixtures instead of the real folder.
+  const patchDirArg = process.argv.indexOf('--patches');
+  const patchDir = patchDirArg >= 0 ? process.argv[patchDirArg + 1] : join(CSV_DIR, 'patches');
+  const { patches } = readPatchRecords(patchDir);
+
+  // Every patch whose notes were actually read, including the header-only ones
+  // that changed nothing. "Read and confirmed nothing happened" is what makes a
+  // stat moving anyway suspicious, so those files count here just as much.
+  const ingestedPatchVersions = patches.map(p => p.version);
+
   const timeline = {
     generated: history.generated,
     note: 'Generated by tools/ingest_weapon_history.mjs. Raw stat values only; the UI derives DPS/TTK and carries stats forward for versions whose sheet omits them.',
-    versions: SOURCES.map(s => ({ version: s.version, author: s.author, method: s.method, caveats: s.caveats || [] })),
+    versions: [
+      // Full measurements of the game as it shipped.
+      ...SOURCES.map(s => ({
+        version: s.version, kind: 'sheet',
+        author: s.author, method: s.method, caveats: s.caveats || []
+      })),
+      // Stated changes from the patch notes, sparse by design.
+      ...patches.map(p => ({
+        version: p.version, kind: 'patch',
+        date: p.date || null, title: p.title || null, url: p.url || null,
+        confirmedNoChanges: p.confirmedNoChanges,
+        weaponsTouched: [...new Set(p.entries.map(e => e.id))].length
+      }))
+    ].sort((a, b) => compareVersions(a.version, b.version)),
     aliases: ALIASES.aliases,
     runtime_defaults: ALIASES.runtime_defaults || {},
     weapons: {}
@@ -1025,7 +1520,30 @@ function main() {
         notes: rec.notes
       };
     }
-    if (!Object.keys(snaps).length) continue;
+    const hasPatchRecords = patches.some(p => p.entries.some(e => e.id === id));
+    if (!Object.keys(snaps).length && !hasPatchRecords) continue;
+
+    // What each patch said about this weapon, keyed by version. Fields it
+    // did not mention are absent, meaning "unchanged by this patch".
+    const patchRecords = {};
+    for (const patch of patches) {
+      const mine = patch.entries.filter(e => e.id === id);
+      if (!mine.length) continue;
+      const fields = {}, meta = {}, notes = [], devNotes = [];
+      for (const entry of mine) {
+        if (entry.kind === 'dev') { devNotes.push(entry.note); continue; }
+        if (entry.field) {
+          // A row's note is the patch note's own wording for that stat, so it
+          // travels with the change rather than becoming a second, separate
+          // event saying the same thing.
+          fields[entry.field] = entry.value;
+          meta[entry.field] = { note: entry.note || null, kind: entry.kind || null };
+        } else if (entry.note) {
+          notes.push({ note: entry.note, kind: entry.kind || 'soft' });
+        }
+      }
+      patchRecords[patch.version] = { fields, meta, notes, devNotes };
+    }
 
     timeline.weapons[id] = {
       name: meta.name,
@@ -1036,12 +1554,22 @@ function main() {
       firing_mode: meta.firing_mode || null,
       alias_note: ALIASES.notes[id] || null,
       snapshots: snaps,
-      changes: events.filter(e => e.weapon === id)
+      patches: patchRecords,
+      changes: [
+        ...reconcileSheetEvents(events.filter(e => e.weapon === id), patchRecords, snaps, ingestedPatchVersions),
+        ...patchChangeEvents(id, patchRecords, snaps)
+      ].sort((a, b) => compareVersions(a.to_version, b.to_version))
     };
   }
 
   writeFileSync(join(OUT_DIR, 'weapon_timeline.json'), JSON.stringify(timeline) + '\n');
   console.log(`  ${Object.keys(timeline.weapons).length} weapons  →  csv/cleaned/weapon_timeline.json`);
+
+  if (patches.length) {
+    const touched = patches.filter(p => !p.confirmedNoChanges).length;
+    const stated = patches.reduce((n, p) => n + p.entries.filter(e => e.field).length, 0);
+    console.log(`  ${patches.length} patch records (${touched} with stat changes, ${stated} stated values)`);
+  }
 
   if (unmatched.size) {
     console.log('\n  UNMATCHED NAMES (add to tools/weapon_aliases.json):');
