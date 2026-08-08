@@ -513,7 +513,26 @@
   // leaves the Dagger's magazine empty — so it must not be back-filled from an
   // older sheet that recorded a 1 there. Only a wholly empty row is a coverage
   // gap, and that inherits the last version that did record the weapon.
+  // The versions a data sheet actually measured. Everything else on the
+  // timeline is a patch record, which states changes but never a full roster.
+  function sheetVersions() {
+    return new Set((timeline?.versions || []).filter(v => v.kind === 'sheet').map(v => v.version));
+  }
+
   function resolveWeaponAt(weapon, version) {
+    // A patch version has no roster of its own, so "is this weapon on the
+    // sheet" is the wrong question — there is no sheet. Fall back to the same
+    // carry-forward-plus-patches resolution the chart plots, which is the whole
+    // reason the patch records were ingested: the game at 11.0.0 is a state you
+    // should be able to simulate, not just one you can read about.
+    if (!sheetVersions().has(version)) {
+      const state = statsByVersion(weapon).get(version);
+      if (!state) return null;
+      const fields = {};
+      for (const key of RUNTIME_FIELDS) fields[key] = state.fields[key] ?? null;
+      return { fields, inheritedFrom: state.carried ? state.source.version : null };
+    }
+
     if (!weapon.snapshots[version]) return null;   // not on this sheet's roster
 
     if (hasAnyStat(weapon.snapshots[version])) {
@@ -628,7 +647,15 @@
     }
 
     list.sort((a, b) => a.name.localeCompare(b.name));
-    return { list, inheritedCount };
+    // Which sheet this version's numbers ultimately rest on — the newest one at
+    // or before it. Worth surfacing, because on a patch version it is the only
+    // measurement anywhere underneath the stated changes.
+    const basedOn = [...sheetVersions()]
+      .filter(v => compareVersions(v, version) <= 0)
+      .sort(compareVersions)
+      .pop() || null;
+
+    return { list, inheritedCount, basedOn };
   }
 
   // Swaps the roster the entire app runs on, in place so every module that
@@ -661,20 +688,43 @@
 
   function syncVersionPickers() {
     const versions = orderedVersions();
+    const measured = sheetVersions();
+    const newest = newestVersion();
+
+    // 137 flat entries is a scroll, not a choice. Grouping by season keeps the
+    // list navigable, and marking which versions a sheet actually measured says
+    // what you are getting: the rest are carried forward with patch notes laid
+    // over the top, which is real data but not a fresh capture.
+    const bySeason = new Map();
+    for (const v of versions.slice().reverse()) {
+      const season = parseInt(String(v).split('.')[0], 10) || 0;
+      if (!bySeason.has(season)) bySeason.set(season, []);
+      bySeason.get(season).push(v);
+    }
+
+    const markup = [...bySeason.entries()].map(([season, list]) => `
+      <optgroup label="Season ${season}">
+        ${list.map(v => `<option value="${esc(v)}">${esc(v)}${
+          v === newest ? ' — newest' : measured.has(v) ? ' — measured' : ''}</option>`).join('')}
+      </optgroup>`).join('');
+
     document.querySelectorAll('.data-version-picker').forEach(sel => {
-      if (sel.options.length !== versions.length) {
-        sel.innerHTML = versions.slice().reverse().map(v =>
-          `<option value="${esc(v)}">${esc(v)}${v === newestVersion() ? ' (newest)' : ''}</option>`).join('');
-      }
+      if (sel.options.length !== versions.length) sel.innerHTML = markup;
       sel.value = activeDataVersion;
     });
 
     const built = timeline ? materializeWeapons(activeDataVersion) : null;
     document.querySelectorAll('.data-version-note').forEach(el => {
       const meta = timeline?.versions.find(v => v.version === activeDataVersion);
+      // On a patch version every weapon is carried forward by definition, so
+      // the per-weapon count adds nothing there — it only means something on a
+      // sheet, where it says how much of the roster that sheet missed.
+      const isSheet = sheetVersions().has(activeDataVersion);
       el.innerHTML = built
-        ? `${built.list.length} weapons · ${esc(meta?.author || '')}${
-            built.inheritedCount ? ` · ${built.inheritedCount} weapon${built.inheritedCount === 1 ? '' : 's'} carried forward from earlier sheets` : ''}`
+        ? `${built.list.length} weapons · ${isSheet
+            ? esc(meta?.author || 'measured')
+              + (built.inheritedCount ? ` · ${built.inheritedCount} carried forward from earlier sheets` : '')
+            : `no sheet measured this version — carried forward from ${esc(built.basedOn || 'the last sheet')} with the patch notes since applied`}`
         : '';
     });
   }
