@@ -75,11 +75,12 @@ async function loadWeapons() {
 }
 
 loadWeapons();
-// Class movement speeds (m/s in-game feel)
-const CLASS_SPEED = { light: 7.0, medium: 5.0, heavy: 3.5 };
-const CLASS_HP    = { light: 150, medium: 250, heavy: 350 };
-const MELEE_RANGE = 2.0;
-const DT = 0.01; // simulation tick 10ms
+
+// CLASS_SPEED, CLASS_HP, MELEE_RANGE and DT now live in heals.js, which
+// loads first. They used to be declared here and copied into the worker and
+// both test harnesses; the worker still carries the comment explaining what
+// that cost, which was the meta analysis quietly running a different game
+// from the 1v1 screen.
 
 // ═══════════════════════════════════════
 // STATE
@@ -445,8 +446,16 @@ function runSim() {
   document.getElementById('winner-banner').style.display = 'none';
   document.getElementById('stats-grid').style.display = 'none';
 
+  // Support healing, as picked in the Loadouts panel. ui_shell.js owns the
+  // picker because it owns the data version these resolve against; null
+  // means nobody is healing that fighter.
+  const healOpts = {
+    p1Heal: typeof window.resolveHealStack === 'function' ? window.resolveHealStack(1) : null,
+    p2Heal: typeof window.resolveHealStack === 'function' ? window.resolveHealStack(2) : null
+  };
+
   // Run visual sim (single, always)
-  const result = simulate(p1_weapon, p2_weapon, p1acc, p1hs, p2acc, p2hs, startDist, speedOv, meleeAdv, firstShot, true);
+  const result = simulate(p1_weapon, p2_weapon, p1acc, p1hs, p2acc, p2hs, startDist, speedOv, meleeAdv, firstShot, true, healOpts);
   lastResult = result;
   simFrames = result.frames;
   
@@ -463,7 +472,7 @@ function runSim() {
   if (simMode === 'multi' && simN > 1) {
     let w1=0, w2=0, ties=0, ttkArr1=[], ttkArr2=[], hp1Arr=[], hp2Arr=[]; bulletsToKill1=[], bulletsToKill2=[];
     for (let i = 0; i < simN; i++) {
-      const r = simulate(p1_weapon, p2_weapon, p1acc, p1hs, p2acc, p2hs, startDist, speedOv, meleeAdv, firstShot, false);
+      const r = simulate(p1_weapon, p2_weapon, p1acc, p1hs, p2acc, p2hs, startDist, speedOv, meleeAdv, firstShot, false, healOpts);
       if (r.winner==='p1') { 
       w1++; ttkArr1.push(r.time);
         bulletsToKill1.push(r.hits1);
@@ -512,6 +521,13 @@ function runSim() {
   animId = requestAnimationFrame(playback);
 }
 
+// Minimal escape for the one place this file builds HTML from a string it
+// just composed. ui_shell.js has its own; this avoids reaching across files
+// for four characters.
+function esc0(str) {
+  return String(str).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
 function showResults(r) {
   document.getElementById('winner-banner').style.display = 'flex';
   document.getElementById('stats-grid').style.display = 'grid';
@@ -522,7 +538,25 @@ function showResults(r) {
   const p2_weapon = WEAPONS[parseInt(document.getElementById('p2-weapon').value)];
   document.getElementById('winner-icon').textContent = w==='tie' ? '⚡' : '🏆';
   wEl.textContent = w==='p1' ? p1_weapon.name : w==='p2' ? p2_weapon.name : 'TIE';
-  document.getElementById('winner-sub').textContent = w==='tie' ? 'Simultaneous elimination' : `${w==='p1'?'Player 1':'Player 2'} wins in ${r.time.toFixed(2)}s`;
+  const base = w==='tie' ? 'Simultaneous elimination' : `${w==='p1'?'Player 1':'Player 2'} wins in ${r.time.toFixed(2)}s`;
+
+  // Healing absorbed, not healing poured out — anything landing on a
+  // fighter already at full health is thrown away, so the two differ
+  // whenever a heal outpaces the damage coming in.
+  const healBits = [];
+  if (r.healed1 > 0) healBits.push(`P1 healed ${r.healed1.toFixed(0)}`);
+  if (r.healed2 > 0) healBits.push(`P2 healed ${r.healed2.toFixed(0)}`);
+
+  const summaries = [1, 2]
+    .map(p => typeof window.healStackSummary === 'function' ? window.healStackSummary(p) : null);
+  const theoretical = summaries.some(s => s && s.theoretical);
+
+  const sub = document.getElementById('winner-sub');
+  sub.textContent = base + (healBits.length ? ` · ${healBits.join(' · ')}` : '');
+  if (theoretical) {
+    sub.innerHTML = esc0(sub.textContent) +
+      ' <span style="color:var(--soft)">⚠ theoretical loadout — contains a heal item that did not exist at this data version</span>';
+  }
   document.getElementById('s-p1-dmg').textContent = r.dmg1.toFixed(0);
   document.getElementById('s-p2-dmg').textContent = r.dmg2.toFixed(0);
   document.getElementById('s-p1-shs').textContent = `${r.shots1}/${r.hits1}/${r.hs1}`;

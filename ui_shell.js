@@ -17,7 +17,8 @@
     stats:  { view: 'view-stats',  title: 'Weapon / Gadget Stats',            nav: 'stats'},
     weapon: { view: 'view-weapon', title: 'Weapon history',                   nav: 'stats'},
     sim:    { view: 'view-sim',    title: '1v1 Simulation — visual mode',     nav: 'sim'  },
-    meta:   { view: 'view-meta',   title: 'Meta Simulation — cross analysis', nav: 'meta' }
+    meta:   { view: 'view-meta',   title: 'Meta Simulation — cross analysis', nav: 'meta' },
+    sustain:{ view: 'view-sustain', title: 'Sustain Analysis — holding the objective', nav: 'sustain' }
   };
 
   let currentRoute = 'home';
@@ -77,8 +78,9 @@
   function onRouteEntered(route, params = []) {
     if (route === 'home') renderKillTimeChart();
     if (route === 'sim') redrawArena();
-    if (route === 'stats') { renderStatsTable(); loadTimeline().then(t => { if (t && currentRoute === 'stats') renderStatsTable(); }); }
+    if (route === 'stats') { renderStatsTable(); renderHealStats(); loadTimeline().then(t => { if (t && currentRoute === 'stats') renderStatsTable(); }); }
     if (route === 'meta') updateMetaEstimate();
+    if (route === 'sustain') updateSustainEstimate();
     if (route === 'weapon') renderWeaponPage(params[0], params[1]);
   }
 
@@ -157,13 +159,25 @@
     }
     return t;
   }
+//outdated
+  // function idealTTK(w, hp) {
+  //   const s = statsFor(w);
+  //   if (!s || !s.bodyDmg) return null;
+  //   const shots = Math.ceil(hp / s.bodyDmg);
+  //   return timeToNthShot(s, shots);
+  // }
 
-  function idealTTK(w, hp) {
-    const s = statsFor(w);
-    if (!s || !s.bodyDmg) return null;
-    const shots = Math.ceil(hp / s.bodyDmg);
-    return timeToNthShot(s, shots);
-  }
+  function idealTTKFromStats(s, hp) {
+  if (!s || !s.bodyDmg) return null;
+
+  const shots = Math.ceil(hp / s.bodyDmg);
+  return timeToNthShot(s, shots);
+}
+
+
+function idealTTK(w, hp) {
+  return idealTTKFromStats(statsFor(w), hp);
+}
 
   // Sustained body-shot DPS: damage of a full magazine over the time
   // it takes to empty and reload it.
@@ -204,9 +218,9 @@
     { key: 'reload', label: 'Reload',  align: 'right', get: w => num(w.empty_reload_time) ?? num(w.tactical_reload_time), fmt: v => v == null ? '—' : v.toFixed(2) + 's' },
     { key: 'drop',   label: 'Dropoff', align: 'left',  get: w => dropoffText(w),            fmt: v => v },
     { key: 'dps',    label: 'DPS',     align: 'right', get: w => sustainedDPS(w),           fmt: v => v == null ? '—' : v.toFixed(0), derived: true },
-    { key: 'ttkL',   label: 'TTK 150', align: 'right', get: w => idealTTK(w, 150),          fmt: v => v == null ? '—' : v.toFixed(2) + 's', derived: true },
-    { key: 'ttkM',   label: 'TTK 250', align: 'right', get: w => idealTTK(w, 250),          fmt: v => v == null ? '—' : v.toFixed(2) + 's', derived: true },
-    { key: 'ttkH',   label: 'TTK 350', align: 'right', get: w => idealTTK(w, 350),          fmt: v => v == null ? '—' : v.toFixed(2) + 's', derived: true }
+    { key: 'ttkL',   label: `TTK ${CLASS_HP.light}`,  align: 'right', get: w => idealTTK(w, CLASS_HP.light),  fmt: v => v == null ? '—' : v.toFixed(2) + 's', derived: true },
+    { key: 'ttkM',   label: `TTK ${CLASS_HP.medium}`, align: 'right', get: w => idealTTK(w, CLASS_HP.medium), fmt: v => v == null ? '—' : v.toFixed(2) + 's', derived: true },
+    { key: 'ttkH',   label: `TTK ${CLASS_HP.heavy}`,  align: 'right', get: w => idealTTK(w, CLASS_HP.heavy),  fmt: v => v == null ? '—' : v.toFixed(2) + 's', derived: true }
   ];
 
   function num(v) {
@@ -459,7 +473,10 @@
     };
   }
 
-  const HP = { light: 150, medium: 250, heavy: 350 };
+  // Class health comes from heals.js, which loads first. Kept under the
+  // short name this file already uses everywhere rather than renaming ten
+  // call sites, but it is no longer a second copy of the numbers.
+  const HP = CLASS_HP;
 
   // ═════════════════════════════════════════════════════════════════
   // DATA VERSION
@@ -683,6 +700,15 @@
     renderStatsTable();
     renderKillTimeChart();
     syncVersionPickers();
+
+    // Heals move with the roster or they silently stay on Season 11 numbers
+    // while the weapons rewind. Warned-about picks are forgotten too: the
+    // same item at a different version is a different claim.
+    warnedTheoretical.clear();
+    renderHealStacks();
+    renderHealStats();
+    updateSustainEstimate();
+
     if (currentRoute === 'weapon') renderWeaponPage(currentParams[0], currentParams[1]);
   }
 
@@ -1587,6 +1613,695 @@
     });
   }
 
+
+  // ═════════════════════════════════════════════════════════════════
+  // HEALING
+  //
+  // A heal "attached" to a fighter is an off-screen support healing them —
+  // a pocket healer. Two of the four sources cannot heal the person holding
+  // them, so modelling it any other way would leave the beam and the
+  // infuser unusable in a duel.
+  //
+  // Items can be picked at versions before they existed. That is deliberate:
+  // Season 1's beam against the ball's launch build is a fair question, and
+  // refusing it would be worse than answering it with a label. Everything
+  // renders off `provenance`, so a theoretical number cannot reach the
+  // screen without being marked as one.
+  // ═════════════════════════════════════════════════════════════════
+
+  const HEAL_ORDER = ['beam', 'ball', 'infuser', 'canister'];
+
+  let healTimeline = null;
+  let healTimelinePromise = null;
+
+  // Which player's chip row is currently showing its add menu, if any.
+  let healMenuOpenFor = null;
+
+  // Items already warned about this session. Cleared on a version change.
+  const warnedTheoretical = new Set();
+
+  const healStacks = { 1: [], 2: [] };
+
+  function loadHealTimeline() {
+    if (healTimelinePromise) return healTimelinePromise;
+    healTimelinePromise = fetch('./csv/cleaned/heal_timeline.json')
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(data => (healTimeline = data))
+      .catch(err => {
+        console.warn('Heal data unavailable — run: node tools/ingest_heals.mjs', err);
+        return null;
+      });
+    return healTimelinePromise;
+  }
+
+  function healAt(id) {
+    if (!healTimeline) return null;
+    return resolveHealAt(healTimeline, id, activeDataVersion);
+  }
+
+  /** Resolved items for one player's stack, in a stable order. */
+  function resolvedStack(player) {
+    return HEAL_ORDER
+      .filter(id => healStacks[player].includes(id))
+      .map(healAt)
+      .filter(Boolean);
+  }
+
+  /** Average HP/s a stack delivers over a window — for labelling only. */
+  function stackRate(items, seconds = 7) {
+    if (!items.length) return 0;
+    return combineSchedules(items).deliveredBy(seconds) / seconds;
+  }
+
+  // battle_simulator.js runs the 1v1 and reads these when it starts a duel.
+  window.resolveHealStack = player => {
+    const items = resolvedStack(player);
+    return items.length ? combineSchedules(items) : null;
+  };
+  window.healStackSummary = player => {
+    const items = resolvedStack(player);
+    if (!items.length) return null;
+    return {
+      ids: items.map(i => i.id),
+      names: items.map(i => i.name),
+      theoretical: items.some(i => i.provenance === 'theoretical'),
+      ratePer7s: stackRate(items)
+    };
+  };
+
+  // ── Stats page reference table ──
+  function renderHealStats() {
+    const mount = document.getElementById('heal-stats');
+    if (!mount) return;
+    if (!healTimeline) { mount.innerHTML = ''; return; }
+
+    const rows = HEAL_ORDER.map(id => {
+      const item = healAt(id);
+      if (!item) return '';
+      const meta = healTimeline.items[id];
+      const theoretical = item.provenance === 'theoretical';
+      const f = item.fields;
+
+      // Each kind is described by different numbers, so the detail column
+      // says what that kind actually does rather than forcing all four into
+      // one set of weapon-shaped fields.
+      const detail =
+        item.kind === 'targeted'
+          ? `${f.heal_rate} HP/s · overheats after ${f.overheat_time}s (${(f.heal_rate * f.overheat_time).toFixed(0)} HP) · ${f.overheat_cooldown}s cooldown · ${f.range}m`
+          : item.kind === 'projectile'
+          ? `${f.heal_per_shot} HP/shot · ${f.capacity} charges (${f.heal_per_shot * f.capacity} HP) · ${f.rpm} RPM · ${f.recharge_delay}s before refill`
+          : id === 'ball'
+          ? `${f.ramp_from}→${f.ramp_to} HP/s over ${f.ramp_time}s · ${f.radius}m radius · ${f.device_hp} HP device · ${f.cooldown}s cooldown`
+          : `${f.burst_heal} HP on contact · then ${f.heal_rate} HP/s for ${f.active_duration}s · ${f.radius}m radius`;
+
+      return `<tr>
+        <td><strong>${esc(item.name)}</strong><br><span class="doc-note">${esc(meta.source_slot)}</span></td>
+        <td>${stackRate([item]).toFixed(0)} HP/s</td>
+        <td>${esc(detail)}</td>
+        <td>${item.self_heal ? 'yes' : 'no'}</td>
+        <td>${theoretical
+              ? `<span style="color:var(--soft)">⚠ ${esc(item.sourceVersion)} values — did not exist until ${esc(item.introducedAt)}</span>`
+              : `${esc(item.sourceVersion)}${item.provenance === 'carried' ? ' (carried)' : ''}`}</td>
+      </tr>`;
+    }).join('');
+
+    mount.innerHTML = `<table class="sustain-rank">
+      <thead><tr>
+        <th>Source</th><th>Avg over 7s</th><th>How it heals</th><th>Self-heals</th><th>Data from</th>
+      </tr></thead>
+      <tbody>${rows}</tbody></table>`;
+  }
+
+  // ── Chip row ──
+  function renderHealStacks() { [1, 2].forEach(renderHealStack); }
+
+  function renderHealStack(player) {
+    const mount = document.getElementById(`p${player}-heals`);
+    if (!mount) return;
+
+    if (!healTimeline) {
+      mount.innerHTML = '<span class="sidebar-hint">Heal data unavailable.</span>';
+      return;
+    }
+
+    const items = resolvedStack(player);
+    const chips = items.map(item => {
+      const theoretical = item.provenance === 'theoretical';
+      const rate = stackRate([item]).toFixed(0);
+      return `<span class="heal-chip ${theoretical ? 'theoretical' : ''}">
+        ${esc(item.name)}
+        <span class="heal-rate">${rate}/s</span>
+        ${theoretical ? `<span class="heal-warn" title="Did not exist at ${esc(activeDataVersion)} — using ${esc(item.sourceVersion)} values">⚠</span>` : ''}
+        <button class="heal-remove" type="button" data-heal-remove="${esc(item.id)}" data-player="${player}" aria-label="Remove ${esc(item.name)}">✕</button>
+      </span>`;
+    }).join('');
+
+    const remaining = HEAL_ORDER.filter(id => !healStacks[player].includes(id));
+    const menu = healMenuOpenFor === player && remaining.length
+      ? `<div class="heal-menu">${remaining.map(id => {
+            const item = healAt(id);
+            if (!item) return '';
+            const theoretical = item.provenance === 'theoretical';
+            return `<button class="heal-add" type="button" data-heal-add="${esc(id)}" data-player="${player}">
+              ${esc(item.name)} ${theoretical ? '⚠' : ''}
+            </button>`;
+          }).join('')}</div>`
+      : '';
+
+    mount.innerHTML = chips +
+      `<button class="heal-add" type="button" data-heal-menu="${player}" ${remaining.length ? '' : 'disabled'}>
+        ${healMenuOpenFor === player ? '− close' : '+ heal item'}
+      </button>` + menu;
+
+    const note = document.getElementById(`p${player}-heal-rate`);
+    if (note) {
+      if (!items.length) note.textContent = 'No support. Health only ever goes down.';
+      else {
+        const anyTheoretical = items.some(i => i.provenance === 'theoretical');
+        // Two overlapping fields pay the higher rate, not both — worth saying
+        // out loud, or the second one looks like it did nothing.
+        const zones = items.filter(i => i.kind === 'zone');
+        note.innerHTML = `${stackRate(items).toFixed(0)} HP/s averaged over a 7s hold` +
+          (zones.length > 1
+            ? ` · <span style="color:var(--soft)">${esc(zones.map(z => z.name).join(' and '))} overlap — only the higher rate counts</span>`
+            : '') +
+          (anyTheoretical ? ' · <span style="color:var(--soft)">contains theoretical items</span>' : '');
+      }
+    }
+  }
+
+  function addHeal(player, id) {
+    const item = healAt(id);
+    if (!item) return;
+
+    const commit = () => {
+      if (!healStacks[player].includes(id)) healStacks[player].push(id);
+      healMenuOpenFor = null;
+      renderHealStack(player);
+      redrawArena();
+    };
+
+    if (item.provenance === 'theoretical' && !warnedTheoretical.has(id)) {
+      warnedTheoretical.add(id);
+      showTheoreticalWarning(item, commit);
+      return;
+    }
+    commit();
+  }
+
+  function initHealPickers() {
+    document.addEventListener('click', e => {
+      const menuBtn = e.target.closest('[data-heal-menu]');
+      if (menuBtn) {
+        const player = +menuBtn.dataset.healMenu;
+        healMenuOpenFor = healMenuOpenFor === player ? null : player;
+        renderHealStack(player);
+        return;
+      }
+
+      const addBtn = e.target.closest('[data-heal-add]');
+      if (addBtn) { addHeal(+addBtn.dataset.player, addBtn.dataset.healAdd); return; }
+
+      const removeBtn = e.target.closest('[data-heal-remove]');
+      if (removeBtn) {
+        const player = +removeBtn.dataset.player;
+        const id = removeBtn.dataset.healRemove;
+        healStacks[player] = healStacks[player].filter(x => x !== id);
+        renderHealStack(player);
+        redrawArena();
+      }
+    });
+  }
+
+  // ── Theoretical warning ──
+  function showTheoreticalWarning(item, onConfirm) {
+    const modal = document.getElementById('heal-modal');
+    const body = document.getElementById('heal-modal-body');
+    if (!modal || !body) { onConfirm(); return; }
+
+    const rate = stackRate([item]).toFixed(0);
+    body.innerHTML = `
+      <p><strong>${esc(item.name)}</strong> did not exist in
+      <code>${esc(activeDataVersion)}</code>. It was introduced in
+      <code>${esc(item.introducedAt)}</code>.</p>
+      <p>Using its <code>${esc(item.sourceVersion)}</code> values —
+      about <strong>${rate} HP/s</strong> across a 7 second hold.</p>
+      <p class="modal-sub">Results using this loadout are theoretical and cannot be
+      compared to real ${esc(activeDataVersion)} play. The item stays marked
+      wherever it appears.</p>`;
+
+    const confirm = document.getElementById('heal-modal-confirm');
+    const cancel = document.getElementById('heal-modal-cancel');
+
+    const close = () => {
+      modal.hidden = true;
+      confirm.removeEventListener('click', accept);
+      cancel.removeEventListener('click', close);
+      document.removeEventListener('keydown', onKey);
+    };
+    const accept = () => { close(); onConfirm(); };
+    const onKey = e => { if (e.key === 'Escape') close(); };
+
+    confirm.addEventListener('click', accept);
+    cancel.addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    modal.hidden = false;
+    confirm.focus();
+  }
+
+  // ═════════════════════════════════════════════════════════════════
+  // SUSTAIN ANALYSIS
+  //
+  // Not "who wins" but "did you last long enough". Holding an objective is
+  // a time question, and a win rate cannot answer it.
+  // ═════════════════════════════════════════════════════════════════
+
+  const SUSTAIN_SAMPLE_STEP = 0.25;
+  const SUSTAIN_SAMPLE_MAX = 20;
+
+  // Squad sizes solved every run. All three are solved together so the
+  // 1-vs-2-vs-3 comparison is a click rather than another few minutes.
+  const SUSTAIN_ATTACKER_COUNTS = [1, 2, 3];
+
+  let sustainWindow = 7;
+  let sustainAttackers = 1;
+  let sustainResults = null;
+
+  const sustainClass = () => document.getElementById('sustain-class')?.value || 'medium';
+  const sustainDistance = () => +(document.getElementById('sustain-distance')?.value || 15);
+  const sustainProfile = () => document.getElementById('sustain-profile')?.value || 'Average';
+  const sustainStagger = () => document.getElementById('sustain-stagger')?.value || 'spread';
+
+  const sampleIndexFor = seconds => Math.round(seconds / SUSTAIN_SAMPLE_STEP);
+
+  /** Every legal stack: one item per source, so 2^4 including none. */
+  function sustainHealStacks() {
+    if (!healTimeline) return [];
+    return allHealStacks(HEAL_ORDER).map(ids => ({
+      ids,
+      items: ids.map(healAt).filter(Boolean)
+    }));
+  }
+
+  function stackLabel(ids) {
+    if (!ids.length) return 'none';
+    return ids.map(id => healTimeline?.items[id]?.name || id).join(' + ');
+  }
+
+  function stackIsTheoretical(ids) {
+    return ids.some(id => healAt(id)?.provenance === 'theoretical');
+  }
+
+  function closeMatchupPanels() {
+    document.querySelectorAll('.rank-bar-cell.is-open').forEach(cell => {
+      cell.classList.remove('is-open');
+      cell.querySelector('.sustain-bar-btn')?.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  function initSustainPanel() {
+    const dist = document.getElementById('sustain-distance');
+    if (dist && typeof getDistances === 'function') {
+      dist.innerHTML = getDistances()
+        .map(d => `<option value="${d}" ${d === 15 ? 'selected' : ''}>${d}m</option>`).join('');
+    }
+
+    const prof = document.getElementById('sustain-profile');
+    if (prof && typeof getAimProfiles === 'function') {
+      prof.innerHTML = getAimProfiles()
+        .map(p => `<option value="${esc(p.name)}" ${p.name === 'Average' ? 'selected' : ''}>${esc(p.name)} — ${Math.round(p.acc * 100)}% acc</option>`).join('');
+    }
+
+    document.querySelectorAll('#sustain-window-group .tbtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#sustain-window-group .tbtn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        sustainWindow = +btn.dataset.window;
+        updateSustainEstimate();
+        if (sustainResults) renderSustain(sustainResults, 'sustain-grid');
+      });
+    });
+
+    document.querySelectorAll('#sustain-attackers-group .tbtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#sustain-attackers-group .tbtn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        sustainAttackers = +btn.dataset.attackers;
+        if (sustainResults) renderSustain(sustainResults, 'sustain-grid');
+      });
+    });
+
+    // Re-reading finished results is free; only the class needs a re-run,
+    // because base health changes what was solved. Squad size does not —
+    // every count is solved up front and the toggle above slices.
+    ['sustain-distance', 'sustain-profile'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', () => {
+        if (sustainResults) renderSustain(sustainResults, 'sustain-grid');
+      });
+    });
+
+    const invalidate = (title, why) => {
+      sustainResults = null;
+      updateSustainEstimate();
+      const mount = document.getElementById('sustain-grid');
+      if (mount) mount.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">✚</div><div class="empty-title">${esc(title)}</div>
+        <div class="empty-sub">${esc(why)}</div></div>`;
+    };
+    document.getElementById('sustain-class')?.addEventListener('change', () =>
+      invalidate('Class changed',
+        'Base health changes what gets solved, so this needs another run.'));
+    // Stagger moves the shot times themselves, so unlike the window or the
+    // squad-size toggle it cannot be re-read off finished results.
+    document.getElementById('sustain-stagger')?.addEventListener('change', () =>
+      invalidate('Squad timing changed',
+        'This moves when each attacker opens fire, so it needs another run.'));
+
+    // The matchup panels open on hover, but a pinned one survives the pointer
+    // leaving, so the list can be read (and scrolled) at leisure. Only one at
+    // a time — two open panels overlap each other.
+    const mount = document.getElementById('sustain-grid');
+    mount?.addEventListener('click', e => {
+      const btn = e.target.closest('.sustain-bar-btn');
+      if (!btn || !mount.contains(btn)) return;
+      const cell = btn.parentElement;
+      const open = !cell.classList.contains('is-open');
+      closeMatchupPanels();
+      cell.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', String(open));
+    });
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.rank-bar-cell')) closeMatchupPanels();
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeMatchupPanels();
+    });
+
+    document.getElementById('sustain-run-btn')?.addEventListener('click', startSustainAnalysis);
+    document.getElementById('sustain-cancel-btn')?.addEventListener('click', () => {
+      if (typeof cancelCrossAnalysis === 'function') cancelCrossAnalysis('sustain-grid');
+    });
+
+    updateSustainEstimate();
+  }
+
+  function updateSustainEstimate() {
+    const el = document.getElementById('sustain-estimate');
+    if (!el) return;
+    const stacks = sustainHealStacks().length || 16;
+    const squads = SUSTAIN_ATTACKER_COUNTS.length;
+    const cells = weapons().length * 7 * 4 * stacks * squads;
+    el.innerHTML = `<strong>${cells.toLocaleString()}</strong> scenarios —
+      ${weapons().length} weapons × 7 ranges × 4 aim profiles × ${stacks} heal stacks
+      × ${squads} squad sizes, solved exactly.`;
+  }
+
+  function setSustainRunning(running) {
+    const run = document.getElementById('sustain-run-btn');
+    const cancel = document.getElementById('sustain-cancel-btn');
+    if (run) run.disabled = running;
+    if (cancel) cancel.disabled = !running;
+  }
+
+  function startSustainAnalysis() {
+    if (!healTimeline) return;
+    if (typeof runSustainAnalysis !== 'function') return;
+
+    setSustainRunning(true);
+    runSustainAnalysis({
+      defenderClass: sustainClass(),
+      healStacks: sustainHealStacks(),
+      mountId: 'sustain-grid',
+      sampleStep: SUSTAIN_SAMPLE_STEP,
+      sampleMax: SUSTAIN_SAMPLE_MAX,
+      attackerCounts: SUSTAIN_ATTACKER_COUNTS,
+      attackerStagger: sustainStagger(),
+      render: (results, mountId) => { sustainResults = results; renderSustain(results, mountId); },
+      onComplete: () => setSustainRunning(false)
+    });
+  }
+
+  // ── Rendering ──
+  function renderSustain(results, mountId) {
+    const mount = document.getElementById(mountId);
+    if (!mount) return;
+    if (!results || !results.length) { mount.innerHTML = ''; return; }
+
+    const distance = sustainDistance();
+    const profile = sustainProfile();
+    const idx = sampleIndexFor(sustainWindow);
+
+    // Everything below reads this one slice: the chosen range, aim profile
+    // and squad size, at the chosen hold window. Older results predate the
+    // squad-size axis, so a missing count reads as 1.
+    const countOf = r => r.attackerCount || 1;
+    const atRange = results.filter(r => r.distance === distance && r.profile === profile);
+    const slice = atRange.filter(r => countOf(r) === sustainAttackers);
+
+    // Mean hold across the roster, for one heal stack at one squad size.
+    const meanHold = rows =>
+      rows.reduce((sum, r) => sum + (r.survival[idx] ?? 0), 0) / (rows.length || 1);
+
+    // The 1/2/3 comparison is the point of the axis, so it is carried on
+    // every ranking row rather than living behind the toggle.
+    const byStackAndCount = new Map();
+    for (const r of atRange) {
+      const key = r.healKey + '|' + countOf(r);
+      if (!byStackAndCount.has(key)) byStackAndCount.set(key, []);
+      byStackAndCount.get(key).push(r);
+    }
+    const squadSizes = [...new Set(atRange.map(countOf))].sort((a, b) => a - b);
+
+    const byStack = new Map();
+    for (const r of slice) {
+      if (!byStack.has(r.healKey)) byStack.set(r.healKey, { key: r.healKey, ids: r.healIds, rows: [] });
+      byStack.get(r.healKey).rows.push(r);
+    }
+
+    const ranked = [...byStack.values()].map(entry => ({
+      ids: entry.ids,
+      label: stackLabel(entry.ids),
+      theoretical: stackIsTheoretical(entry.ids),
+      hold: meanHold(entry.rows),
+      holdByCount: squadSizes.map(n => {
+        const rows = byStackAndCount.get(entry.key + '|' + n);
+        return rows ? meanHold(rows) : null;
+      }),
+      rate: entry.ids.length ? stackRate(entry.ids.map(healAt).filter(Boolean), sustainWindow) : 0,
+      rows: entry.rows
+    })).sort((a, b) => b.hold - a.hold);
+
+    const squadWord = sustainAttackers === 1 ? 'one attacker' : `${sustainAttackers} attackers`;
+
+    mount.innerHTML = `
+      <div class="sustain-head">
+        <div>
+          <div class="sustain-title">Holding ${sustainWindow}s as ${esc(sustainClass())} under ${squadWord}</div>
+          <div class="sustain-sub">${distance}m · ${esc(profile)} aim · ${slice.length.toLocaleString()} scenarios · data ${esc(activeDataVersion)}</div>
+        </div>
+      </div>
+
+      <div class="sustain-section-title">Which healing gets you there — chance of holding ${sustainWindow}s</div>
+      ${rankingHtml(ranked, squadSizes)}
+
+      <div class="sustain-section-title">Survival over time</div>
+      <div class="sustain-curves">${curvesHtml(ranked)}</div>
+
+      <p class="sustain-note">
+        One-sided: you are interacting with the objective and not returning fire, and
+        none of the attackers can be dropped mid-hold. Averaged across every weapon in
+        the roster at this range and aim profile — read it as "against a random
+        opponent", not against a specific one. Everyone shooting you carries the same
+        weapon and the same aim; a mixed squad is not solvable on this grid.
+      </p>`;
+  }
+
+  function rankingHtml(ranked, squadSizes) {
+    // The squad columns are the comparison the axis exists for, so they sit
+    // next to each other rather than behind the toggle. The selected size
+    // is the one the bar and the rest of the page are drawn from.
+    const compare = squadSizes.length > 1;
+    const idx = sampleIndexFor(sustainWindow);
+
+    const pct = h => h == null ? '—' : (h * 100).toFixed(1) + '%';
+    const squadCells = r => compare
+      ? r.holdByCount.map((h, i) => `
+        <td class="rank-hold ${squadSizes[i] === sustainAttackers ? 'is-selected' : ''}"
+            >${pct(h)}</td>`).join('')
+      : `<td class="rank-hold is-selected">${pct(r.hold)}</td>`;
+
+    const rows = ranked.map((r, i) => `
+      <tr class="${r.theoretical ? 'is-theoretical' : ''}">
+        <td class="rank-num">${i + 1}</td>
+        <td class="rank-stack">${esc(r.label)}</td>
+        ${squadCells(r)}
+        ${barCellHtml(r, i, idx, ranked.length)}
+        <td class="rank-rate">${r.rate.toFixed(0)} HP/s</td>
+      </tr>`).join('');
+
+    const squadHeads = compare
+      ? squadSizes.map(n => `<th style="text-align:right" class="${n === sustainAttackers ? 'is-selected' : ''}"
+          >${n}v1</th>`).join('')
+      : `<th style="text-align:right">Hold ${sustainWindow}s</th>`;
+
+    const anyTheoretical = ranked.some(r => r.theoretical);
+    return `<table class="sustain-rank">
+      <thead><tr>
+        <th></th><th>Heal stack</th>${squadHeads}
+        <th>Matchups</th><th style="text-align:right">Avg rate</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p class="sustain-note">Hover a bar for the matchups behind it, or click to pin it open —
+      <span class="matchup-won">green</span> is a weapon you held off,
+      <span class="matchup-lost">red</span> is one that broke you.</p>` + (anyTheoretical ? `<p class="sustain-note">
+      ⚠ Marked rows contain an item that did not exist at ${esc(activeDataVersion)} and use its
+      launch values. Those rows are theoretical and cannot be compared to real play at this version.</p>` : '');
+  }
+
+  /**
+   * The bar doubles as the handle for the per-weapon breakdown: hovering or
+   * focusing it opens the panel, clicking pins it open so the list can be
+   * read without holding the pointer still.
+   */
+  function barCellHtml(r, i, idx, total) {
+    // Rows in the lower half open upward, so a panel on the last row is not
+    // stranded past the bottom of the scrolling results pane.
+    const up = total > 4 && i >= total / 2;
+    const held = r.rows.filter(row => (row.survival[idx] ?? 0) >= 0.5)
+      .sort((a, b) => (b.survival[idx] ?? 0) - (a.survival[idx] ?? 0));
+    const broke = r.rows.filter(row => (row.survival[idx] ?? 0) < 0.5)
+      .sort((a, b) => (a.survival[idx] ?? 0) - (b.survival[idx] ?? 0));
+
+    const chips = (rows, cls) => rows.map(row => `<span class="matchup-chip ${cls}">
+      ${esc(row.attacker)} <b>${((row.survival[idx] ?? 0) * 100).toFixed(0)}%</b></span>`).join('');
+
+    const label = `${r.label}: held against ${held.length} of ${r.rows.length} weapons ` +
+      `over ${sustainWindow}s. Activate for the matchup list.`;
+
+    return `<td class="rank-bar-cell">
+      <button type="button" class="sustain-bar-btn" aria-expanded="false"
+              aria-label="${esc(label)}">
+        <span class="sustain-bar" style="width:${(r.hold * 100).toFixed(1)}%"></span>
+      </button>
+      <div class="sustain-matchups ${up ? 'opens-up' : ''}" role="tooltip">
+        <div class="matchup-head">
+          ${esc(r.label)} — holding ${sustainWindow}s against
+          <span class="matchup-won">${held.length} won</span> ·
+          <span class="matchup-lost">${broke.length} lost</span>
+          <span class="matchup-of">of ${r.rows.length}</span>
+        </div>
+        <div class="matchup-body">
+          ${held.length ? `<div class="matchup-group">
+            <div class="matchup-label matchup-won">Held the objective against</div>
+            <div class="matchup-chips">${chips(held, 'is-won')}</div>
+          </div>` : ''}
+          ${broke.length ? `<div class="matchup-group">
+            <div class="matchup-label matchup-lost">Broke the hold</div>
+            <div class="matchup-chips">${chips(broke, 'is-lost')}</div>
+          </div>` : ''}
+          ${!r.rows.length ? '<div class="matchup-label">No scenarios at this slice.</div>' : ''}
+        </div>
+      </div>
+    </td>`;
+  }
+
+  function curvesHtml(ranked) {
+    const W = 820, H = 300, PAD_L = 46, PAD_B = 34, PAD_T = 12, PAD_R = 12;
+    const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
+    const n = Math.round(SUSTAIN_SAMPLE_MAX / SUSTAIN_SAMPLE_STEP);
+
+    const x = t => PAD_L + (t / SUSTAIN_SAMPLE_MAX) * plotW;
+    const y = p => PAD_T + (1 - p) * plotH;
+
+    // Six lines is the most that stays readable; the rest are in the table.
+    const shown = ranked.slice(0, 6);
+    const colours = ['#39d974', '#4a9eff', '#9d7fff', '#e08a1e', '#e84040', '#8b93a7'];
+
+    const paths = shown.map((r, i) => {
+      const mean = [];
+      for (let k = 0; k <= n; k++) {
+        let sum = 0;
+        for (const row of r.rows) sum += row.survival[k] ?? 0;
+        mean.push(sum / (r.rows.length || 1));
+      }
+      const d = mean.map((p, k) => `${k ? 'L' : 'M'}${x(k * SUSTAIN_SAMPLE_STEP).toFixed(1)},${y(p).toFixed(1)}`).join(' ');
+      return `<path d="${d}" fill="none" stroke="${colours[i]}" stroke-width="2"
+        ${r.theoretical ? 'stroke-dasharray="5 3"' : ''} />`;
+    }).join('');
+
+    const legend = shown.map((r, i) =>
+      `<g transform="translate(${PAD_L + 8},${PAD_T + 8 + i * 15})">
+         <rect width="10" height="3" y="4" fill="${colours[i]}"/>
+         <text x="16" y="9" fill="#8b93a7" font-size="11" font-family="Share Tech Mono, monospace">${esc(r.label)}${r.theoretical ? ' ⚠' : ''}</text>
+       </g>`).join('');
+
+    const gridY = [0, 0.25, 0.5, 0.75, 1].map(p =>
+      `<line x1="${PAD_L}" y1="${y(p)}" x2="${W - PAD_R}" y2="${y(p)}" stroke="#1e232e"/>
+       <text x="${PAD_L - 6}" y="${y(p) + 4}" text-anchor="end" fill="#8b93a7" font-size="11">${p * 100}%</text>`).join('');
+
+    const gridX = [0, 5, 10, 15, 20].map(t =>
+      `<line x1="${x(t)}" y1="${PAD_T}" x2="${x(t)}" y2="${PAD_T + plotH}" stroke="#1e232e"/>
+       <text x="${x(t)}" y="${H - 12}" text-anchor="middle" fill="#8b93a7" font-size="11">${t}s</text>`).join('');
+
+    const marker = `
+      <line x1="${x(sustainWindow)}" y1="${PAD_T}" x2="${x(sustainWindow)}" y2="${PAD_T + plotH}"
+            stroke="#e84040" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <text x="${x(sustainWindow) + 5}" y="${PAD_T + 12}" fill="#e84040" font-size="11"
+            font-family="Share Tech Mono, monospace">${sustainWindow}s</text>`;
+
+    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img"
+      aria-label="Probability of surviving over time, one line per heal stack">
+      ${gridY}${gridX}${marker}${paths}${legend}</svg>`;
+  }
+
+  // ═════════════════════════════════════════════════════════════════
+  // COLLAPSIBLE SIDEBAR
+  // Every .app view (sim / meta / sustain) gets the same toggle, and the
+  // state is shared, so switching views never reopens a panel the user
+  // just closed. Collapsed leaves a rail behind — see the CSS.
+  // ═════════════════════════════════════════════════════════════════
+  const SIDEBAR_KEY = 'finals.sidebarCollapsed';
+  let sidebarCollapsed = false;
+  try { sidebarCollapsed = localStorage.getItem(SIDEBAR_KEY) === '1'; } catch { /* private mode */ }
+
+  function applySidebarState() {
+    document.querySelectorAll('.app').forEach(app => {
+      app.classList.toggle('sidebar-collapsed', sidebarCollapsed);
+      const btn = app.querySelector('.sidebar-toggle');
+      if (!btn) return;
+      const label = sidebarCollapsed ? 'Show panel' : 'Hide panel';
+      btn.setAttribute('aria-expanded', String(!sidebarCollapsed));
+      // The label is hidden in the collapsed rail, so name the button directly.
+      btn.setAttribute('aria-label', label);
+      btn.title = label;
+      btn.querySelector('.sidebar-toggle-icon').textContent = sidebarCollapsed ? '»' : '«';
+      btn.querySelector('.sidebar-toggle-label').textContent = label;
+    });
+  }
+
+  function setSidebarCollapsed(next) {
+    sidebarCollapsed = next;
+    try { localStorage.setItem(SIDEBAR_KEY, next ? '1' : '0'); } catch { /* private mode */ }
+    applySidebarState();
+    // The arena canvas takes its width from the parent, which just changed.
+    if (currentRoute === 'sim') redrawArena();
+  }
+
+  function initSidebarToggles() {
+    document.querySelectorAll('.app > .sidebar').forEach(sidebar => {
+      if (sidebar.querySelector('.sidebar-toggle')) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sidebar-toggle';
+      btn.innerHTML = '<span class="sidebar-toggle-icon" aria-hidden="true">«</span>' +
+                      '<span class="sidebar-toggle-label">Hide panel</span>';
+      btn.addEventListener('click', () => setSidebarCollapsed(!sidebarCollapsed));
+      sidebar.prepend(btn);
+    });
+    applySidebarState();
+  }
+
   // ═════════════════════════════════════════════════════════════════
   // BOOT
   // ═════════════════════════════════════════════════════════════════
@@ -1627,8 +2342,12 @@
   });
 
   renderStatsHead();
+  initSidebarToggles();
   initMetaPanel();
+  initSustainPanel();
+  initHealPickers();
   initWeaponPage();
+  loadHealTimeline().then(() => { renderHealStacks(); renderHealStats(); });
   {
     const { name, params } = routeFromHash();
     navigate(name, { push: false, params });

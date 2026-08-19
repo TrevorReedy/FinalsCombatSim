@@ -69,8 +69,18 @@ function rotateLeft32(value, bits) {
 function useSystemRandom() {
   rollRandom = Math.random;
 }
-function simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOverride, meleeAdv, fsa, captureFrames) {
+// `opts` is a trailing options bag rather than three more positional
+// parameters — there were already eleven, and the two call sites are
+// battle_simulator.js runSim() and the worker's resolveBySampling().
+//
+//   opts.p1Heal, opts.p2Heal   schedules from heals.js combineSchedules(),
+//                              or null for nobody healing that fighter
+//   opts.regen                 per-class {delay, rate} table, or null for off
+function simulate(p1w, p2w, p1acc, p1hs, p2acc, p2hs, startDist, speedOverride, meleeAdv, fsa, captureFrames, opts = {}) {
 const s1 = getStats(p1w), s2 = getStats(p2w);
+const p1Heal = opts.p1Heal || null;
+const p2Heal = opts.p2Heal || null;
+const regen  = opts.regen  || null;
 let meleeRange1 = null;
 let meleeRange2 = null;
 
@@ -112,6 +122,14 @@ if (s2.isMelee) {
   let dmg1 = 0, dmg2 = 0;
   let shots1 = 0, hits1 = 0, hs1count = 0;
   let shots2 = 0, hits2 = 0, hs2count = 0;
+
+  // Healing actually absorbed — what landed on a fighter below full health,
+  // not what the support poured out. Overheal is thrown away, so the two
+  // differ whenever a heal outpaces incoming damage.
+  let healed1 = 0, healed2 = 0;
+  const regen1 = regen ? regen[p1w.class] : null;
+  const regen2 = regen ? regen[p2w.class] : null;
+  let lastHit1 = 0, lastHit2 = 0;
 
   const frames      = captureFrames ? [] : null;
   const log         = captureFrames ? [] : null;
@@ -238,6 +256,39 @@ if (p1InRange && rollRandom() < p1acc) {
     hp2 = Math.max(0, hp2 - pendingDmgToP2);
     hp1 = Math.max(0, hp1 - pendingDmgToP1);
 
+    if (pendingDmgToP1 > 0) lastHit1 = time;
+    if (pendingDmgToP2 > 0) lastHit2 = time;
+
+    // ── Apply healing, to whoever is still standing ──
+    // Healing is taken as the difference of the schedule's cumulative
+    // total across this tick rather than as rate x DT. The solver reads
+    // the same cumulative function, so differencing it is what stops the
+    // two engines drifting apart on a curve that ramps or pulses.
+    //
+    // Clamping at max health here is exact, and that is the point: this
+    // engine is the reference the solver's cheaper approximation gets
+    // checked against.
+    if (hp1 > 0) {
+      let gain = 0;
+      if (p1Heal) gain += p1Heal.deliveredBy(time + DT) - p1Heal.deliveredBy(time);
+      if (regen1 && time - lastHit1 >= regen1.delay) gain += regen1.rate * DT;
+      if (gain > 0) {
+        const before = hp1;
+        hp1 = Math.min(maxHP1, hp1 + gain);
+        healed1 += hp1 - before;
+      }
+    }
+    if (hp2 > 0) {
+      let gain = 0;
+      if (p2Heal) gain += p2Heal.deliveredBy(time + DT) - p2Heal.deliveredBy(time);
+      if (regen2 && time - lastHit2 >= regen2.delay) gain += regen2.rate * DT;
+      if (gain > 0) {
+        const before = hp2;
+        hp2 = Math.min(maxHP2, hp2 + gain);
+        healed2 += hp2 - before;
+      }
+    }
+
     // ── Projectile aging (visual only) ──
     projectiles = projectiles.filter(p => p.age < 3);
     projectiles.forEach(p => p.age++);
@@ -284,6 +335,7 @@ if (p1InRange && rollRandom() < p1acc) {
     hp1: Math.max(0, hp1), hp2: Math.max(0, hp2),
     maxHP1, maxHP2,
     dmg1, dmg2,
+    healed1, healed2,
     shots1, hits1, hs1: hs1count,
     shots2, hits2, hs2: hs2count,
     frames, log

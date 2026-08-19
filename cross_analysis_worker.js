@@ -10,16 +10,15 @@
 //   * by sampling with simulate.js otherwise, from a per-job seed so a
 //     surprising number can always be replayed.
 // ═══════════════════════════════════════
-importScripts('./simulate.js', './duel_solver.js');
+// heals.js first: it defines the simulation constants both of the others
+// read as free globals, and the heal schedules the solver needs.
+importScripts('./heals.js', './simulate.js', './duel_solver.js');
 
-// ── Simulation constants (mirrored from main thread) ──
-// Must stay in step with battle_simulator.js — a mismatch here silently gave
-// the meta analysis a different game than the 1v1 simulation.
-const CLASS_SPEED = { light: 7.0, medium: 5.0, heavy: 3.5 };
-const CLASS_HP    = { light: 150, medium: 250, heavy: 350 };
-const MELEE_RANGE = 2.0;
-const DT          = 0.01;
-const MAX_TIME    = 60;
+// ── Simulation constants ──
+// These used to be re-declared here, mirrored by hand from
+// battle_simulator.js, and a mismatch silently gave the meta analysis a
+// different game than the 1v1 simulation. They now come from heals.js, so
+// there is one copy and nothing to keep in step.
 
 function parseNum(s) {
   if (!s) return null;
@@ -106,7 +105,17 @@ self.addEventListener('message', function(e) {
 //   return 1 - ((dist - s.dropMin) / (s.dropMax - s.dropMin)) * s.dropR;
 // }
 
+// Heal items arrive on the job already resolved to the active data version
+// — plain {id, kind, fields} objects, which structured-clone fine. The
+// worker only has to turn them into a schedule, so nothing here needs the
+// timeline or knows what version is selected.
+function scheduleFrom(resolvedItems) {
+  return resolvedItems && resolvedItems.length ? combineSchedules(resolvedItems) : null;
+}
+
 function runJob(job) {
+  if (job.kind === 'sustain') return runSustainJob(job);
+
   const {
     attacker, defender, distance, profile, runs,
     speedOverride, meleeAdv,
@@ -120,14 +129,17 @@ function runJob(job) {
   const settings = {
     attacker, defender, attackerStats, defenderStats, distance,
     attackerAcc, attackerHs, defenderAcc, defenderHs,
-    speedOverride, meleeAdv, runs, seed
+    speedOverride, meleeAdv, runs, seed,
+    attackerHeal: scheduleFrom(job.attackerHeal),
+    defenderHeal: scheduleFrom(job.defenderHeal)
   };
 
   const solvable = !forceSampling && canSolveExactly({
     meleeAdvance: meleeAdv,
     speedOverride,
     p1Stats: attackerStats,
-    p2Stats: defenderStats
+    p2Stats: defenderStats,
+    regenRate: job.regenRate || 0
   });
 
   const outcome = solvable ? resolveExactly(settings) : resolveBySampling(settings);
@@ -168,6 +180,60 @@ function runJob(job) {
   };
 }
 
+/**
+ * One-sided: how long does a defender on the objective last under fire?
+ *
+ * No return fire, so this is a single kill-time walk rather than two
+ * compared against each other — cheaper than a duel, not dearer. The whole
+ * survival curve comes back rather than one number so the screen can move
+ * its target duration without re-running the grid.
+ *
+ * `attackerCount` is how many of them are shooting you. It merges into one
+ * firing schedule inside the solver, so a 3v1 costs a longer shot list and
+ * nothing else structural.
+ */
+function runSustainJob(job) {
+  const { attacker, distance, profile, defenderClass, healIds, sampleStep, sampleMax,
+          attackerCount, attackerStagger } = job;
+
+  const sampleSeconds = [];
+  for (let t = 0; t <= sampleMax + 1e-9; t += sampleStep) sampleSeconds.push(+t.toFixed(3));
+
+  const out = solveSurvival({
+    attackerStats: getStats(attacker),
+    attackerAccuracy: job.attackerAcc,
+    attackerHeadshotChance: job.attackerHs,
+    defenderMaxHealth: CLASS_HP[defenderClass],
+    defenderHeal: scheduleFrom(job.defenderHeal),
+    distance,
+    dropMultiplierFor: dropMult,
+    sampleSeconds,
+    attackerCount: attackerCount || 1,
+    attackerStagger: attackerStagger || 'spread',
+    // Solving only as far as the longest window anyone can ask about is
+    // what keeps this affordable: it cuts the shot count and the heal that
+    // can pile up, which are the two things that size the solver's grid.
+    maxTime: Math.min(MAX_TIME, sampleMax)
+  });
+
+  return {
+    jobId: job.jobId,
+    kind: 'sustain',
+    attacker: attacker.name,
+    class: attacker.class,
+    distance,
+    profile: profile.name,
+    attackerCount: attackerCount || 1,
+    healIds,
+    healKey: healIds.join('+') || 'none',
+    // Float64Array does not survive structured clone as itself in every
+    // engine; a plain array is one allocation and always arrives intact.
+    survival: Array.from(out.survival),
+    survivedToEnd: out.survivedToEnd,
+    medianKillTime: out.medianKillTime
+  };
+}
+
 /** Exact probabilities, straight from the solver. */
 function resolveExactly(s) {
   const exact = solveDuelExactly({
@@ -182,7 +248,9 @@ function resolveExactly(s) {
     distance: s.distance,
     firstShot: 'both',
     maxTime: MAX_TIME,
-    dropMultiplierFor: dropMult
+    dropMultiplierFor: dropMult,
+    p1Heal: s.attackerHeal,
+    p2Heal: s.defenderHeal
   });
 
   return {
@@ -212,7 +280,8 @@ function resolveBySampling(s) {
     const duel = simulate(
       s.attacker, s.defender,
       s.attackerAcc, s.attackerHs, s.defenderAcc, s.defenderHs,
-      s.distance, s.speedOverride, s.meleeAdv, 'both'
+      s.distance, s.speedOverride, s.meleeAdv, 'both', false,
+      { p1Heal: s.attackerHeal, p2Heal: s.defenderHeal }
     );
 
     // simulate() awards a 60 second stalemate to whoever has more health

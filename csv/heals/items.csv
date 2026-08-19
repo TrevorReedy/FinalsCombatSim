@@ -1,0 +1,5 @@
+id,name,wiki_name,source_slot,kind,introduced,self_heal,notes
+beam,Heal Beam,Healing Beam,Medium specialization,targeted,1.0.0,no,Continuous beam locked onto one ally. Overheats after sustained use and cannot heal the user.
+ball,Heal Ball,Healing Emitter,Heavy gadget,zone,7.0.0,yes,Placed or thrown emitter that heals the user and allies inside its radius. Ramps up while a target stays attached.
+infuser,H+ Infuser,H+ Infuser,Light gadget,projectile,7.0.0,no,Hitscan shots that heal an ally on contact. Cannot damage enemies and cannot heal the user.
+canister,Heal Canister,Healing Barrel,Arena carriable,zone,6.6.0,yes,Arena pickup. Heals on direct hit then leaves a healing zone. Shipped in 6.6.0 as "Healing Canister"; the wiki files it as "Healing Barrel".

@@ -1,0 +1,15 @@
+id,version,heal_rate,heal_per_shot,rpm,capacity,burst_heal,ramp_from,ramp_to,ramp_time,overheat_time,overheat_cooldown,recharge_delay,recharge_rate,active_duration,cooldown,charges,device_hp,radius,range,acquire_range,note
+beam,1.0.0,50,-,-,-,-,-,-,-,7,7.5,0.5,40,-,-,-,-,-,15,12,Launch state. Overheat cooldown and recharge are current values carried back; no patch note has ever moved them.
+beam,3.6.0,50,-,-,-,-,-,-,-,5.5,7.5,0.5,40,-,-,-,-,-,15,12,Overheat time reduced from 7s to 5.5s.
+beam,4.0.0,40,-,-,-,-,-,-,-,5.5,7.5,0.5,40,-,-,-,-,-,15,12,Healing decreased from 50 to 40 per second.
+beam,4.6.0,40,-,-,-,-,-,-,-,5.5,7.5,0.5,40,-,-,-,-,-,13,10,Target distance reduced 12m to 10m; healing distance 15m to 13m.
+beam,8.0.0,46,-,-,-,-,-,-,-,5.5,7.5,0.5,40,-,-,-,-,-,13,10,Healing increased from 40 to 46 per second. At 5.5s this is the 253 HP overheat figure the wiki quotes.
+ball,7.0.0,-,-,-,-,-,10,20,2,-,-,-,-,-,35,1,200,4,-,-,Introduced for Heavy.
+ball,7.3.0,-,-,-,-,-,10,20,2,-,-,-,-,-,30,1,200,4,-,-,Cooldown reduced from 35s to 30s; retrieval mechanics added.
+infuser,7.0.0,-,20,800,20,-,-,-,-,-,-,8,5,-,-,-,-,-,-,-,Introduced for Light.
+infuser,7.3.0,-,15,800,20,-,-,-,-,-,-,8,5,-,-,-,-,-,-,-,Healing per shot reduced from 20 to 15.
+infuser,8.0.0,-,14,800,20,-,-,-,-,-,-,8,5,-,-,-,-,-,-,-,Healing per shot decreased from 15 to 14.
+infuser,10.3.0,-,14,800,20,-,-,-,-,-,-,10,5,-,-,-,-,-,-,-,Delay before ammo regeneration extended from 8s to 10s.
+infuser,10.12.0,-,11,800,20,-,-,-,-,-,-,10,5,-,-,-,-,-,-,-,Healing per shot reduced from 14 to 11.
+canister,6.6.0,10,-,-,-,50,-,-,-,-,-,-,-,14,-,-,50,3,-,-,Added as an arena carriable.
+canister,7.0.0,10,-,-,-,50,-,-,-,-,-,-,-,14,-,-,15,3,-,-,Object health reduced from 50 to 15; no longer needs instant damage to trigger.

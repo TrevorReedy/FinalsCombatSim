@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>THE FINALS — Combat Simulator</title>
 
+<script src="./heals.js" defer></script>
 <script src="./simulate.js" defer></script>
 <script src="./duel_solver.js" defer></script>
 <script src="./battle_simulator.js" defer></script>
@@ -33,6 +34,7 @@
       <button class="navbtn" type="button" data-route="stats">Stats</button>
       <button class="navbtn" type="button" data-route="sim">Simulation</button>
       <button class="navbtn" type="button" data-route="meta">Meta</button>
+      <button class="navbtn" type="button" data-route="sustain">Sustain</button>
     </nav>
 
     <label class="version-picker" title="Weapon data version used by every screen">
@@ -94,6 +96,15 @@
             <span class="menu-body">
               <span class="menu-title">Meta Simulation</span>
               <span class="menu-desc">One weapon versus every other, across every range and aim profile — the full cross product.</span>
+            </span>
+            <span class="menu-arrow">▶</span>
+          </button>
+
+          <button class="menu-card" type="button" data-route="sustain">
+            <span class="menu-num">05</span>
+            <span class="menu-body">
+              <span class="menu-title">Sustain Analysis</span>
+              <span class="menu-desc">Which healing keeps you alive long enough to force a steal — every heal stack against the whole arsenal.</span>
             </span>
             <span class="menu-arrow">▶</span>
           </button>
@@ -268,7 +279,7 @@
           <article class="doc-card warn">
             <h2>Known limits</h2>
             <ul class="doc-ul">
-              <li>No gadgets, specializations, healing or shields — weapons only.</li>
+              <li>Healing is modelled — the four heal sources, stacked, versioned by season. Other gadgets, specializations and shields are not.</li>
               <li>No cover, movement mechanics, recoil or spread growth; accuracy is a flat per-shot probability.</li>
               <li>Projectile travel time is cosmetic; hits resolve on the tick they are fired.</li>
               <li>Quick-reload behaviour (e.g. the ARN-220) is not implemented yet.</li>
@@ -339,14 +350,22 @@
         </p>
 
         <article class="doc-card gadget-card">
-          <h2>Gadgets</h2>
+          <h2>Healing</h2>
           <p>
-            Gadget data isn't in the dataset yet, so nothing here would be trustworthy.
-            The simulation is weapons-only until it is.
+            The four healing sources, at the selected data version. Attach them to either
+            fighter on the Simulation screen, or rank every combination of them on the
+            Sustain screen.
+          </p>
+          <div id="heal-stats"></div>
+          <p class="doc-note">
+            Rates are averaged across a 7 second hold, which is what a cashout steal takes —
+            a beam sustains 46 HP/s but overheats after 5.5s, so its average over a window is
+            lower than its peak. Healing that lands on someone already at full health is lost,
+            so a fighter never absorbs the whole figure.
           </p>
           <p class="doc-note">
-            Adding them needs per-gadget damage, radius, arm/fuse time, cooldown and charges
-            in <code>weapons_s10_cleaned.json</code>'s format, plus a tick handler in the engine.
+            Other gadgets are still absent: adding them needs per-gadget damage, radius,
+            arm/fuse time, cooldown and charges, plus a tick handler in the engine.
           </p>
         </article>
       </div>
@@ -427,6 +446,10 @@
             <div id="p1-badges" class="weapon-badge"></div>
             <div id="p1-note" class="weapon-note"></div>
 
+            <label>Support Healing</label>
+            <div class="heal-stack" id="p1-heals" data-player="1"></div>
+            <p class="sidebar-hint heal-rate-note" id="p1-heal-rate"></p>
+
             <label>Accuracy</label>
             <div class="range-row">
               <input type="range" id="p1-acc" min="1" max="100" value="75" oninput="syncRange(this,'p1-acc-v','%')">
@@ -453,6 +476,10 @@
             <select id="p2-weapon"oninput ="drawIdle()" onchange="updateWeaponInfo(2)"></select>
             <div id="p2-badges" class="weapon-badge"></div>
             <div id="p2-note" class="weapon-note"></div>
+
+            <label>Support Healing</label>
+            <div class="heal-stack" id="p2-heals" data-player="2"></div>
+            <p class="sidebar-hint heal-rate-note" id="p2-heal-rate"></p>
 
             <label>Accuracy</label>
             <div class="range-row">
@@ -733,7 +760,128 @@
       </div>
     </section>
 
+    <!-- ══════════════════════════════════════════════════════════
+         SUSTAIN ANALYSIS
+         ══════════════════════════════════════════════════════════ -->
+    <section class="view view-app" id="view-sustain" hidden>
+      <div class="app">
+        <div class="sidebar">
+          <div class="sidebar-head">
+            <div class="section-title">Sustain Analysis</div>
+            <p class="sidebar-hint">
+              You are on the objective and not shooting back. Which healing keeps you
+              standing long enough to finish?
+            </p>
+
+            <label style="margin-top:12px;">Weapon Data Version</label>
+            <select class="data-version-picker" aria-label="Weapon data version"></select>
+            <p class="sidebar-hint data-version-note"></p>
+          </div>
+
+          <div class="fighter-panel active">
+            <label>You are playing</label>
+            <select id="sustain-class">
+              <option value="light">Light — 150 HP</option>
+              <option value="medium" selected>Medium — 250 HP</option>
+              <option value="heavy">Heavy — 350 HP</option>
+            </select>
+
+            <label>Holding for</label>
+            <div class="toggle-group" id="sustain-window-group">
+              <button class="tbtn active" type="button" data-window="7">Steal 7s</button>
+              <button class="tbtn" type="button" data-window="6">Final 6s</button>
+              <button class="tbtn" type="button" data-window="20">Vault 20s</button>
+            </div>
+            <p class="sidebar-hint">
+              Stealing a cashout takes 7s in qualifying rounds and 6s in the final.
+              A vault takes 20s.
+            </p>
+
+            <label>Contested by</label>
+            <div class="toggle-group" id="sustain-attackers-group">
+              <button class="tbtn active" type="button" data-attackers="1">1 attacker</button>
+              <button class="tbtn" type="button" data-attackers="2">2 attackers</button>
+              <button class="tbtn" type="button" data-attackers="3">3 attackers</button>
+            </div>
+            <p class="sidebar-hint">
+              A full enemy squad is three. All three are solved every run, so this
+              switches instantly — and the ranking table shows 1v1, 2v1 and 3v1 side
+              by side whatever is picked here.
+            </p>
+
+            <label>Range</label>
+            <select id="sustain-distance"></select>
+
+            <label>They shoot like</label>
+            <select id="sustain-profile"></select>
+
+            <label>Squad opens fire</label>
+            <select id="sustain-stagger">
+              <option value="spread" selected>Spread — evenly across one fire interval</option>
+              <option value="sync">Together — one synchronised volley</option>
+            </select>
+            <p class="sidebar-hint">
+              Everyone opening at once fires in perfect lockstep all fight, which
+              roughly triples the chance of dying in the first half second. Spread is
+              the neutral arrangement; together is the worst case. Changing this needs
+              another run.
+            </p>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Run Settings</div>
+            <div class="meta-estimate" id="sustain-estimate"></div>
+            <p class="doc-note">
+              Every scenario is solved exactly — no sampling, no noise. Each cell is one
+              kill-time walk rather than a duel, because nobody is shooting back. Extra
+              attackers merge into that same walk, so a 3v1 costs a longer shot list and
+              nothing else. Everyone in the squad carries the weapon named on the row.
+            </p>
+          </div>
+
+          <div class="run-row">
+            <button class="btn-run" id="sustain-run-btn" type="button">▶ Run Sustain Analysis</button>
+            <button class="btn-run btn-ghost" id="sustain-cancel-btn" type="button" disabled>■ Cancel</button>
+          </div>
+        </div>
+
+        <div class="main-area">
+          <div class="results-area">
+            <div class="tab-bar">
+              <div class="tab active">Sustain</div>
+            </div>
+            <div class="tab-content active">
+              <div id="sustain-grid">
+                <div class="empty-state">
+                  <div class="empty-icon">✚</div>
+                  <div class="empty-title">No analysis yet</div>
+                  <div class="empty-sub">
+                    Pick a class and a hold window, then run. Every legal heal stack is
+                    ranked by how often it gets you to the end of that window.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
+
+  <!-- Theoretical-comparison warning. Cross-era loadouts are allowed; this
+       is what stops them being mistaken for real play. -->
+  <div class="heal-modal" id="heal-modal" hidden>
+    <div class="heal-modal-box" role="alertdialog" aria-modal="true" aria-labelledby="heal-modal-title">
+      <div class="heal-modal-head" id="heal-modal-title">⚠ Theoretical comparison</div>
+      <div class="heal-modal-body" id="heal-modal-body"></div>
+      <div class="heal-modal-actions">
+        <button class="btn-run btn-ghost" type="button" id="heal-modal-cancel">Cancel</button>
+        <button class="btn-run" type="button" id="heal-modal-confirm">Use anyway</button>
+      </div>
+    </div>
+  </div>
+
 
   <script>
     const ospuzeToggle = document.getElementById('ospuze-toggle');

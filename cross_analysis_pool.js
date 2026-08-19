@@ -75,7 +75,7 @@ const STAND_AND_FIGHT = { speedOverride: 0, meleeAdv: false };
 // function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeAdv) {
 //   const jobs = [];
 //   let jobId  = 0;
-function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeAdv, attackerAcc, attackerHs, analysisSeed, forceSampling) {
+function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeAdv, attackerAcc, attackerHs, analysisSeed, forceSampling, attackerHeal, defenderHeal) {
   const jobs = [];
   let jobId  = 0;
 
@@ -116,7 +116,12 @@ function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeA
 
           // OPPONENT / DEFENDER SETTINGS
           defenderAcc: profile.acc,
-          defenderHs: profile.hs
+          defenderHs: profile.hs,
+
+          // Resolved heal items, or null. Resolved on the main thread so
+          // the worker never needs the timeline or the selected version.
+          attackerHeal: attackerHeal || null,
+          defenderHeal: defenderHeal || null
         });
       });
     });
@@ -124,6 +129,91 @@ function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeA
 
   return jobs;
 }
+
+// ── Sustain grid ──
+// The meta grid asks "who wins". This one asks "did the defender last long
+// enough", across every legal heal stack, so it carries a fourth dimension:
+// weapon x distance x aim profile x heal stack.
+//
+// The defender does not shoot back — you are interacting with a cashout
+// station, not duelling — so each cell is one kill-time walk rather than
+// two compared, which makes these jobs cheaper than the meta grid's despite
+// there being sixteen times as many.
+function buildSustainJobs({
+  weapons, distances, profiles, healStacks, defenderClass,
+  sampleStep, sampleMax, attackerCounts, attackerStagger
+}) {
+  const jobs = [];
+  let jobId = 0;
+  const counts = attackerCounts && attackerCounts.length ? attackerCounts : [1];
+
+  weapons.forEach(attacker => {
+    distances.forEach(distance => {
+      profiles.forEach(profile => {
+        // Squad size is solved as an axis rather than a run setting, the
+        // same way range and aim profile are: the whole question is what
+        // changes between one attacker and three, and that comparison is
+        // worthless if seeing it costs another run.
+        counts.forEach(attackerCount => {
+          healStacks.forEach(healStack => {
+            jobs.push({
+              jobId: jobId++,
+              kind: 'sustain',
+              attacker,
+              distance,
+              profile,
+              // The profile describes how well the attacker shoots at you.
+              // Every attacker in the squad shoots to it — the solver's
+              // merged schedule needs one shared damage profile.
+              attackerAcc: profile.acc,
+              attackerHs: profile.hs,
+              attackerCount,
+              attackerStagger,
+              defenderClass,
+              healIds: healStack.ids,
+              defenderHeal: healStack.items,
+              sampleStep,
+              sampleMax
+            });
+          });
+        });
+      });
+    });
+  });
+
+  return jobs;
+}
+// ── Sustain entry point ──
+// Delegates to runCrossAnalysis for the worker pool, progress and cancel,
+// supplying its own grid and its own renderer. Nothing about the pool is
+// duel-shaped — it only needs jobs with unique ids.
+function runSustainAnalysis(opts = {}) {
+  const healStacks = opts.healStacks || [];
+  const attackerCounts = opts.attackerCounts || [1];
+  const jobs = buildSustainJobs({
+    weapons: WEAPONS,
+    distances: getDistances(),
+    profiles: getAimProfiles(),
+    healStacks,
+    defenderClass: opts.defenderClass || 'medium',
+    sampleStep: opts.sampleStep ?? 0.25,
+    sampleMax: opts.sampleMax ?? 20,
+    attackerCounts,
+    attackerStagger: opts.attackerStagger || 'spread'
+  });
+
+  return runCrossAnalysis({
+    attacker: WEAPONS[0],          // unused by sustain jobs; keeps the guard happy
+    mountId: opts.mountId || 'sustain-grid',
+    button: opts.button || null,
+    jobs,
+    headline: `Holding as ${opts.defenderClass || 'medium'} against the field, `
+      + `${healStacks.length} heal stacks × ${attackerCounts.join('/')} attackers`,
+    render: opts.render,
+    onComplete: opts.onComplete
+  });
+}
+
 // ── Initial job distribution ──
 // Slice the full queue into POOL_SIZE roughly-equal chunks.
 // Any remainder drips into the first worker's chunk.
@@ -314,15 +404,27 @@ function distributeJobs(jobs, poolSize) {
 //   }
 // }
 
-// Handle on the in-flight analysis, or null when idle.
-let activeRun = null;
+// Handles on in-flight analyses, keyed by the element they render into.
+//
+// This used to be a single slot. With two screens driving the pool that is
+// a bug waiting to happen: starting a second run orphaned the first, whose
+// workers kept going and kept posting results, and a cancel button hit
+// whichever run happened to be current rather than its own.
+const activeRuns = new Map();
 
-function cancelCrossAnalysis() {
-  if (activeRun) activeRun.cancel();
+function cancelCrossAnalysis(mountId) {
+  if (mountId) { activeRuns.get(mountId)?.cancel(); return; }
+  for (const run of activeRuns.values()) run.cancel();
 }
 
-// opts: { attacker, attackerAcc, attackerHs, mountId, button, onComplete }
+// opts: { attacker, attackerAcc, attackerHs, mountId, button, onComplete,
+//         jobs, render, headline }
 // Movement is not an option here — see STAND_AND_FIGHT above.
+//
+// `jobs` lets a caller supply its own grid (the Sustain screen builds a
+// four-dimensional one), and `render` replaces the default heat map, which
+// used to be called unconditionally on completion whether the caller
+// wanted it or not.
 function runCrossAnalysis(opts = {}) {
   console.log("🚀 Cross Analysis START");
   const __analysisStart = performance.now();
@@ -345,7 +447,7 @@ function runCrossAnalysis(opts = {}) {
   // sampling fallback consumes it — exact solves need no randomness at all.
   const analysisSeed = opts.seed != null ? (opts.seed >>> 0) : (Date.now() >>> 0);
 
-  const allJobs = buildJobs(
+  const allJobs = opts.jobs || buildJobs(
     attacker,
     WEAPONS,
     distances,
@@ -355,7 +457,9 @@ function runCrossAnalysis(opts = {}) {
     attackerAcc,
     attackerHs,
     analysisSeed,
-    opts.method === 'sampled'
+    opts.method === 'sampled',
+    opts.attackerHeal || null,
+    opts.defenderHeal || null
   );
 
   const totalJobs = allJobs.length;
@@ -377,7 +481,7 @@ function runCrossAnalysis(opts = {}) {
   const loadingHtml = `
     <div class="ca-progress">
       <div class="ca-progress-head">
-        Running ${attacker.name} vs the field, stand and fight — ${POOL_SIZE} workers ·
+        ${opts.headline || `Running ${attacker.name} vs the field, stand and fight`} — ${POOL_SIZE} workers ·
         ${totalJobs.toLocaleString()} scenarios ·
         ${opts.method === 'sampled' ? `${RUNS.toLocaleString()} runs each` : 'solved exactly'}
       </div>
@@ -413,13 +517,13 @@ function runCrossAnalysis(opts = {}) {
   let activeWorkers = POOL_SIZE;
   const workers = [];
 
-  // Exposed so the Meta Simulation panel can abort a long run.
-  activeRun = {
+  // Registered under this run's mount so each screen cancels its own.
+  activeRuns.set(mountId, {
     cancel() {
       workers.forEach(w => w.terminate());
       globalQueue.length = 0;
       activeWorkers = 0;
-      activeRun = null;
+      activeRuns.delete(mountId);
       if (btn) btn.disabled = false;
       if (crossContainer) {
         crossContainer.innerHTML =
@@ -430,7 +534,7 @@ function runCrossAnalysis(opts = {}) {
       }
       onComplete(null);
     }
-  };
+  });
 
   function handleStealRequest(worker) {
     console.log(`🔀 Steal request — remaining jobs: ${globalQueue.length}`);
@@ -470,18 +574,24 @@ function runCrossAnalysis(opts = {}) {
 
       if (activeWorkers === 0) {
         if (btn) btn.disabled = false;
-        activeRun = null;
+        activeRuns.delete(mountId);
 
         const finalResults = results.filter(Boolean);
+        // Keyed by mount so two screens do not overwrite each other's
+        // last run. The bare names stay for anything already poking at
+        // them from the console.
+        window.LAST_RESULTS_BY_MOUNT = window.LAST_RESULTS_BY_MOUNT || {};
+        window.LAST_RESULTS_BY_MOUNT[mountId] = finalResults;
         window.LAST_RESULTS = finalResults;
         window.LAST_ANALYSIS_SEED = analysisSeed;
 
         const __analysisEnd = performance.now();
         console.log(`🏁 TOTAL ANALYSIS TIME: ${(__analysisEnd - __analysisStart).toFixed(2)}ms`);
 
-        if (typeof renderHeatGraph === 'function') {
-          renderHeatGraph(finalResults, mountId);
-        }
+        // The caller says how to draw its own results. Only the Meta
+        // screen wants the heat map.
+        if (typeof opts.render === 'function') opts.render(finalResults, mountId);
+        else if (typeof renderHeatGraph === 'function') renderHeatGraph(finalResults, mountId);
 
         onComplete(finalResults);
       }
