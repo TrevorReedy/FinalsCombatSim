@@ -33,7 +33,8 @@ The current architecture uses a **dual-engine simulation system**:
 - **Stats** — data + history
 - **Help** — model + limits
 
-<!-- Add a screenshot or GIF of the app here. -->
+<img width="2256" height="1504" alt="Screenshot from 2026-08-21 12-13-56" src="https://github.com/user-attachments/assets/bce1bc50-31e2-4a0f-8210-fb2bbdaeabd8" />
+
 
 ---
 
