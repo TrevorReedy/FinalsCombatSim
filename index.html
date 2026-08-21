@@ -7,6 +7,7 @@
   <title>THE FINALS — Combat Simulator</title>
 
 <script src="./heals.js" defer></script>
+<script src="./gadgets.js" defer></script>
 <script src="./simulate.js" defer></script>
 <script src="./duel_solver.js" defer></script>
 <script src="./battle_simulator.js" defer></script>
@@ -363,9 +364,35 @@
             lower than its peak. Healing that lands on someone already at full health is lost,
             so a fighter never absorbs the whole figure.
           </p>
+        </article>
+
+        <article class="doc-card gadget-card">
+          <h2>Shields</h2>
+          <p>
+            The two shields the simulation models, at the selected data version. A shield is
+            not extra health: it absorbs before health does, takes no healing, keeps none of
+            the overflow from the shot that breaks it, and — for the Dome — expires on a timer
+            whether or not anything hit it. Rank them alongside the healing on the
+            <button class="linkish" type="button" data-route="sustain">Sustain</button> screen.
+          </p>
+          <div id="shield-stats"></div>
+        </article>
+
+        <article class="doc-card gadget-card">
+          <h2>The rest of the kit</h2>
+          <p>
+            Every specialization, gadget and carriable in the game, with the class that can
+            carry it and the slot it takes. Only the shields and the healing above carry
+            numbers; the rest are here because the loadout rules need to know what competes
+            for which slot — that is what decides whether a squad of three can actually field
+            a given combination of healing and shields.
+          </p>
+          <div id="gadget-roster"></div>
           <p class="doc-note">
-            Other gadgets are still absent: adding them needs per-gadget damage, radius,
-            arm/fuse time, cooldown and charges, plus a tick handler in the engine.
+            Simulating any of the others needs its own model, not just its numbers: damage,
+            radius, arm and fuse time, and what the engine is supposed to do when it goes off.
+            Adding one to <code>csv/gadgets/</code> is a row; making it mean something is a
+            feature.
           </p>
         </article>
       </div>
@@ -814,6 +841,33 @@
 
             <label>They shoot like</label>
             <select id="sustain-profile"></select>
+
+            <label>Shields</label>
+            <div class="toggle-group" id="sustain-shields-group">
+              <button class="tbtn active" type="button" data-shields="1">With shields</button>
+              <button class="tbtn" type="button" data-shields="0">Healing only</button>
+            </div>
+            <p class="sidebar-hint">
+              The Mesh Shield and the Dome Shield join the kit space, which roughly
+              triples the grid. Every combination of healing and shields a squad of
+              three can legally carry is solved; the ones no squad can field are left
+              out. Changing this needs another run.
+            </p>
+
+            <label>Mesh Shield facing you</label>
+            <select id="sustain-mesh-coverage">
+              <option value="1">Always — every shot goes through it</option>
+              <option value="0.6" selected>Often — 60% of engagements</option>
+              <option value="0.35">Sometimes — 35%</option>
+              <option value="0">Never — flanked every time</option>
+            </select>
+            <p class="sidebar-hint">
+              The Mesh is a panel covering one arc, so whether it is between you and
+              the shot depends on where they are standing. That is an assumption, not
+              a measurement — it blends two already-solved kits, so it applies
+              instantly without another run. The Dome needs no setting: whether it
+              covers you is decided by its 4m radius against the range.
+            </p>
 
             <label>Squad opens fire</label>
             <select id="sustain-stagger">

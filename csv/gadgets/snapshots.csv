@@ -1,0 +1,13 @@
+id,version,device_hp,duration,radius,cooldown,charges,note
+mesh,1.0.0,1250,-,-,-,-,Launch state. Reconstructed by running the wiki's change log backwards from today.
+mesh,1.4.0,1100,-,-,-,-,Health reduced from 1250 to 1100.
+mesh,1.5.0,1000,-,-,-,-,Health reduced from 1100 to 1000.
+mesh,2.5.0,750,-,-,-,-,Health reduced from 1000 to 750.
+mesh,5.0.0,750,-,-,-,-,"Reworked onto an energy pool with no cooldown: 225 energy to raise it again after lowering, 300 to redeploy after it is destroyed. The pool is still 750, so nothing here moves."
+mesh,9.0.0,850,-,-,-,-,Max health increased from 750 to 850.
+mesh,11.0.0,900,-,-,-,-,"900 in Season 11. User-reported from play; no patch note for the 850 to 900 step has been located, so this is the one row here without a wiki citation behind it."
+dome,1.0.0,350,20,4,30,1,"Launch state. Radius, cooldown and charges are current values carried back — no patch note has moved them since 1.0.0."
+dome,1.4.0,300,20,4,30,1,Health reduced from 350 to 300.
+dome,2.0.0,300,12,4,30,1,Maximum duration decreased from 20s to 12s.
+dome,3.10.0,300,5.5,4,30,1,Duration decreased from 12s to 5.5s.
+dome,9.7.0,250,5.5,4,30,1,Health decreased from 300 to 250.

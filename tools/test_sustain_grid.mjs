@@ -30,11 +30,15 @@ const { getStats, dropMult } = new Function(
 )(CLASS_SPEED, CLASS_HP, MELEE_RANGE, DT, parseNum);
 
 const { solveSurvival, buildVolleySchedule } = require(join(ROOT, 'duel_solver.js'));
+const { resolveGadgetAt, allLegalKits, combineShields, shieldCoverageAt, MESH_COVERAGE } =
+  require(join(ROOT, 'gadgets.js'));
 
 const WEAPONS = JSON.parse(readFileSync(join(ROOT, 'weapons_s10_cleaned.json'), 'utf8'));
 const timeline = JSON.parse(readFileSync(join(ROOT, 'csv', 'cleaned', 'heal_timeline.json'), 'utf8'));
+const gadgetTimeline = JSON.parse(readFileSync(join(ROOT, 'csv', 'cleaned', 'gadget_timeline.json'), 'utf8'));
 
 const HEAL_ORDER = ['beam', 'ball', 'infuser', 'canister'];
+const SHIELD_ORDER = ['mesh', 'dome'];
 const STEP = 0.25, MAXS = 20;
 
 const defenderClass = process.argv[2] || 'medium';
@@ -56,7 +60,26 @@ for (let t = 0; t <= MAXS + 1e-9; t += STEP) sampleSeconds.push(+t.toFixed(3));
 const idx = Math.round(holdWindow / STEP);
 
 const at = id => resolveHealAt(timeline, id, version);
-const stacks = allHealStacks(HEAL_ORDER).map(ids => ({ ids, items: ids.map(at).filter(Boolean) }));
+const gadgetAt = id => resolveGadgetAt(gadgetTimeline, id, version);
+
+// The kit space the screen actually solves: healing and shields chosen
+// together, filtered to what a squad of three can carry with this defender
+// in it. See gadgets.js.
+const roster = [...HEAL_ORDER, ...SHIELD_ORDER].map(gadgetAt);
+const kits = allLegalKits(roster, defenderClass).map(kit => {
+  const healIds = kit.ids.filter(id => HEAL_ORDER.includes(id));
+  const shieldIds = kit.ids.filter(id => SHIELD_ORDER.includes(id));
+  return {
+    ids: kit.ids,
+    healIds,
+    shieldIds,
+    items: healIds.map(at).filter(Boolean),
+    // What the worker does per job: a shield the attacker is standing
+    // inside is dropped rather than solved.
+    shield: combineShields(shieldIds.map(gadgetAt).filter(g => shieldCoverageAt(g, distance) > 0))
+  };
+});
+const stacks = kits;
 
 let failures = 0;
 const same = (label, actual, expected) => {
@@ -66,9 +89,16 @@ const same = (label, actual, expected) => {
 };
 
 console.log('\nGRID SHAPE');
-same('heal stacks enumerated', stacks.length, 16);
-same('no stack repeats a source',
+same('every kit is a legal loadout', kits.length <= 64 && kits.length > 0, true);
+// A Heavy defender can carry the Emitter themselves, which frees the seat
+// the rest of the healing needs. Everyone else is two teammates short of
+// beam-plus-infuser-plus-emitter, so two of the sixteen heal stacks the
+// screen used to rank were never fieldable by anybody.
+same('heal-only kits', kits.filter(k => !k.shieldIds.length).length,
+  defenderClass === 'heavy' ? 16 : 14);
+same('no kit repeats an item',
   stacks.every(s => new Set(s.ids).size === s.ids.length), true);
+console.log(`        ${kits.length} of 64 combinations are fieldable by a ${defenderClass}-led squad`);
 same('survival samples per cell', sampleSeconds.length, 81);
 same(`index for ${holdWindow}s`, idx, holdWindow / STEP);
 
@@ -85,6 +115,7 @@ for (const attacker of WEAPONS) {
         attackerHeadshotChance: profile.hs,
         defenderMaxHealth: CLASS_HP[defenderClass],
         defenderHeal: stack.items.length ? combineSchedules(stack.items) : null,
+        defenderShield: stack.shield,
         distance,
         dropMultiplierFor: dropMult,
         sampleSeconds,
@@ -97,6 +128,7 @@ for (const attacker of WEAPONS) {
         attackerCount,
         healKey: stack.ids.join('+') || 'none',
         ids: stack.ids,
+        shieldIds: stack.shieldIds,
         survival: Array.from(out.survival)
       });
     }
@@ -163,7 +195,7 @@ for (const [, m] of byWeapon) {
     }
   }
 }
-same('adding a heal never lowers survival', monotoneInHealing, true);
+same('adding an item never lowers survival', monotoneInHealing, true);
 if (worstHealingPair) console.log(`        worst: ${worstHealingPair}  (drop ${worstHealingDrop.toExponential(2)})`);
 
 // ── Squad size ──
@@ -218,9 +250,16 @@ for (const r of rows) {
   if (!grouped.has(r.healKey)) grouped.set(r.healKey, { ids: r.ids, rows: [] });
   grouped.get(r.healKey).rows.push(r);
 }
-const label = ids => ids.length ? ids.map(id => timeline.items[id].name).join(' + ') : 'none';
-const rateOf = ids => ids.length
-  ? combineSchedules(ids.map(at)).deliveredBy(holdWindow) / holdWindow : 0;
+const label = ids => ids.length
+  ? ids.map(id => (timeline.items[id] || gadgetTimeline.items[id]).name).join(' + ')
+  : 'none';
+const rateOf = ids => {
+  const healIds = ids.filter(id => HEAL_ORDER.includes(id));
+  return healIds.length ? combineSchedules(healIds.map(at)).deliveredBy(holdWindow) / holdWindow : 0;
+};
+const poolOf = ids => ids
+  .filter(id => SHIELD_ORDER.includes(id))
+  .reduce((sum, id) => sum + (gadgetAt(id).fields.device_hp || 0), 0);
 
 // Mean hold across the roster, for one stack at one squad size — the same
 // number renderSustain() puts in each column.
@@ -235,32 +274,62 @@ const ranked = [...grouped.values()].map(g => ({
   hold: g.rows.reduce((a, r) => a + r.survival[idx], 0) / g.rows.length,
   bySquad: SQUAD_SIZES.map(n => holdFor(g.ids, n)),
   rate: rateOf(g.ids),
+  pool: poolOf(g.ids),
   broke: g.rows.filter(r => r.survival[idx] < 0.5).length,
   total: g.rows.length
 })).sort((a, b) => b.hold - a.hold);
 
 console.log(`\nHOLD ${holdWindow}s AS ${defenderClass.toUpperCase()} — ${distance}m, ${profileName} aim, ${attackerStagger} opening, data ${version}`);
-console.log(`${WEAPONS.length} weapons x ${stacks.length} stacks x ${SQUAD_SIZES.length} squad sizes = ${allRows.length} cells, solved in ${elapsed}ms\n`);
-console.log('  ' + 'heal stack'.padEnd(42) +
+console.log(`${WEAPONS.length} weapons x ${stacks.length} kits x ${SQUAD_SIZES.length} squad sizes = ${allRows.length} cells, solved in ${elapsed}ms`);
+console.log(`shields are counted at full coverage here — the screen blends the Mesh down to ${Math.round(MESH_COVERAGE * 100)}%\n`);
+console.log('  ' + 'kit'.padEnd(52) +
   SQUAD_SIZES.map(n => `${n}v1`.padStart(7)).join('') +
-  'HP/s'.padStart(8) + '   break the 1v1 hold');
+  'HP/s'.padStart(8) + 'shield'.padStart(9) + '   break the 1v1 hold');
 for (const r of ranked) {
-  console.log('  ' + r.label.padEnd(42) +
+  console.log('  ' + r.label.padEnd(52) +
     r.bySquad.map(h => (h * 100).toFixed(1).padStart(6) + '%').join('') +
     r.rate.toFixed(0).padStart(8) +
+    (r.pool ? r.pool.toFixed(0) : '—').padStart(9) +
     `   ${r.broke} of ${r.total}`);
 }
 
-same('\n  none ranks last', ranked[ranked.length - 1].label, 'none');
+// Carrying nothing cannot beat carrying something. It can tie: at 1m a Dome
+// is worth exactly nothing, and the screen drops those rows for that reason.
+const noneHold = ranked.find(r => r.label === 'none').hold;
+same('\n  nothing ranks below carrying nothing',
+  ranked.every(r => r.hold >= noneHold - 1e-12), true);
 
 // The full stack ties for first rather than winning outright. With zones
 // taking the higher rate, the Barrel's only contribution alongside the
 // Emitter is its contact burst, and that lands at t=0 against a defender
 // still at full health — entirely wasted. So it is a tie, not a lead, and
 // asserting a strict win would only be asserting the sort's tie-break.
-const fullStack = ranked.find(r => r.label === label(HEAL_ORDER));
-same('  no stack holds better than the full stack',
+const bestKit = kits.reduce((a, b) => (b.ids.length > a.ids.length ? b : a), kits[0]);
+const fullStack = ranked.find(r => r.label === label(bestKit.ids));
+same('  nothing holds better than the biggest legal kit',
   ranked.every(r => r.hold <= fullStack.hold + 1e-9), true);
+
+// ── Shields ──
+// A shield the attacker is standing inside is not a shield. At 1m a Dome
+// covers nothing, so its kits must land on exactly the same number as the
+// kits without it; anywhere outside 4m it has to be worth something.
+{
+  const holdOf = ids => {
+    const key = ids.join('+') || 'none';
+    const rs = rows.filter(r => r.healKey === key);
+    return rs.reduce((a, r) => a + r.survival[idx], 0) / (rs.length || 1);
+  };
+  const domeKit = kits.find(k => k.ids.length === 1 && k.ids[0] === 'dome');
+  const meshKit = kits.find(k => k.ids.length === 1 && k.ids[0] === 'mesh');
+  if (domeKit) {
+    const gap = holdOf(['dome']) - holdOf([]);
+    if (distance < 4) same(`  dome is worth nothing at ${distance}m`, Math.abs(gap) < 1e-12, true);
+    else same(`  dome is worth something at ${distance}m`, gap > 0, true);
+  }
+  if (meshKit) {
+    same('  mesh outlasts the dome', holdOf(['mesh']) >= holdOf(['dome']) - 1e-12, true);
+  }
+}
 
 console.log(failures ? `\n  ${failures} FAILED\n` : '\n  all passed\n');
 process.exit(failures ? 1 : 0);

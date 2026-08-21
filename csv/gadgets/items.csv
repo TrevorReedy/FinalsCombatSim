@@ -1,0 +1,50 @@
+id,name,wiki_name,classes,slot,category,introduced,removed,self_use,heal_id,model,notes
+cloaking_device,Cloaking Device,Cloaking Device,light,specialization,stealth,1.0.0,,yes,,none,Turns near-invisible while still. Breaks on firing.
+evasive_dash,Evasive Dash,Evasive Dash,light,specialization,mobility,1.0.0,,yes,,none,Short burst dash on charges.
+grappling_hook,Grappling Hook,Grappling Hook,light,specialization,mobility,1.0.0,,yes,,none,Swing/pull to a surface on a cooldown.
+dematerializer,Dematerializer,Dematerializer,medium,specialization,breach,?,,yes,,none,Temporarily deletes a panel of terrain.
+guardian_turret,Guardian Turret,Guardian Turret,medium,specialization,damage,1.0.0,,yes,,none,Placed auto-turret that fires on enemies in range.
+beam,Heal Beam,Healing Beam,medium,specialization,heal,1.0.0,,no,beam,heals,Continuous beam locked onto one ally. Cannot heal the user — see csv/heals/.
+shockwave,Shockwave,Shockwave,medium,specialization,control,?,,yes,,none,Cone blast that shoves players and objects.
+recon_senses,Recon Senses,Recon Senses,medium,specialization,vision,?,,yes,,none,Periodic enemy reveal. Roster entry only; availability by season not researched.
+charge_n_slam,Charge 'N' Slam,Charge 'N' Slam,heavy,specialization,mobility,1.0.0,,yes,,none,Charging shoulder rush ending in a ground slam.
+goo_gun,Goo Gun,Goo Gun,heavy,specialization,cover,1.0.0,,yes,,none,Sprays goo blobs — cover, blocking, and traversal.
+mesh,Mesh Shield,Mesh Shield,heavy,specialization,shield,1.0.0,,yes,,shield,"Projected shield held in front of the user. Blocks from the front only, so it is cover for the user and anyone behind them."
+winch_claw,Winch Claw,Winch Claw,heavy,specialization,control,1.0.0,,yes,,none,Reels in players and objects.
+breach_charge,Breach Charge,Breach Charge,light,gadget,breach,1.0.0,,yes,,none,Remote-detonated wall charge.
+gateway,Gateway,Gateway,light,gadget,mobility,?,,yes,,none,Paired portals.
+glitch_grenade,Glitch Grenade,Glitch Grenade,light,gadget,control,1.0.0,,yes,,none,Disables equipment and abilities in its radius.
+gravity_vortex,Gravity Vortex,Gravity Vortex,light,gadget,control,?,,yes,,none,Pulls players and objects toward a point.
+infuser,H+ Infuser,H+ Infuser,light,gadget,heal,7.0.0,,no,infuser,heals,Hitscan heal shots. Cannot heal the user — see csv/heals/.
+sonar_grenade,Sonar Grenade,Sonar Grenade,light,gadget,vision,?,,yes,,none,Pulses enemy positions through walls.
+nullifier,Nullifier,Nullifier,light,gadget,control,?,,yes,,none,Zone that suppresses equipment and abilities.
+thermal_bore,Thermal Bore,Thermal Bore,light,gadget,breach,1.0.0,,yes,,none,Burns a hole through a surface.
+thermal_vision,Thermal Vision,Thermal Vision,light,gadget,vision,?,,yes,,none,Sees heat signatures through smoke and walls for a short time.
+tracking_dart,Tracking Dart,Tracking Dart,light,gadget,vision,?,,yes,,none,Marks a hit enemy for the squad.
+vanishing_bomb,Vanishing Bomb,Vanishing Bomb,light,gadget,stealth,?,,yes,,none,Cloaks everyone in its blast.
+aps_turret,APS Turret,APS Turret,medium,gadget,defense,1.0.0,,yes,,none,Shoots down incoming projectiles in a radius.
+breach_drill,Breach Drill,Breach Drill,medium,gadget,breach,?,,yes,,none,Drills through a surface after a delay.
+data_reshaper,Data Reshaper,Data Reshaper,medium,gadget,utility,1.0.0,,yes,,none,Converts an enemy placeable into a harmless prop.
+defibrillator,Defibrillator,Defibrillator,medium,gadget,revive,1.0.0,,no,,none,Fast revive of a downed teammate. Does nothing for a fighter still standing.
+gas_mine,Gas Mine,Gas Mine,medium,gadget,trap,?,,yes,,none,Proximity mine that releases a gas cloud.
+glitch_trap,Glitch Trap,Glitch Trap,medium,gadget,trap,?,,yes,,none,Proximity trap that glitches whoever sets it off.
+hover_pad,Hover Pad,Hover Pad,medium,gadget,mobility,?,,yes,,none,Placed pad that holds players aloft.
+jump_pad,Jump Pad,Jump Pad,medium,gadget,mobility,1.0.0,,yes,,none,Placed pad that launches players.
+zipline,Zipline,Zipline,medium,gadget,mobility,1.0.0,,yes,,none,Deployable line between two anchors.
+anti_gravity_cube,Anti-Gravity Cube,Anti-Gravity Cube,heavy,gadget,control,?,,yes,,none,Field that lifts players and objects.
+barricade,Barricade,Barricade,heavy,gadget,cover,1.0.0,,yes,,none,"Deployable wall panel. Cover rather than a shield — modelled as neither until its health is recorded."
+c4,C4,C4,heavy,gadget,damage,1.0.0,,yes,,none,Remote-detonated explosive.
+dome,Dome Shield,Dome Shield,heavy,gadget,shield,1.0.0,,yes,,shield,"Deployable bubble that blocks fire from every direction. Anyone inside is covered; anyone inside can also shoot out."
+ball,Heal Ball,Healing Emitter,heavy,gadget,heal,7.0.0,,yes,ball,heals,Placed emitter healing everyone in its radius — see csv/heals/.
+lockbolt,Lockbolt,Lockbolt Launcher,heavy,gadget,control,?,,yes,,none,Tethers a target to a surface.
+pyro_mine,Pyro Mine,Pyro Mine,heavy,gadget,trap,?,,yes,,none,Proximity mine that sets off a fire burst.
+rpg7,RPG-7,RPG-7,heavy,gadget,damage,1.0.0,,yes,,none,Single-shot rocket launcher.
+flashbang,Flashbang,Flashbang,all,gadget,control,1.0.0,,yes,,none,Blinds and deafens in its radius.
+frag_grenade,Frag Grenade,Frag Grenade,all,gadget,damage,1.0.0,,yes,,none,Standard fragmentation grenade.
+gas_grenade,Gas Grenade,Gas Grenade,all,gadget,damage,1.0.0,,yes,,none,Leaves a damaging gas cloud.
+goo_grenade,Goo Grenade,Goo Grenade,all,gadget,cover,1.0.0,,yes,,none,Bursts into goo blocks — instant cover.
+pyro_grenade,Pyro Grenade,Pyro Grenade,all,gadget,damage,?,,yes,,none,Bursts into a fire pool.
+smoke_grenade,Smoke Grenade,Smoke Grenade,all,gadget,cover,1.0.0,,yes,,none,Blocks line of sight.
+proximity_sensor,Proximity Sensor,Proximity Sensor,medium/heavy,gadget,vision,?,,yes,,none,Placed sensor that reveals nearby enemies.
+explosive_mine,Explosive Mine,Explosive Mine,medium/heavy,gadget,trap,?,,yes,,none,Proximity mine dealing burst damage.
+canister,Heal Canister,Healing Barrel,all,carriable,heal,6.6.0,,yes,canister,heals,Arena pickup rather than a loadout slot — see csv/heals/.

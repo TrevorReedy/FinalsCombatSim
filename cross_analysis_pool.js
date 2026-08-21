@@ -132,15 +132,19 @@ function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeA
 
 // ── Sustain grid ──
 // The meta grid asks "who wins". This one asks "did the defender last long
-// enough", across every legal heal stack, so it carries a fourth dimension:
-// weapon x distance x aim profile x heal stack.
+// enough", across every kit a squad can legally bring, so it carries a
+// fourth dimension: weapon x distance x aim profile x kit.
+//
+// A kit is the healing and the shields together, because they are chosen
+// together: three players hold one specialization and three gadgets each,
+// and gadgets.js decides which combinations of the two survive that.
 //
 // The defender does not shoot back — you are interacting with a cashout
 // station, not duelling — so each cell is one kill-time walk rather than
 // two compared, which makes these jobs cheaper than the meta grid's despite
 // there being sixteen times as many.
 function buildSustainJobs({
-  weapons, distances, profiles, healStacks, defenderClass,
+  weapons, distances, profiles, kits, defenderClass,
   sampleStep, sampleMax, attackerCounts, attackerStagger
 }) {
   const jobs = [];
@@ -155,7 +159,7 @@ function buildSustainJobs({
         // changes between one attacker and three, and that comparison is
         // worthless if seeing it costs another run.
         counts.forEach(attackerCount => {
-          healStacks.forEach(healStack => {
+          kits.forEach(kit => {
             jobs.push({
               jobId: jobId++,
               kind: 'sustain',
@@ -170,8 +174,10 @@ function buildSustainJobs({
               attackerCount,
               attackerStagger,
               defenderClass,
-              healIds: healStack.ids,
-              defenderHeal: healStack.items,
+              healIds: kit.healIds,
+              shieldIds: kit.shieldIds,
+              defenderHeal: kit.healItems,
+              defenderShield: kit.shieldItems,
               sampleStep,
               sampleMax
             });
@@ -188,13 +194,13 @@ function buildSustainJobs({
 // supplying its own grid and its own renderer. Nothing about the pool is
 // duel-shaped — it only needs jobs with unique ids.
 function runSustainAnalysis(opts = {}) {
-  const healStacks = opts.healStacks || [];
+  const kits = opts.kits || [];
   const attackerCounts = opts.attackerCounts || [1];
   const jobs = buildSustainJobs({
     weapons: WEAPONS,
     distances: getDistances(),
     profiles: getAimProfiles(),
-    healStacks,
+    kits,
     defenderClass: opts.defenderClass || 'medium',
     sampleStep: opts.sampleStep ?? 0.25,
     sampleMax: opts.sampleMax ?? 20,
@@ -208,7 +214,7 @@ function runSustainAnalysis(opts = {}) {
     button: opts.button || null,
     jobs,
     headline: `Holding as ${opts.defenderClass || 'medium'} against the field, `
-      + `${healStacks.length} heal stacks × ${attackerCounts.join('/')} attackers`,
+      + `${kits.length} legal kits × ${attackerCounts.join('/')} attackers`,
     render: opts.render,
     onComplete: opts.onComplete
   });

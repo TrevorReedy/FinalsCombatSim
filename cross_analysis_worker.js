@@ -12,7 +12,7 @@
 // ═══════════════════════════════════════
 // heals.js first: it defines the simulation constants both of the others
 // read as free globals, and the heal schedules the solver needs.
-importScripts('./heals.js', './simulate.js', './duel_solver.js');
+importScripts('./heals.js', './gadgets.js', './simulate.js', './duel_solver.js');
 
 // ── Simulation constants ──
 // These used to be re-declared here, mirrored by hand from
@@ -113,6 +113,18 @@ function scheduleFrom(resolvedItems) {
   return resolvedItems && resolvedItems.length ? combineSchedules(resolvedItems) : null;
 }
 
+// Shields arrive resolved too, and are turned into a pool the same way.
+//
+// A shield the attacker is standing inside covers nothing, so it is
+// dropped here rather than solved and explained away later: at 1m the
+// attacker is well within a Dome's 4m bubble, and a cell that pretends
+// otherwise would put a made-up number on the screen. Which shields
+// survived the range test comes back on the result.
+function shieldFrom(resolvedShields, distance) {
+  const covering = (resolvedShields || []).filter(s => shieldCoverageAt(s, distance) > 0);
+  return { shield: combineShields(covering), ids: covering.map(s => s.id) };
+}
+
 function runJob(job) {
   if (job.kind === 'sustain') return runSustainJob(job);
 
@@ -193,8 +205,10 @@ function runJob(job) {
  * nothing else structural.
  */
 function runSustainJob(job) {
-  const { attacker, distance, profile, defenderClass, healIds, sampleStep, sampleMax,
-          attackerCount, attackerStagger } = job;
+  const { attacker, distance, profile, defenderClass, healIds, shieldIds,
+          sampleStep, sampleMax, attackerCount, attackerStagger } = job;
+
+  const shields = shieldFrom(job.defenderShield, distance);
 
   const sampleSeconds = [];
   for (let t = 0; t <= sampleMax + 1e-9; t += sampleStep) sampleSeconds.push(+t.toFixed(3));
@@ -205,6 +219,7 @@ function runSustainJob(job) {
     attackerHeadshotChance: job.attackerHs,
     defenderMaxHealth: CLASS_HP[defenderClass],
     defenderHeal: scheduleFrom(job.defenderHeal),
+    defenderShield: shields.shield,
     distance,
     dropMultiplierFor: dropMult,
     sampleSeconds,
@@ -225,6 +240,11 @@ function runSustainJob(job) {
     profile: profile.name,
     attackerCount: attackerCount || 1,
     healIds,
+    shieldIds,
+    // What actually stood between the defender and the fire here — the
+    // requested shields minus any the attacker was standing inside.
+    activeShieldIds: shields.ids,
+    kitKey: [...healIds, ...shieldIds].join('+') || 'none',
     healKey: healIds.join('+') || 'none',
     // Float64Array does not survive structured clone as itself in every
     // engine; a plain array is one allocation and always arrives intact.

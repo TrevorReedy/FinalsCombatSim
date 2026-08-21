@@ -268,14 +268,121 @@ function killIsReachable(shotTimes, maxShotDamage, targetHealth, healSchedule) {
 
 const HEALTH_BUCKETS = 2048;
 
-function solveKillTimesByHealth(shotTimes, shot, targetHealth, healSchedule) {
-  const step = targetHealth / HEALTH_BUCKETS;
-  const TOP = HEALTH_BUCKETS;
+// ═══════════════════════════════════════════════════════════════════
+// 3c. A SHIELD IS A SECOND LAYER, AND IT IS NOT ON THE GRID
+//
+// A Dome or a Mesh is not extra health. It absorbs before health, it takes
+// no healing, it does not carry damage through when it breaks, and the
+// Dome vanishes on a timer whether or not anything hit it.
+//
+// The tempting move is to hang the shield off the top of the same health
+// axis — buckets above full health — and it is wrong, for a reason worth
+// recording because it cost a test to find. The health grid splits each
+// shot across two neighbouring buckets, which is unbiased and correct
+// where damage simply accumulates. It is not correct against a threshold:
+// the split leaves a sliver of shield in a bucket that should be empty,
+// and because a broken shield eats the whole shot that broke it, that
+// sliver absorbs an entire round. Against a 250 HP Dome and a 20 damage
+// rifle it was worth three points of survival at the seven second mark.
+//
+// So the shield is tracked exactly instead, as a map from "shield still
+// standing" to probability. That is affordable precisely because of the
+// rule that made the grid wrong: while any shield remains, no damage
+// reaches the defender, so their health is full and there is no second
+// dimension to track. The map holds one entry per reachable shield total,
+// entries merge whenever a timer clamps them, and mass leaves it in one
+// direction only — into the health walk at full health, the instant the
+// shield breaks.
+//
+// The health walk below is then exactly the walk it always was, at the
+// resolution it always had.
+// ═══════════════════════════════════════════════════════════════════
+
+// Denominators past this are not worth chasing: a head-to-body ratio that
+// needs one is not a ratio the data actually contains.
+const DAMAGE_RATIO_DENOMINATOR_LIMIT = 64;
+
+/** Closest p/q to x with q no larger than the limit. */
+function rationalApproximation(x, limit) {
+  let best = { p: Math.round(x), q: 1, error: Math.abs(x - Math.round(x)) };
+  for (let q = 2; q <= limit; q++) {
+    const p = Math.round(x * q);
+    const error = Math.abs(x - p / q);
+    if (error < best.error) best = { p, q, error };
+  }
+  return best;
+}
+
+/**
+ * Where to put the bucket boundaries on the health axis.
+ *
+ * The obvious answer — health over 2048 — is the wrong one, and the reason
+ * is the same threshold problem that keeps shields off this grid. A shot
+ * that does not land on a bucket boundary gets split across two, which is
+ * unbiased for accumulating damage and wrong at the moment the accumulated
+ * damage is exactly lethal. An AKM does 20 body and 30 head; seven heads
+ * and two bodies is exactly the 250 a Medium has, and it is exactly the
+ * case where the split leaves half the mass a hundredth of a hit point
+ * alive. Real thresholds like that are common, because health totals and
+ * damage numbers are both round.
+ *
+ * So the grid is aligned to the damage instead: find a step that divides
+ * both the body and the head figure a whole number of times, then scale it
+ * to land near the bucket budget. Damage then never splits, and the only
+ * thing left rounding is where full health sits — which is worth a
+ * fraction of a hit point on the heal clamp and decides nothing.
+ *
+ * Falls back to the plain division when the two damages have no usable
+ * common measure, which leaves that case exactly where it was.
+ */
+function bucketPlanFor(targetHealth, shot) {
+  const damages = [];
+  if (shot.bodyChance > 0 && shot.bodyDamage > 0) damages.push(shot.bodyDamage);
+  if (shot.headChance > 0 && shot.headDamage > 0) damages.push(shot.headDamage);
+
+  const smallest = damages.length ? Math.min(...damages) : targetHealth;
+  // The fallback unit is fine enough that rounding a shot to it moves the
+  // shield by well under a hundredth of a hit; it is only ever reached when
+  // the two damage figures have no usable common measure.
+  const plain = {
+    step: targetHealth / HEALTH_BUCKETS,
+    top: HEALTH_BUCKETS,
+    unit: smallest / 64,
+    exactUnit: false
+  };
+  if (!damages.length) return plain;
+
+  let base;
+  if (damages.length === 1 || damages[0] === damages[1]) {
+    base = damages[0];
+  } else {
+    const [a, b] = damages;
+    const { q, error } = rationalApproximation(b / a, DAMAGE_RATIO_DENOMINATOR_LIMIT);
+    if (error > 1e-9 * (b / a)) return plain;
+    base = a / q;
+  }
+
+  // Scale the common measure down to roughly the bucket budget.
+  const scale = Math.max(1, Math.round(base * HEALTH_BUCKETS / targetHealth));
+  const step = base / scale;
+  const top = Math.round(targetHealth / step);
+  if (!(top > 0) || !Number.isFinite(top) || top > 8 * HEALTH_BUCKETS) return plain;
+
+  // The shield layer runs on the unscaled measure. It has no healing on it,
+  // so the only quantity it ever has to represent is the pool minus some
+  // number of whole shots — and on this grid that is exact, in a few
+  // hundred cells rather than the few thousand the health axis needs.
+  return { step, top, unit: base, exactUnit: true };
+}
+
+function solveKillTimesByHealth(shotTimes, shot, targetHealth, healSchedule, shield = null) {
+  const plan = bucketPlanFor(targetHealth, shot);
+  const step = plan.step;
+  const TOP = plan.top;
 
   // Mass at bucket i means health i * step. Bucket 0 is dead.
   let alive = new Float64Array(TOP + 1);
   let next = new Float64Array(TOP + 1);
-  alive[TOP] = 1;
 
   const kills = [];
   let aliveProbability = 1;
@@ -286,61 +393,155 @@ function solveKillTimesByHealth(shotTimes, shot, targetHealth, healSchedule) {
   const bodyDrop = shot.bodyDamage / step;
   const headDrop = shot.headDamage / step;
   const outcomes = [];
-  if (shot.bodyChance > 0) outcomes.push({ chance: shot.bodyChance, whole: Math.floor(bodyDrop), frac: bodyDrop - Math.floor(bodyDrop) });
-  if (shot.headChance > 0) outcomes.push({ chance: shot.headChance, whole: Math.floor(headDrop), frac: headDrop - Math.floor(headDrop) });
+  if (shot.bodyChance > 0) outcomes.push({ chance: shot.bodyChance, damage: shot.bodyDamage, whole: Math.floor(bodyDrop), frac: bodyDrop - Math.floor(bodyDrop) });
+  if (shot.headChance > 0) outcomes.push({ chance: shot.headChance, damage: shot.headDamage, whole: Math.floor(headDrop), frac: headDrop - Math.floor(headDrop) });
+
+  // ── The shield layer ──
+  // Its own grid, in whole shots rather than in health. See the block
+  // above: this is the layer that must not smear, and on this grid it
+  // cannot, because every shot moves it a whole number of cells.
+  const shieldPool = shield && shield.pool > 0 ? shield.pool : 0;
+
+  // The measure has to divide the shots, but on its own it can be far too
+  // coarse to hold the pool: a sniper doing 118 a shot would put a 250 HP
+  // Dome in two cells and lose 14 HP of it, which is most of a third shot.
+  // So it is subdivided — by a whole number, so the shots stay whole — until
+  // the pool has enough cells to be worth the name.
+  const MIN_SHIELD_CELLS = 256;
+  const rawCells = shieldPool > 0 ? shieldPool / plan.unit : 0;
+  const subdivision = rawCells > 0 ? Math.max(1, Math.ceil(MIN_SHIELD_CELLS / rawCells)) : 1;
+  const unit = plan.unit / subdivision;
+  const shieldCells = shieldPool > 0 ? Math.max(1, Math.round(shieldPool / unit)) : 0;
+  for (const outcome of outcomes) outcome.cells = Math.max(1, Math.round(outcome.damage / unit));
+
+  let standing = shieldCells ? new Float64Array(shieldCells + 1) : null;
+  let standingNext = shieldCells ? new Float64Array(shieldCells + 1) : null;
+  if (standing) standing[shieldCells] = 1;
+  else alive[TOP] = 1;
+
+  // While every path is still behind an unbroken shield, the health layer
+  // is empty and stepping over it is pure cost. Under a Mesh that is most
+  // of the window, and on a grid this size that is most of the run.
+  let healthActive = !standing;
+
+  const expiries = (shield && shield.expiries ? shield.expiries : [])
+    .slice().sort((a, b) => a.at - b.at);
+  let nextExpiry = 0;
+
+  // ── Heal since the previous event, clamped at full ──
+  // Everything the support delivered in the gap, moved up the grid.
+  // Anything that would go past full piles up at the top, and that pile is
+  // the overheal the hit-count grid could not see. The shield layer is
+  // untouched: its paths are at full health already, and nothing in the
+  // game repairs a Dome.
+  const applyHeal = (fromSeconds, toSeconds) => {
+    if (!healSchedule || !healthActive || toSeconds <= fromSeconds) return;
+    const gained = (healSchedule.deliveredBy(toSeconds) - healSchedule.deliveredBy(fromSeconds)) / step;
+    if (gained <= 0) return;
+
+    next.fill(0);
+    const whole = Math.floor(gained);
+    const frac = gained - whole;
+    for (let i = 1; i <= TOP; i++) {
+      const mass = alive[i];
+      if (mass === 0) continue;
+      const lower = i + whole;
+      if (lower >= TOP) { next[TOP] += mass; continue; }
+      next[lower] += mass * (1 - frac);
+      const upper = lower + 1;
+      next[upper >= TOP ? TOP : upper] += mass * frac;
+    }
+    const swap = alive; alive = next; next = swap;
+  };
+
+  // ── A shield's timer runs out ──
+  // What is still standing is clamped to what the surviving layers are
+  // worth, and anything left of the expired layer is gone. When nothing
+  // survives, the layer empties into the health walk at full health —
+  // which is where an untouched defender has been all along.
+  const applyExpiry = poolAfter => {
+    if (!standing) return;
+    const ceiling = Math.round(poolAfter / unit);
+    if (ceiling <= 0) {
+      let released = 0;
+      for (let j = 1; j <= shieldCells; j++) { released += standing[j]; standing[j] = 0; }
+      if (released > 0) { alive[TOP] += released; healthActive = true; }
+      standing = null;
+      return;
+    }
+    for (let j = ceiling + 1; j <= shieldCells; j++) {
+      if (standing[j] === 0) continue;
+      standing[ceiling] += standing[j];
+      standing[j] = 0;
+    }
+  };
 
   for (const atMicros of shotTimes) {
     if (aliveProbability < NEGLIGIBLE_PROBABILITY) break;
 
     const atSeconds = toSeconds(atMicros);
 
-    // ── Heal since the previous shot, clamped at full ──
-    // Everything the support delivered in the gap, moved up the grid.
-    // Anything that would go past full piles up at the top, and that pile
-    // is the overheal the hit-count grid could not see.
-    const gained = healSchedule
-      ? (healSchedule.deliveredBy(atSeconds) - healSchedule.deliveredBy(previousSeconds)) / step
-      : 0;
+    // Heal and expiry are both events on the clock, so they are applied in
+    // the order they happen rather than both at the shot. A Dome that dies
+    // at 5.5s must not still be standing for the shot at 5.6.
+    while (nextExpiry < expiries.length && expiries[nextExpiry].at <= atSeconds) {
+      applyHeal(previousSeconds, expiries[nextExpiry].at);
+      previousSeconds = expiries[nextExpiry].at;
+      applyExpiry(expiries[nextExpiry].poolAfter);
+      nextExpiry++;
+    }
+    applyHeal(previousSeconds, atSeconds);
     previousSeconds = atSeconds;
 
-    if (gained > 0) {
-      next.fill(0);
-      const whole = Math.floor(gained);
-      const frac = gained - whole;
-      for (let i = 1; i <= TOP; i++) {
-        const mass = alive[i];
-        if (mass === 0) continue;
-        const lower = i + whole;
-        if (lower >= TOP) { next[TOP] += mass; continue; }
-        next[lower] += mass * (1 - frac);
-        const upper = lower + 1;
-        next[upper >= TOP ? TOP : upper] += mass * frac;
-      }
-      const swap = alive; alive = next; next = swap;
-    }
-
-    // ── The shot ──
     next.fill(0);
     let killedByThisShot = 0;
 
-    for (let i = 1; i <= TOP; i++) {
-      const mass = alive[i];
-      if (mass === 0) continue;
+    // ── The shot, on the health layer ──
+    if (healthActive) {
+      for (let i = 1; i <= TOP; i++) {
+        const mass = alive[i];
+        if (mass === 0) continue;
 
-      if (shot.missChance > 0) next[i] += mass * shot.missChance;
+        if (shot.missChance > 0) next[i] += mass * shot.missChance;
 
-      for (const outcome of outcomes) {
-        const share = mass * outcome.chance;
-        // The drop lands between two buckets, so it is split across both
-        // rather than rounded to one — over a long fight rounding would
-        // drift in whichever direction the remainder happened to fall.
-        const high = i - outcome.whole;
-        const low = high - 1;
-        const toHigh = share * (1 - outcome.frac);
-        const toLow = share * outcome.frac;
-        if (toHigh > 0) { if (high <= 0) killedByThisShot += toHigh; else next[high] += toHigh; }
-        if (toLow > 0) { if (low <= 0) killedByThisShot += toLow; else next[low] += toLow; }
+        for (const outcome of outcomes) {
+          const share = mass * outcome.chance;
+          // The drop lands between two buckets, so it is split across both
+          // rather than rounded to one — over a long fight rounding would
+          // drift in whichever direction the remainder happened to fall.
+          const high = i - outcome.whole;
+          const low = high - 1;
+          const toHigh = share * (1 - outcome.frac);
+          const toLow = share * outcome.frac;
+          if (toHigh > 0) { if (high <= 0) killedByThisShot += toHigh; else next[high] += toHigh; }
+          if (toLow > 0) { if (low <= 0) killedByThisShot += toLow; else next[low] += toLow; }
+        }
       }
+    }
+
+    // ── The same shot, on the shield layer ──
+    // Nobody dies here: a shot that lands on a shield lands on the shield,
+    // whether or not it was the last of it. Mass whose shield runs out
+    // joins the health layer at full health, in time for the next shot.
+    if (standing) {
+      standingNext.fill(0);
+      let broke = 0;
+      for (let j = 1; j <= shieldCells; j++) {
+        const mass = standing[j];
+        if (mass === 0) continue;
+
+        if (shot.missChance > 0) standingNext[j] += mass * shot.missChance;
+
+        for (const outcome of outcomes) {
+          const share = mass * outcome.chance;
+          if (share === 0) continue;
+          const left = j - outcome.cells;
+          if (left > 0) standingNext[left] += share;
+          else broke += share;
+        }
+      }
+      if (broke > 0) { next[TOP] += broke; healthActive = true; }
+      const swap = standing; standing = standingNext; standingNext = swap;
     }
 
     if (killedByThisShot > 0) {
@@ -370,7 +571,7 @@ function solveKillTimesByHealth(shotTimes, shot, targetHealth, healSchedule) {
  *          Probabilities are conserved: every kill chance plus
  *          neverKillsProbability sums to 1.
  */
-function solveKillTimes(shotTimes, shot, targetHealth, healSchedule = null) {
+function solveKillTimes(shotTimes, shot, targetHealth, healSchedule = null, shield = null) {
   const maxShotDamage = Math.max(shot.bodyDamage, shot.headDamage);
 
   // A fighter who cannot do damage at all never kills.
@@ -378,13 +579,31 @@ function solveKillTimes(shotTimes, shot, targetHealth, healSchedule = null) {
     return { kills: [], neverKillsProbability: 1 };
   }
 
+  // What a shield is guaranteed to be worth, for the short-circuits below.
+  // Only the layers that outlast every expiry count: an attacker who does
+  // nothing for the Dome's first five seconds and opens up afterwards has
+  // to chew through the Mesh and no more, so crediting the Dome here could
+  // call a target unkillable that a real run kills.
+  const guaranteedShield = shield
+    ? (shield.expiries && shield.expiries.length
+        ? Math.min(...shield.expiries.map(e => e.poolAfter))
+        : shield.pool)
+    : 0;
+  const floorHealth = targetHealth + guaranteedShield;
+
   // ── Phase 0: can a kill happen at all? ──
   // With healing this is not rhetorical. A target healing faster than the
   // attacker can land damage is unkillable, and saying so here costs one
   // pass over the schedule instead of a full walk over a grid sized for
   // sixty seconds of accumulated healing. On the sustain grid most cells
   // land here, which is what makes it affordable.
-  if (healSchedule && !killIsReachable(shotTimes, maxShotDamage, targetHealth, healSchedule)) {
+  if (healSchedule && !killIsReachable(shotTimes, maxShotDamage, floorHealth, healSchedule)) {
+    return { kills: [], neverKillsProbability: 1 };
+  }
+
+  // The same question without a heal to complicate it: landing every shot
+  // as a headshot still has to get through the shield that never expires.
+  if (!healSchedule && shotTimes.length * maxShotDamage < floorHealth) {
     return { kills: [], neverKillsProbability: 1 };
   }
 
@@ -392,7 +611,12 @@ function solveKillTimes(shotTimes, shot, targetHealth, healSchedule = null) {
   // solveKillTimesByHealth. Without it they are exact and cheaper, so the
   // grid below stays in charge of every unhealed matchup, which is most of
   // them.
-  if (healSchedule) return solveKillTimesByHealth(shotTimes, shot, targetHealth, healSchedule);
+  // A shield puts the walk on the health axis for the same reason healing
+  // does: what matters is where the damage lands, not how much of it there
+  // has been. See the block above solveKillTimesByHealth.
+  if (healSchedule || shield) {
+    return solveKillTimesByHealth(shotTimes, shot, targetHealth, healSchedule, shield);
+  }
 
   // ── Phase 1: the grid of hit combinations the target survives ──
   // A cell is worth tracking only while its damage is under the kill
@@ -728,6 +952,12 @@ function survivalCurve(killResult, sampleSeconds) {
 function solveSurvival({
   attackerStats, attackerAccuracy, attackerHeadshotChance,
   defenderMaxHealth, defenderHeal = null,
+  // A damage pool sitting in front of the defender, from gadgets.js
+  // combineShields(). Assumed to be between them and every attacker for
+  // the whole window — how often that is true is a coverage question, and
+  // it is answered a level up by blending this result with the one without
+  // the shield. See the sustain screen.
+  defenderShield = null,
   distance, dropMultiplierFor,
   sampleSeconds, maxTime = 60,
   // How many attackers are firing on the defender. They all carry
@@ -740,7 +970,7 @@ function solveSurvival({
 
   const killResult = solveKillTimes(
     buildVolleySchedule(attackerStats, attackerCount, attackerStagger, maxTime),
-    shot, defenderMaxHealth, defenderHeal);
+    shot, defenderMaxHealth, defenderHeal, defenderShield);
 
   const survival = survivalCurve(killResult, sampleSeconds);
 

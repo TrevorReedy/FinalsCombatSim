@@ -78,7 +78,7 @@
   function onRouteEntered(route, params = []) {
     if (route === 'home') renderKillTimeChart();
     if (route === 'sim') redrawArena();
-    if (route === 'stats') { renderStatsTable(); renderHealStats(); loadTimeline().then(t => { if (t && currentRoute === 'stats') renderStatsTable(); }); }
+    if (route === 'stats') { renderStatsTable(); renderHealStats(); renderGadgetStats(); loadTimeline().then(t => { if (t && currentRoute === 'stats') renderStatsTable(); }); }
     if (route === 'meta') updateMetaEstimate();
     if (route === 'sustain') updateSustainEstimate();
     if (route === 'weapon') renderWeaponPage(params[0], params[1]);
@@ -707,6 +707,10 @@ function idealTTK(w, hp) {
     warnedTheoretical.clear();
     renderHealStacks();
     renderHealStats();
+    // The shields rewind with everything else — a Dome at 2.0.0 lasted 12s
+    // and a Mesh was worth 750, and a page still showing today's numbers
+    // would be quietly wrong about both.
+    renderGadgetStats();
     updateSustainEstimate();
 
     if (currentRoute === 'weapon') renderWeaponPage(currentParams[0], currentParams[1]);
@@ -1659,6 +1663,39 @@ function idealTTK(w, hp) {
     return resolveHealAt(healTimeline, id, activeDataVersion);
   }
 
+  // ── The kit roster ──
+  // csv/gadgets/ carries every specialization, gadget and carriable. Most
+  // of it is roster only, and that is what the loadout rules run on: the
+  // four heal sources appear there too, so a Heal Beam can be recognised
+  // as a Medium specialization competing for the same slot as a Guardian
+  // Turret. Only the two shields carry numbers this screen simulates.
+  const SHIELD_ORDER = ['mesh', 'dome'];
+
+  let gadgetTimeline = null;
+  let gadgetTimelinePromise = null;
+
+  function loadGadgetTimeline() {
+    if (gadgetTimelinePromise) return gadgetTimelinePromise;
+    gadgetTimelinePromise = fetch('./csv/cleaned/gadget_timeline.json')
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(data => (gadgetTimeline = data))
+      .catch(err => {
+        console.warn('Gadget data unavailable — run: node tools/ingest_gadgets.mjs', err);
+        return null;
+      });
+    return gadgetTimelinePromise;
+  }
+
+  function gadgetAt(id) {
+    if (!gadgetTimeline) return null;
+    return resolveGadgetAt(gadgetTimeline, id, activeDataVersion);
+  }
+
+  /** Display name for anything in a kit, heal source or shield. */
+  function itemName(id) {
+    return healTimeline?.items[id]?.name || gadgetTimeline?.items[id]?.name || id;
+  }
+
   /** Resolved items for one player's stack, in a stable order. */
   function resolvedStack(player) {
     return HEAL_ORDER
@@ -1730,6 +1767,89 @@ function idealTTK(w, hp) {
         <th>Source</th><th>Avg over 7s</th><th>How it heals</th><th>Self-heals</th><th>Data from</th>
       </tr></thead>
       <tbody>${rows}</tbody></table>`;
+  }
+
+  // ── Stats page: the shields, and the roster behind them ──
+  function renderGadgetStats() {
+    renderShieldStats();
+    renderGadgetRoster();
+  }
+
+  function renderShieldStats() {
+    const mount = document.getElementById('shield-stats');
+    if (!mount) return;
+    if (!gadgetTimeline) { mount.innerHTML = ''; return; }
+
+    const rows = SHIELD_ORDER.map(id => {
+      const item = gadgetAt(id);
+      if (!item || !item.fields) return '';
+      const f = item.fields;
+      const theoretical = item.provenance === 'theoretical';
+      const meta = gadgetTimeline.items[id];
+
+      const detail = [
+        `${f.device_hp} HP`,
+        f.duration != null ? `${f.duration}s once deployed` : 'stands until it is broken',
+        f.radius != null ? `${f.radius}m radius — nothing inside it is covered` : 'covers the arc it faces',
+        f.cooldown != null ? `${f.cooldown}s cooldown` : 'paid for out of an energy pool'
+      ].join(' · ');
+
+      return `<tr>
+        <td><strong>${esc(item.name)}</strong><br><span class="doc-note">${esc(item.classes.join('/'))} ${esc(item.slot)}</span></td>
+        <td>${f.device_hp} HP</td>
+        <td>${esc(detail)}</td>
+        <td>${esc(meta.notes || '')}</td>
+        <td>${theoretical
+              ? `<span style="color:var(--soft)">⚠ ${esc(item.sourceVersion)} values — did not exist until ${esc(item.introducedAt)}</span>`
+              : `${esc(item.sourceVersion)}${item.provenance === 'carried' ? ' (carried)' : ''}`}</td>
+      </tr>`;
+    }).join('');
+
+    mount.innerHTML = `<table class="sustain-rank">
+      <thead><tr>
+        <th>Shield</th><th>Absorbs</th><th>How it behaves</th><th>What it is</th><th>Data from</th>
+      </tr></thead>
+      <tbody>${rows}</tbody></table>`;
+  }
+
+  function renderGadgetRoster() {
+    const mount = document.getElementById('gadget-roster');
+    if (!mount) return;
+    if (!gadgetTimeline) { mount.innerHTML = ''; return; }
+
+    const items = Object.values(gadgetTimeline.items);
+    // Grouped the way the loadout screen is: specializations first, then
+    // gadgets, each in light-medium-heavy order with the shared ones last.
+    const slotOrder = { specialization: 0, gadget: 1, carriable: 2 };
+    const classOrder = { light: 0, medium: 1, heavy: 2 };
+    const sorted = items.slice().sort((a, b) =>
+      (slotOrder[a.slot] - slotOrder[b.slot]) ||
+      (a.classes.length - b.classes.length) ||
+      (classOrder[a.classes[0]] - classOrder[b.classes[0]]) ||
+      a.name.localeCompare(b.name));
+
+    const modelled = { heals: 'healing', shield: 'shield', none: '—' };
+
+    const rows = sorted.map(item => `<tr>
+      <td><strong>${esc(item.name)}</strong></td>
+      <td>${esc(item.classes.length === 3 ? 'all' : item.classes.join('/'))}</td>
+      <td>${esc(item.slot)}</td>
+      <td>${esc(item.category)}</td>
+      <td>${esc(modelled[item.model] || item.model)}</td>
+      <td class="doc-note">${esc(item.notes || '')}</td>
+    </tr>`).join('');
+
+    const counts = ['specialization', 'gadget', 'carriable']
+      .map(slot => `${items.filter(i => i.slot === slot).length} ${slot}s`).join(', ');
+    const unknown = items.filter(i => !i.introduced).length;
+
+    mount.innerHTML = `<table class="sustain-rank">
+      <thead><tr>
+        <th>Item</th><th>Class</th><th>Slot</th><th>Does</th><th>Simulated</th><th>Notes</th>
+      </tr></thead>
+      <tbody>${rows}</tbody></table>
+      <p class="doc-note">${counts}. ${unknown} of them have no recorded introduction version yet —
+      marked <code>?</code> in <code>csv/gadgets/items.csv</code> rather than guessed.</p>`;
   }
 
   // ── Chip row ──
@@ -1887,6 +2007,20 @@ function idealTTK(w, hp) {
   let sustainAttackers = 1;
   let sustainResults = null;
 
+  // Whether the shields are in the kit space at all. They multiply the grid
+  // by about three, so skipping them is a real option on a slow machine —
+  // and the run it skips is the one nobody is asking for when the question
+  // is purely about healing.
+  let sustainUseShields = true;
+
+  // How often the Mesh is assumed to be facing the right way. This is an
+  // assumption rather than a measurement (see gadgets.js), so it is a
+  // control rather than a constant — and because it is applied by blending
+  // two solved kits rather than by re-solving anything, moving it is
+  // instant. The Dome needs no such knob: whether it covers you is decided
+  // by its radius against the range, which is geometry.
+  let meshCoverage = MESH_COVERAGE;
+
   const sustainClass = () => document.getElementById('sustain-class')?.value || 'medium';
   const sustainDistance = () => +(document.getElementById('sustain-distance')?.value || 15);
   const sustainProfile = () => document.getElementById('sustain-profile')?.value || 'Average';
@@ -1894,22 +2028,51 @@ function idealTTK(w, hp) {
 
   const sampleIndexFor = seconds => Math.round(seconds / SUSTAIN_SAMPLE_STEP);
 
-  /** Every legal stack: one item per source, so 2^4 including none. */
-  function sustainHealStacks() {
-    if (!healTimeline) return [];
-    return allHealStacks(HEAL_ORDER).map(ids => ({
-      ids,
-      items: ids.map(healAt).filter(Boolean)
-    }));
+  /**
+   * Every kit a squad of three can legally bring, for a defender of this class.
+   *
+   * Not every subset: a Heal Beam is a Medium specialization, an H+ Infuser
+   * is a Light gadget and a Mesh Shield is a Heavy specialization, so
+   * wanting all three means wanting three specific teammates and you have
+   * two. gadgets.js does the seating; what comes back is what a real squad
+   * can field. See its header for why that filter is worth having.
+   */
+  function sustainKits() {
+    if (!healTimeline || !gadgetTimeline) return [];
+
+    const ids = sustainUseShields ? [...HEAL_ORDER, ...SHIELD_ORDER] : [...HEAL_ORDER];
+    const roster = ids.map(gadgetAt).filter(Boolean);
+    if (roster.length !== ids.length) return [];
+
+    return allLegalKits(roster, sustainClass()).map(kit => {
+      const healIds = kit.ids.filter(id => HEAL_ORDER.includes(id));
+      const shieldIds = kit.ids.filter(id => SHIELD_ORDER.includes(id));
+      return {
+        ids: kit.ids,
+        healIds,
+        shieldIds,
+        // The heal numbers come from csv/heals/; the gadget row only knows
+        // which slot the thing occupies.
+        healItems: healIds.map(healAt).filter(Boolean),
+        shieldItems: shieldIds.map(gadgetAt).filter(Boolean)
+      };
+    });
   }
+
+  const kitKeyOf = ids => ids.join('+') || 'none';
 
   function stackLabel(ids) {
     if (!ids.length) return 'none';
-    return ids.map(id => healTimeline?.items[id]?.name || id).join(' + ');
+    return ids.map(itemName).join(' + ');
   }
 
   function stackIsTheoretical(ids) {
-    return ids.some(id => healAt(id)?.provenance === 'theoretical');
+    return ids.some(id => (HEAL_ORDER.includes(id) ? healAt(id) : gadgetAt(id))?.provenance === 'theoretical');
+  }
+
+  /** Total absorbing HP a kit's shields are worth, before any coverage. */
+  function kitShieldPool(shieldIds) {
+    return shieldIds.reduce((sum, id) => sum + (gadgetAt(id)?.fields?.device_hp || 0), 0);
   }
 
   function closeMatchupPanels() {
@@ -1951,6 +2114,35 @@ function idealTTK(w, hp) {
       });
     });
 
+    const invalidate = (title, why) => {
+      sustainResults = null;
+      updateSustainEstimate();
+      const mount = document.getElementById('sustain-grid');
+      if (mount) mount.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">✚</div><div class="empty-title">${esc(title)}</div>
+        <div class="empty-sub">${esc(why)}</div></div>`;
+    };
+    // The shields change which kits exist, so like the class they cannot be
+    // re-read off a finished grid.
+    document.querySelectorAll('#sustain-shields-group .tbtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const next = btn.dataset.shields === '1';
+        if (next === sustainUseShields) return;
+        document.querySelectorAll('#sustain-shields-group .tbtn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        sustainUseShields = next;
+        invalidate(next ? 'Shields added to the kit space' : 'Shields removed from the kit space',
+          'This changes which kits get solved, so it needs another run.');
+      });
+    });
+
+    // Coverage is a weight on results that already exist, so unlike every
+    // other shield setting this one is instant.
+    document.getElementById('sustain-mesh-coverage')?.addEventListener('change', e => {
+      meshCoverage = +e.target.value;
+      if (sustainResults) renderSustain(sustainResults, 'sustain-grid');
+    });
+
     // Re-reading finished results is free; only the class needs a re-run,
     // because base health changes what was solved. Squad size does not —
     // every count is solved up front and the toggle above slices.
@@ -1960,17 +2152,11 @@ function idealTTK(w, hp) {
       });
     });
 
-    const invalidate = (title, why) => {
-      sustainResults = null;
-      updateSustainEstimate();
-      const mount = document.getElementById('sustain-grid');
-      if (mount) mount.innerHTML = `<div class="empty-state">
-        <div class="empty-icon">✚</div><div class="empty-title">${esc(title)}</div>
-        <div class="empty-sub">${esc(why)}</div></div>`;
-    };
     document.getElementById('sustain-class')?.addEventListener('change', () =>
+      // Class decides base health and, through the loadout rules, which
+      // kits a squad built around you can even carry.
       invalidate('Class changed',
-        'Base health changes what gets solved, so this needs another run.'));
+        'Base health and the legal kits both change, so this needs another run.'));
     // Stagger moves the shot times themselves, so unlike the window or the
     // squad-size toggle it cannot be re-read off finished results.
     document.getElementById('sustain-stagger')?.addEventListener('change', () =>
@@ -2008,12 +2194,17 @@ function idealTTK(w, hp) {
   function updateSustainEstimate() {
     const el = document.getElementById('sustain-estimate');
     if (!el) return;
-    const stacks = sustainHealStacks().length || 16;
+    const kits = sustainKits().length || (sustainUseShields ? 50 : 16);
     const squads = SUSTAIN_ATTACKER_COUNTS.length;
-    const cells = weapons().length * 7 * 4 * stacks * squads;
+    const cells = weapons().length * 7 * 4 * kits * squads;
+    const illegal = (1 << (sustainUseShields ? 6 : 4)) - kits;
     el.innerHTML = `<strong>${cells.toLocaleString()}</strong> scenarios —
-      ${weapons().length} weapons × 7 ranges × 4 aim profiles × ${stacks} heal stacks
-      × ${squads} squad sizes, solved exactly.`;
+      ${weapons().length} weapons × 7 ranges × 4 aim profiles × ${kits} legal kits
+      × ${squads} squad sizes, solved exactly.` +
+      (illegal > 0
+        ? `<br><span class="doc-note">${illegal} combination${illegal === 1 ? '' : 's'} left out —
+           no squad of three ${sustainClass()}-plus-two can carry ${illegal === 1 ? 'it' : 'them'}.</span>`
+        : '');
   }
 
   function setSustainRunning(running) {
@@ -2024,13 +2215,13 @@ function idealTTK(w, hp) {
   }
 
   function startSustainAnalysis() {
-    if (!healTimeline) return;
+    if (!healTimeline || !gadgetTimeline) return;
     if (typeof runSustainAnalysis !== 'function') return;
 
     setSustainRunning(true);
     runSustainAnalysis({
       defenderClass: sustainClass(),
-      healStacks: sustainHealStacks(),
+      kits: sustainKits(),
       mountId: 'sustain-grid',
       sampleStep: SUSTAIN_SAMPLE_STEP,
       sampleMax: SUSTAIN_SAMPLE_MAX,
@@ -2055,43 +2246,106 @@ function idealTTK(w, hp) {
     // and squad size, at the chosen hold window. Older results predate the
     // squad-size axis, so a missing count reads as 1.
     const countOf = r => r.attackerCount || 1;
+    const keyOf = r => r.kitKey || r.healKey;
+    const shieldsOf = r => r.shieldIds || [];
     const atRange = results.filter(r => r.distance === distance && r.profile === profile);
-    const slice = atRange.filter(r => countOf(r) === sustainAttackers);
+    const squadSizes = [...new Set(atRange.map(countOf))].sort((a, b) => a - b);
 
-    // Mean hold across the roster, for one heal stack at one squad size.
+    // ── Every solved kit, indexed so one can be read off against another ──
+    // Coverage below is answered by comparing a kit to the same kit without
+    // the shield, which is only possible because every legal subset was
+    // solved. Rows are kept per attacker so the blend happens per matchup
+    // rather than on an average that has already thrown the matchups away.
+    const solved = new Map();          // key|count -> Map(attacker -> row)
+    const kitIds = new Map();          // key -> ids
+    for (const r of atRange) {
+      const key = keyOf(r) + '|' + countOf(r);
+      if (!solved.has(key)) solved.set(key, new Map());
+      solved.get(key).set(r.attacker, r);
+      kitIds.set(keyOf(r), [...(r.healIds || []), ...shieldsOf(r)]);
+    }
+
+    // ── Coverage ──
+    // A shield only helps when it is between you and the people shooting.
+    // The Dome is geometry: inside its radius the attacker is in there with
+    // you, and the whole kit collapses onto the one without it — so those
+    // rows are dropped rather than shown twice under different names. The
+    // Mesh is a panel facing one way, and how often that is the right way is
+    // an assumption; it is applied by blending the kit with the same kit
+    // without it, which needs no re-solving and moves with the control.
+    const dropped = [];
+    const coverageOf = id => {
+      const item = gadgetAt(id);
+      return item ? shieldCoverageAt(item, distance, meshCoverage) : 0;
+    };
+
+    const usableKeys = [...new Set(atRange.map(keyOf))].filter(key => {
+      const dead = (kitIds.get(key) || []).filter(id => SHIELD_ORDER.includes(id) && coverageOf(id) === 0);
+      if (dead.length) { dropped.push(...dead.map(itemName)); return false; }
+      return true;
+    });
+
+    /**
+     * The rows for one kit at one squad size, with partial coverage folded
+     * in. A kit whose Mesh covers 60% of engagements is 60% of itself and
+     * 40% of the kit without it — both were solved, so this is a weighted
+     * read of two exact answers rather than a third approximate one.
+     */
+    const rowsFor = (key, count) => {
+      const ids = kitIds.get(key) || [];
+      const partial = ids.filter(id => SHIELD_ORDER.includes(id) && coverageOf(id) < 1);
+      const base = solved.get(key + '|' + count);
+      if (!base) return [];
+      if (!partial.length) return [...base.values()];
+
+      // One partial shield today, so one fold. Written as a loop so a
+      // second one does not need this rewritten.
+      let blended = [...base.values()].map(r => ({ ...r, survival: r.survival.slice() }));
+      for (const id of partial) {
+        const weight = coverageOf(id);
+        const without = solved.get(kitKeyOf(ids.filter(x => x !== id)) + '|' + count);
+        if (!without) continue;
+        blended = blended.map(r => {
+          const other = without.get(r.attacker);
+          if (!other) return r;
+          return {
+            ...r,
+            survival: r.survival.map((v, i) => v * weight + (other.survival[i] ?? 0) * (1 - weight))
+          };
+        });
+      }
+      return blended;
+    };
+
     const meanHold = rows =>
       rows.reduce((sum, r) => sum + (r.survival[idx] ?? 0), 0) / (rows.length || 1);
 
-    // The 1/2/3 comparison is the point of the axis, so it is carried on
-    // every ranking row rather than living behind the toggle.
-    const byStackAndCount = new Map();
-    for (const r of atRange) {
-      const key = r.healKey + '|' + countOf(r);
-      if (!byStackAndCount.has(key)) byStackAndCount.set(key, []);
-      byStackAndCount.get(key).push(r);
-    }
-    const squadSizes = [...new Set(atRange.map(countOf))].sort((a, b) => a - b);
+    const ranked = usableKeys.map(key => {
+      const ids = kitIds.get(key) || [];
+      const rows = rowsFor(key, sustainAttackers);
+      const healIds = ids.filter(id => HEAL_ORDER.includes(id));
+      const shieldIds = ids.filter(id => SHIELD_ORDER.includes(id));
+      return {
+        ids,
+        label: stackLabel(ids),
+        theoretical: stackIsTheoretical(ids),
+        hold: meanHold(rows),
+        // The 1/2/3 comparison is the point of the axis, so it is carried on
+        // every ranking row rather than living behind the toggle.
+        holdByCount: squadSizes.map(n => {
+          const r = rowsFor(key, n);
+          return r.length ? meanHold(r) : null;
+        }),
+        rate: healIds.length ? stackRate(healIds.map(healAt).filter(Boolean), sustainWindow) : 0,
+        shieldPool: kitShieldPool(shieldIds),
+        rows
+      };
+    }).sort((a, b) => b.hold - a.hold);
 
-    const byStack = new Map();
-    for (const r of slice) {
-      if (!byStack.has(r.healKey)) byStack.set(r.healKey, { key: r.healKey, ids: r.healIds, rows: [] });
-      byStack.get(r.healKey).rows.push(r);
-    }
-
-    const ranked = [...byStack.values()].map(entry => ({
-      ids: entry.ids,
-      label: stackLabel(entry.ids),
-      theoretical: stackIsTheoretical(entry.ids),
-      hold: meanHold(entry.rows),
-      holdByCount: squadSizes.map(n => {
-        const rows = byStackAndCount.get(entry.key + '|' + n);
-        return rows ? meanHold(rows) : null;
-      }),
-      rate: entry.ids.length ? stackRate(entry.ids.map(healAt).filter(Boolean), sustainWindow) : 0,
-      rows: entry.rows
-    })).sort((a, b) => b.hold - a.hold);
-
+    const slice = atRange.filter(r => countOf(r) === sustainAttackers);
     const squadWord = sustainAttackers === 1 ? 'one attacker' : `${sustainAttackers} attackers`;
+    const droppedNames = [...new Set(dropped)];
+    const meshInPlay = ranked.some(r => r.ids.includes('mesh'));
 
     mount.innerHTML = `
       <div class="sustain-head">
@@ -2101,8 +2355,18 @@ function idealTTK(w, hp) {
         </div>
       </div>
 
-      <div class="sustain-section-title">Which healing gets you there — chance of holding ${sustainWindow}s</div>
+      <div class="sustain-section-title">Which kit gets you there — chance of holding ${sustainWindow}s</div>
       ${rankingHtml(ranked, squadSizes)}
+
+      ${droppedNames.length ? `<p class="sustain-note">
+        ⌀ ${esc(droppedNames.join(' and '))} ${droppedNames.length === 1 ? 'is' : 'are'} left out at ${distance}m —
+        an attacker this close is inside the bubble with you, where it blocks nothing.
+        Those kits are identical to the same kit without it, which is already listed.</p>` : ''}
+
+      ${meshInPlay ? `<p class="sustain-note">
+        The Mesh Shield is counted at <strong>${Math.round(meshCoverage * 100)}%</strong> coverage — it is a
+        panel facing one way, and that is the share of engagements it is assumed to be facing the
+        right way for. Change it in the panel; it re-reads the same solved grid rather than re-running it.</p>` : ''}
 
       <div class="sustain-section-title">Survival over time</div>
       <div class="sustain-curves">${curvesHtml(ranked)}</div>
@@ -2113,6 +2377,9 @@ function idealTTK(w, hp) {
         the roster at this range and aim profile — read it as "against a random
         opponent", not against a specific one. Everyone shooting you carries the same
         weapon and the same aim; a mixed squad is not solvable on this grid.
+        Shields and healing are both assumed to be up from the first shot: a Dome
+        dropped late to cover the end of a steal is a real play this grid cannot see,
+        and a Mesh that is destroyed does not come back inside the window.
       </p>`;
   }
 
@@ -2137,6 +2404,7 @@ function idealTTK(w, hp) {
         ${squadCells(r)}
         ${barCellHtml(r, i, idx, ranked.length)}
         <td class="rank-rate">${r.rate.toFixed(0)} HP/s</td>
+        <td class="rank-rate">${r.shieldPool ? r.shieldPool.toFixed(0) + ' HP' : '—'}</td>
       </tr>`).join('');
 
     const squadHeads = compare
@@ -2147,8 +2415,9 @@ function idealTTK(w, hp) {
     const anyTheoretical = ranked.some(r => r.theoretical);
     return `<table class="sustain-rank">
       <thead><tr>
-        <th></th><th>Heal stack</th>${squadHeads}
-        <th>Matchups</th><th style="text-align:right">Avg rate</th>
+        <th></th><th>Kit</th>${squadHeads}
+        <th>Matchups</th><th style="text-align:right">Heal rate</th>
+        <th style="text-align:right">Shield</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
@@ -2179,6 +2448,8 @@ function idealTTK(w, hp) {
     const label = `${r.label}: held against ${held.length} of ${r.rows.length} weapons ` +
       `over ${sustainWindow}s. Activate for the matchup list.`;
 
+    const shieldNote = r.shieldPool ? ` · ${r.shieldPool.toFixed(0)} HP of shield` : '';
+
     return `<td class="rank-bar-cell">
       <button type="button" class="sustain-bar-btn" aria-expanded="false"
               aria-label="${esc(label)}">
@@ -2189,7 +2460,7 @@ function idealTTK(w, hp) {
           ${esc(r.label)} — holding ${sustainWindow}s against
           <span class="matchup-won">${held.length} won</span> ·
           <span class="matchup-lost">${broke.length} lost</span>
-          <span class="matchup-of">of ${r.rows.length}</span>
+          <span class="matchup-of">of ${r.rows.length}${esc(shieldNote)}</span>
         </div>
         <div class="matchup-body">
           ${held.length ? `<div class="matchup-group">
@@ -2348,6 +2619,7 @@ function idealTTK(w, hp) {
   initHealPickers();
   initWeaponPage();
   loadHealTimeline().then(() => { renderHealStacks(); renderHealStats(); });
+  loadGadgetTimeline().then(() => { updateSustainEstimate(); renderGadgetStats(); });
   {
     const { name, params } = routeFromHash();
     navigate(name, { push: false, params });
