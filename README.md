@@ -1,11 +1,23 @@
 # THE FINALS Battle Simulator
 
-A browser-based combat simulation tool for comparing weapons from **THE FINALS**.  
-The simulator lets users select two contestants, choose weapons, adjust accuracy/headshot settings, change distance and movement rules, then run either a visual one-on-one simulation or a larger statistical analysis.
 
-The project includes a canvas-based battle playback system, multi-run simulation stats, weapon data loaded from JSON, a cross-analysis engine powered by Web Workers, and a heatmap view for comparing matchups across multiple distances and aim profiles.
+# THE FINALS Battle Simulator
 
----
+A browser-based combat simulation tool for comparing weapons from **THE FINALS**.
+Pick two contestants, set accuracy, headshot rate, distance, and movement rules,
+then either watch a single duel play out or run thousands of them for the real
+numbers.
+
+### ▶ [Try it live](https://trevorreedy.github.io/FinalsCombatSim/)
+
+
+- Canvas battle playback
+- Monte Carlo duel statistics
+- Web Worker–parallelized cross-analysis
+- JSON-driven weapon data
+- matchup heatmaps across distance and aim profiles
+
+
 
 ## Features
 
