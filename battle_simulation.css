@@ -23,10 +23,17 @@
   --med-cl: #ffffff;
   --heavy-cl: #ffffff;
 
+  /* Type families. Body copy is a proportional sans — the old monospace body
+     read as blocky at paragraph length. The condensed display face stays for
+     headings and nav, and the mono face only for HUD-style readouts. */
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-num: 'Share Tech Mono', ui-monospace, monospace;
+
   /* Fluid sizing system */
   --fs-base: clamp(0.88rem, 0.78rem + 0.28vw, 1.05rem);
-  --fs-micro: clamp(0.62rem, 0.58rem + 0.14vw, 0.78rem);
-  --fs-small: clamp(0.72rem, 0.66rem + 0.18vw, 0.9rem);
+  --fs-micro: clamp(0.75rem, 0.7rem + 0.12vw, 0.85rem);
+  --fs-small: clamp(0.82rem, 0.76rem + 0.16vw, 0.95rem);
   --fs-body: clamp(0.88rem, 0.8rem + 0.24vw, 1rem);
   --fs-label: clamp(0.8rem, 0.68rem + 0.4vw, 1.05rem);
   --fs-ui: clamp(0.95rem, 0.82rem + 0.4vw, 1.2rem);
@@ -49,6 +56,18 @@
   --space-5: clamp(0.95rem, 0.72rem + 0.7vw, 1.4rem);
   --space-6: clamp(1.15rem, 0.92rem + 0.9vw, 1.8rem);
   --space-7: clamp(1.4rem, 1.1rem + 1.2vw, 2.4rem);
+
+  /* Categorical series colours for comparison charts, in fixed order —
+     slot 1 is the weapon whose page it is. Validated as a set (lightness
+     band, chroma, CVD and normal-vision separation, 3:1 contrast) against
+     both this surface (#14171f) and the ospuze one (#201c10), so they are
+     shared by the two themes. Deliberately not the accent red, which the
+     charts reserve for nerfs. */
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
 
   --sidebar-w: clamp(18rem, 24vw, 26rem);
   --sidebar-rail: 2.9rem;
@@ -127,11 +146,14 @@ html {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Share Tech Mono', monospace;
+  font-family: var(--font-body);
   font-size: var(--fs-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   min-height: 100vh;
   overflow-x: hidden;
-  line-height: 1.35;
+  line-height: 1.55;
 }
 
 body::before {
@@ -204,7 +226,7 @@ body.at-home .topnav {
   background: transparent;
   border: var(--border-w) solid var(--border);
   color: var(--muted);
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-ui);
   font-weight: 700;
   letter-spacing: 0.08rem;
@@ -252,7 +274,7 @@ body.at-home .topnav {
 }
 
 .logo {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-weight: 900;
   font-size: var(--fs-logo);
   letter-spacing: clamp(0.14rem, 0.08rem + 0.28vw, 0.34rem);
@@ -308,7 +330,7 @@ body.at-home .topnav {
   border: 0;
   border-bottom: var(--border-w) solid var(--border);
   color: var(--muted);
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-small);
   font-weight: 700;
   letter-spacing: 0.1rem;
@@ -362,7 +384,7 @@ body.at-home .topnav {
 }
 
 .section-title {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-weight: 700;
   font-size: clamp(0.95rem, 0.75rem + 0.75vw, 1.5rem);
   letter-spacing: clamp(0.08rem, 0.05rem + 0.15vw, 0.18rem);
@@ -387,13 +409,14 @@ body.at-home .topnav {
 
 label {
   display: block;
-  font-size: var(--fs-label);
-  letter-spacing: clamp(0.04rem, 0.02rem + 0.12vw, 0.12rem);
+  font-size: var(--fs-small);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: var(--space-1);
   margin-top: var(--space-3);
   line-height: 1.15;
+  font-weight: 600;
 }
 
 label:first-child {
@@ -409,7 +432,7 @@ input[type='number'] {
   color: var(--text);
   padding: clamp(0.55rem, 0.42rem + 0.3vw, 0.75rem)
     clamp(0.6rem, 0.5rem + 0.28vw, 0.85rem);
-  font-family: 'Share Tech Mono', monospace;
+  font-family: var(--font-body);
   font-size: var(--fs-ui);
   outline: none;
   cursor: pointer;
@@ -467,7 +490,7 @@ input[type='range']::-moz-range-thumb {
 }
 
 .range-val {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-ui);
   font-weight: 700;
   min-width: clamp(2.4rem, 2rem + 1vw, 3.6rem);
@@ -486,7 +509,7 @@ input[type='range']::-moz-range-thumb {
 .ftab {
   padding: var(--space-4);
   text-align: center;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-ui);
   font-weight: 700;
   letter-spacing: clamp(0.06rem, 0.03rem + 0.15vw, 0.14rem);
@@ -534,9 +557,10 @@ input[type='range']::-moz-range-thumb {
   background: var(--bg);
   border: var(--border-w) solid var(--border);
   font-size: var(--fs-badge);
-  letter-spacing: clamp(0.02rem, 0.01rem + 0.08vw, 0.07rem);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1.15;
+  font-weight: 600;
 }
 
 .badge.light {
@@ -577,7 +601,7 @@ input[type='range']::-moz-range-thumb {
   background: var(--bg);
   border: var(--border-w) solid var(--border);
   color: var(--muted);
-  font-family: 'Share Tech Mono', monospace;
+  font-family: var(--font-body);
   font-size: var(--fs-ui);
   letter-spacing: clamp(0.02rem, 0.01rem + 0.08vw, 0.08rem);
   text-transform: uppercase;
@@ -631,7 +655,7 @@ input[type='range']::-moz-range-thumb {
 
 .btn-run {
   width: 100%;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-weight: 900;
   font-size: var(--fs-button);
   letter-spacing: clamp(0.08rem, 0.04rem + 0.2vw, 0.22rem);
@@ -690,7 +714,7 @@ input[type='range']::-moz-range-thumb {
 }
 
 .hud-name {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-hud);
   font-weight: 900;
   letter-spacing: clamp(0.04rem, 0.02rem + 0.1vw, 0.12rem);
@@ -747,7 +771,7 @@ input[type='range']::-moz-range-thumb {
 }
 
 .dist-big {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-dist);
   font-weight: 900;
   color: var(--accent);
@@ -779,7 +803,7 @@ input[type='range']::-moz-range-thumb {
 
 .tab {
   padding: var(--space-3) var(--space-5);
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-tab);
   font-weight: 700;
   letter-spacing: clamp(0.05rem, 0.03rem + 0.12vw, 0.12rem);
@@ -827,7 +851,7 @@ input[type='range']::-moz-range-thumb {
 }
 
 .winner-name {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-winner);
   font-weight: 900;
   letter-spacing: clamp(0.08rem, 0.04rem + 0.18vw, 0.18rem);
@@ -878,7 +902,7 @@ input[type='range']::-moz-range-thumb {
 }
 
 .stat-val {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-stat-val);
   font-weight: 700;
   line-height: 1;
@@ -974,7 +998,7 @@ input[type='range']::-moz-range-thumb {
 
 .ll.kill {
   color: var(--green);
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(0.95rem, 0.84rem + 0.38vw, 1.2rem);
   letter-spacing: clamp(0.04rem, 0.02rem + 0.12vw, 0.12rem);
   font-weight: 700;
@@ -1073,7 +1097,7 @@ td {
   }
 
 .sidebar {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 20px;
   line-height: 1.4;
 }
@@ -1241,7 +1265,7 @@ td {
 }
 
 .home-title {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-weight: 900;
   font-size: clamp(2.2rem, 1.4rem + 3.6vw, 4.2rem);
   letter-spacing: clamp(0.2rem, 0.1rem + 0.5vw, 0.5rem);
@@ -1289,7 +1313,7 @@ td {
 }
 
 .menu-num {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-ui);
   font-weight: 700;
   color: var(--muted);
@@ -1307,7 +1331,7 @@ td {
 
 .menu-title {
   display: block;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.15rem, 0.95rem + 0.9vw, 1.8rem);
   font-weight: 900;
   letter-spacing: 0.1rem;
@@ -1373,7 +1397,7 @@ td {
 }
 
 .page-title {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-weight: 900;
   font-size: clamp(1.8rem, 1.2rem + 2.4vw, 3rem);
   letter-spacing: clamp(0.14rem, 0.08rem + 0.35vw, 0.32rem);
@@ -1410,7 +1434,7 @@ td {
 }
 
 .doc-card h2 {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.5rem);
   font-weight: 700;
   letter-spacing: 0.14rem;
@@ -1458,7 +1482,7 @@ td {
 }
 
 .doc-dl dt {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-ui);
   font-weight: 700;
   letter-spacing: 0.08rem;
@@ -1589,7 +1613,7 @@ td {
   background: var(--bg);
   border: var(--border-w) solid var(--border);
   color: var(--text);
-  font-family: 'Share Tech Mono', monospace;
+  font-family: var(--font-body);
   font-size: var(--fs-ui);
   padding: 0.5em 0.7em;
   outline: none;
@@ -1600,7 +1624,7 @@ td {
 }
 
 .field-readout {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-ui);
   font-weight: 700;
   color: var(--accent);
@@ -1625,7 +1649,7 @@ td {
   position: sticky;
   top: 0;
   background: var(--surface);
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-small);
   font-weight: 700;
   letter-spacing: 0.1rem;
@@ -1719,7 +1743,7 @@ td {
 }
 
 .empty-title {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-tab);
   font-weight: 700;
   letter-spacing: 0.16rem;
@@ -1753,7 +1777,7 @@ td {
 }
 
 .ca-progress-head {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-tab);
   font-weight: 700;
   letter-spacing: 0.14rem;
@@ -1861,15 +1885,7 @@ td {
   border-bottom-color: var(--accent);
 }
 
-/* The chart carries 137 versions across 11 season bands, so it takes the space
-   the snapshot panel used to hold. The hero card beside it is short by design —
-   identity and a jump list, not a stat dump. */
-.weapon-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(0, 1.5fr);
-  gap: var(--space-4);
-  align-items: start;
-}
+
 
 .page-head.slim {
   border-bottom: none;
@@ -1877,52 +1893,9 @@ td {
   margin-bottom: var(--space-3);
 }
 
-.hero-panel .page-title {
-  font-size: clamp(1.6rem, 3vw, 2.4rem);
-  line-height: 1.05;
-}
 
-.hero-panel .page-lead {
-  margin-top: var(--space-2);
-  font-size: var(--fs-small);
-  color: var(--muted);
-}
 
-.hero-section {
-  margin-top: var(--space-4);
-  padding-top: var(--space-3);
-  border-top: var(--border-w) solid var(--border);
-}
 
-.hero-section .section-label {
-  margin-bottom: var(--space-2);
-}
-
-/* ── Season bands on the chart ─────────────────────────────────── */
-.season-band rect {
-  fill: transparent;
-}
-
-.season-band.alt rect {
-  fill: var(--surface);
-  opacity: 0.55;
-}
-
-.season-band text {
-  fill: var(--muted);
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08rem;
-  opacity: 0.5;
-}
-
-/* A season this weapon was touched in earns a brighter label than one it sat
-   out — the axis then shows at a glance where its history actually happened. */
-.season-band.live text {
-  fill: var(--text);
-  opacity: 0.85;
-}
 
 /* ── Stat block inside a ledger entry ──────────────────────────── */
 .stat-block {
@@ -1945,16 +1918,6 @@ td {
   color: var(--muted);
 }
 
-.vchip.measured {
-  border-color: var(--muted);
-  color: var(--text);
-}
-
-.vchip.active {
-  border-color: var(--accent);
-  color: var(--text);
-}
-
 .panel {
   background: var(--card);
   border: var(--border-w) solid var(--border);
@@ -1973,7 +1936,7 @@ td {
 }
 
 .panel-head h2 {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.5rem);
   font-weight: 700;
   letter-spacing: 0.14rem;
@@ -1985,87 +1948,9 @@ td {
   min-width: 14rem;
 }
 
-/* CHART */
-.chart-wrap svg {
-  width: 100%;
-  height: auto;
-  display: block;
-  overflow: visible;
-}
 
-.chart-grid {
-  stroke: var(--border);
-  stroke-width: 1;
-}
 
-.chart-axis-line {
-  stroke: var(--muted);
-  stroke-width: 1;
-  opacity: 0.5;
-}
 
-.chart-axis {
-  fill: var(--muted);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 12px;
-}
-
-.chart-axis.muted {
-  opacity: 0.35;
-}
-
-.chart-line {
-  stroke: var(--accent);
-  stroke-width: 2;
-}
-
-.chart-line.gap {
-  stroke-dasharray: 5 5;
-  opacity: 0.55;
-}
-
-.chart-value {
-  fill: var(--text);
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-/* VERSION CHIPS */
-.version-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-}
-
-.vchip {
-  background: var(--bg);
-  border: var(--border-w) solid var(--border);
-  color: var(--muted);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: var(--fs-small);
-  padding: 0.35em 0.7em;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.vchip:hover:not(:disabled) {
-  color: var(--text);
-  border-color: var(--muted);
-}
-
-.vchip.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #000;
-  font-weight: 700;
-}
-
-.vchip.empty {
-  opacity: 0.3;
-  cursor: not-allowed;
-  text-decoration: line-through;
-}
 
 /* SNAPSHOT */
 .snapshot-head {
@@ -2073,7 +1958,7 @@ td {
 }
 
 .snapshot-title {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.2rem, 1rem + 0.9vw, 1.8rem);
   font-weight: 900;
   letter-spacing: 0.1rem;
@@ -2134,12 +2019,13 @@ td {
 .skey {
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.06rem;
+  letter-spacing: 0.04em;
   flex: 1;
+  font-weight: 600;
 }
 
 .sval {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-ui);
   font-weight: 700;
   color: var(--text);
@@ -2150,7 +2036,8 @@ td {
   font-size: var(--fs-micro);
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.06rem;
+  letter-spacing: 0.04em;
+  font-weight: 600;
 }
 
 .withheld {
@@ -2162,10 +2049,9 @@ td {
 }
 
 .section-label {
-  font-family: 'Barlow Condensed', sans-serif;
   font-size: var(--fs-small);
-  font-weight: 700;
-  letter-spacing: 0.14rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: var(--space-2);
@@ -2177,7 +2063,7 @@ td {
 }
 
 .chg-head {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-ui);
   font-weight: 700;
   letter-spacing: 0.12rem;
@@ -2211,7 +2097,7 @@ td {
 }
 
 .chg-values {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-ui);
   font-weight: 700;
 }
@@ -2240,7 +2126,7 @@ td {
 /* Marker for a change carried entirely by prose: the glyph does the work the
    from → to numbers do on a stat line. */
 .chg-mark {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-ui);
   font-weight: 700;
   min-width: 1.2rem;
@@ -2273,14 +2159,7 @@ td {
   color: var(--muted);
 }
 
-/* ── Timeline chart: dots, update markers, axis ticks ───────────── */
 
-/* A version nothing happened in. Small and recessive so the eye lands on the
-   updates rather than counting the grid. */
-.chart-dot {
-  fill: var(--muted);
-  opacity: 0.45;
-}
 
 .chart-mark { cursor: pointer; }
 .chart-mark .hit { fill: transparent; }
@@ -2302,29 +2181,6 @@ td {
 .chart-mark.selected .ring { stroke: var(--text); stroke-width: 2.5; }
 .chart-mark:focus-visible { outline: none; }
 
-.chart-value.buff { fill: var(--green); }
-.chart-value.nerf { fill: var(--red); }
-.chart-value.soft { fill: var(--soft); }
-
-.chart-xlabel { cursor: pointer; }
-
-.chart-xlabel text {
-  fill: var(--muted);
-  font-size: 0.62rem;
-  letter-spacing: 0.04rem;
-}
-
-.chart-xlabel .glyph { font-weight: 700; }
-.chart-xlabel.buff .glyph { fill: var(--green); }
-.chart-xlabel.nerf .glyph { fill: var(--red); }
-.chart-xlabel.soft .glyph,
-.chart-xlabel.elsewhere .glyph { fill: var(--soft); }
-
-.chart-xlabel:hover text,
-.chart-xlabel:focus-visible text { fill: var(--text); }
-.chart-xlabel.selected text { fill: var(--text); font-weight: 700; }
-.chart-xlabel:focus-visible { outline: none; }
-
 /* ── The update card expanded from a chart marker ───────────────── */
 .update-card {
   margin-top: var(--space-3);
@@ -2343,7 +2199,7 @@ td {
 }
 
 .update-version {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-ui);
   font-weight: 700;
   letter-spacing: 0.04rem;
@@ -2435,7 +2291,7 @@ td {
 .lfilter.soft .glyph { color: var(--soft); }
 
 .lcount {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-weight: 700;
   color: var(--text);
 }
@@ -2469,7 +2325,7 @@ td {
 .ledger-entry.lit > summary { background: var(--card); }
 
 .ledger-version {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-ui);
   font-weight: 700;
   min-width: 4.5rem;
@@ -2529,9 +2385,6 @@ td {
 }
 
 @media (max-width: 900px) {
-  .weapon-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
 
   .chg-field {
     min-width: 100%;
@@ -2588,7 +2441,7 @@ td {
 }
 
 .chart-title {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.3rem, 1rem + 1.2vw, 2rem);
   font-weight: 900;
   letter-spacing: 0.14rem;
@@ -2670,7 +2523,7 @@ td {
 }
 
 .ttk-class {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-micro);
   font-weight: 700;
   text-align: center;
@@ -2739,7 +2592,7 @@ button.ttk-name:hover {
 }
 
 .ttk-value {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-small);
   font-weight: 700;
   text-align: right;
@@ -2774,7 +2627,7 @@ button.ttk-name:hover {
 .ttk-card strong {
   color: var(--text);
   display: block;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-size: var(--fs-ui);
   letter-spacing: 0.08rem;
   text-transform: uppercase;
@@ -2828,7 +2681,7 @@ button.ttk-name:hover {
   background: var(--card);
   border: var(--border-w) solid var(--border);
   color: var(--text);
-  font-family: 'Share Tech Mono', monospace;
+  font-family: var(--font-body);
   font-size: var(--fs-small);
   padding: 0.3em 0.5em 0.3em 0.7em;
 }
@@ -2870,7 +2723,7 @@ button.ttk-name:hover {
   background: var(--bg);
   border: var(--border-w) dashed var(--border);
   color: var(--muted);
-  font-family: 'Share Tech Mono', monospace;
+  font-family: var(--font-body);
   font-size: var(--fs-small);
   padding: 0.35em 0.7em;
   cursor: pointer;
@@ -2915,7 +2768,7 @@ button.ttk-name:hover {
 }
 
 .heal-modal-head {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -2931,7 +2784,7 @@ button.ttk-name:hover {
 }
 
 .heal-modal-body code {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: var(--font-num);
   color: var(--soft);
 }
 
@@ -2959,7 +2812,7 @@ button.ttk-name:hover {
 }
 
 .sustain-title {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -2969,10 +2822,9 @@ button.ttk-name:hover {
 .sustain-sub { color: var(--muted); font-size: var(--fs-small); }
 
 .sustain-section-title {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   font-size: var(--fs-small);
   color: var(--muted);
   margin: var(--space-3) 0 var(--space-2);
@@ -2982,7 +2834,7 @@ button.ttk-name:hover {
 
 .sustain-rank th {
   text-align: left;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-display);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--muted);
@@ -2993,7 +2845,7 @@ button.ttk-name:hover {
 .sustain-rank td {
   padding: 0.4em 0.6em;
   border-bottom: 1px solid var(--border);
-  font-family: 'Share Tech Mono', monospace;
+  font-family: var(--font-body);
 }
 
 .sustain-rank tr:hover td { background: var(--surface); }
@@ -3076,7 +2928,7 @@ button.ttk-name:hover {
 .rank-bar-cell.is-open .sustain-matchups { display: block; }
 
 .matchup-head {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: var(--font-body);
   font-size: var(--fs-micro);
   color: var(--text);
   border-bottom: 1px solid var(--border);
@@ -3092,17 +2944,17 @@ button.ttk-name:hover {
 .matchup-group + .matchup-group { margin-top: 0.6em; }
 
 .matchup-label {
-  font-family: 'Barlow Condensed', sans-serif;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   font-size: var(--fs-micro);
   margin-bottom: 0.3em;
+  font-weight: 600;
 }
 
 .matchup-chips { display: flex; flex-wrap: wrap; gap: 0.3em; }
 
 .matchup-chip {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: var(--font-body);
   font-size: var(--fs-micro);
   padding: 0.15em 0.45em;
   border: 1px solid currentColor;
@@ -3115,3 +2967,539 @@ button.ttk-name:hover {
 
 .sustain-curves { overflow-x: auto; }
 .sustain-curves svg { display: block; max-width: 100%; }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   WEAPON PAGE — hero, comparison chart, impact
+   ═══════════════════════════════════════════════════════════════════ */
+.weapon-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.6fr);
+  gap: var(--space-5);
+  align-items: center;
+}
+
+.weapon-hero .page-title {
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3.2rem);
+  line-height: 1;
+}
+
+.weapon-hero .page-lead {
+  font-size: var(--fs-small);
+  margin-top: var(--space-3);
+}
+
+.hero-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  position: relative;
+  padding-bottom: 1.4rem;
+}
+
+.hero-tile {
+  background: var(--surface);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.tile-label {
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  color: var(--muted);
+  line-height: 1.25;
+}
+
+.tile-value {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.3rem);
+  font-weight: 700;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.tile-delta {
+  font-size: var(--fs-micro);
+  font-weight: 600;
+}
+.tile-delta.buff { color: var(--green); }
+.tile-delta.nerf { color: var(--red); }
+.tile-delta.flat { color: var(--muted); font-weight: 400; }
+.tile-delta .glyph { margin-right: 0.2em; }
+
+.tile-at {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  font-size: var(--fs-micro);
+  color: var(--muted);
+}
+
+.panel-sub {
+  margin-top: 0.15rem;
+  font-size: var(--fs-micro);
+  color: var(--muted);
+}
+
+.panel-actions { display: flex; gap: var(--space-2); }
+
+/* ── Toolbar ── */
+.wc-toolbar {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-2) 0 var(--space-3);
+  border-bottom: var(--border-w) solid var(--border);
+}
+
+.wc-group { display: flex; align-items: center; gap: var(--space-2); }
+.wc-right { margin-left: auto; }
+
+.wc-btn {
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.42rem 0.8rem;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: border-color 0.12s, background 0.12s;
+}
+.wc-btn:hover { border-color: var(--muted); }
+.wc-btn:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+.wc-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+.wc-btn.small { padding: 0.2rem 0.55rem; font-size: var(--fs-micro); }
+.wc-compare-btn { border-color: var(--series-1); }
+
+.wc-seg { gap: 0; }
+.wc-seg .wc-btn { border-radius: 0; }
+.wc-seg .wc-btn:first-child { border-radius: var(--radius-md) 0 0 var(--radius-md); }
+.wc-seg .wc-btn:last-child { border-radius: 0 var(--radius-md) var(--radius-md) 0; border-left: none; }
+
+.wc-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--fs-small);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.wc-inline select { width: auto; font-size: var(--fs-small); padding: 0.3rem 0.5rem; }
+
+.wc-zoom { font-size: var(--fs-small); font-weight: 600; color: var(--text); }
+
+/* ── Legend ── */
+.wc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) 0 var(--space-2);
+}
+
+.wc-chip {
+  display: inline-flex;
+  align-items: stretch;
+  border: var(--border-w) solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.wc-chip.off .wc-chip-main { opacity: 0.45; text-decoration: line-through; }
+
+.wc-chip-main, .wc-chip-x {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  cursor: pointer;
+}
+.wc-chip-main { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.75rem; }
+.wc-chip-main:disabled { cursor: default; }
+.wc-chip-x { padding: 0.3rem 0.6rem; border-left: var(--border-w) solid var(--border); color: var(--muted); }
+.wc-chip-x:hover { color: var(--text); }
+.wc-legend-hint { font-size: var(--fs-micro); color: var(--muted); }
+
+/* Line keys, not boxes: a short stroke in the series colour. */
+.wc-key, .wc-tip-key {
+  display: inline-block;
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  background: currentColor;
+}
+.wc-key.s1, .wc-tip-key.s1 { color: var(--series-1); }
+.wc-key.s2, .wc-tip-key.s2 { color: var(--series-2); }
+.wc-key.s3, .wc-tip-key.s3 { color: var(--series-3); }
+.wc-key.s4, .wc-tip-key.s4 { color: var(--series-4); }
+.wc-key.s5, .wc-tip-key.s5 { color: var(--series-5); }
+
+/* ── Chart ── */
+.wc {
+  position: relative;
+  outline: none;
+  user-select: none;
+}
+.wc:focus-visible { box-shadow: 0 0 0 2px var(--series-1); border-radius: var(--radius-sm); }
+.wc svg { display: block; overflow: visible; }
+
+.wc-season rect { fill: transparent; }
+.wc-season.alt rect { fill: var(--surface); }
+.wc-season { cursor: pointer; }
+.wc-season text {
+  fill: var(--muted);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+.wc-season.live text { fill: var(--text); opacity: 1; }
+.wc-strip-caption { fill: var(--muted); font-family: var(--font-body); font-size: 12px; font-weight: 600; }
+.wc-season:hover text { fill: var(--text); opacity: 1; text-decoration: underline; }
+
+.wc-panel { margin-top: 2px; }
+.wc-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) 0 0.15rem 66px;
+}
+.wc-panel-title { font-size: var(--fs-small); font-weight: 700; color: var(--text); }
+.wc-panel-remove {
+  background: none;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  cursor: pointer;
+  width: 1.7rem;
+  height: 1.7rem;
+  line-height: 1;
+  font-size: 1rem;
+}
+.wc-panel-remove:hover { color: var(--text); border-color: var(--muted); }
+
+.wc-band { fill: transparent; }
+.wc-band.alt { fill: var(--surface); opacity: 0.8; }
+.wc-divider { stroke: var(--muted); stroke-width: 1; opacity: 0.45; }
+
+.wc-grid { stroke: var(--border); stroke-width: 1; }
+.wc-grid.zero { stroke: var(--muted); stroke-width: 1.5; opacity: 0.8; }
+
+.wc-ylabel, .wc-endvalue, .wc-endname, .wc-tick text, .wc-empty, .wc-export-title {
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+.wc-ylabel { fill: var(--muted); font-size: 13px; }
+.wc-endvalue { fill: var(--text); font-size: 13px; font-weight: 700; }
+.wc-steplabel { fill: var(--text); font-family: var(--font-body); font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; paint-order: stroke; stroke: var(--card); stroke-width: 3px; }
+.wc-endname { fill: var(--muted); font-size: 11.5px; }
+.wc-empty { fill: var(--muted); font-size: 14px; }
+.wc-export-title { fill: var(--text); font-size: 14px; font-weight: 700; }
+
+.wc-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.wc-line.primary { stroke-width: 2.5; }
+.wc-line.gap { stroke-dasharray: 4 5; opacity: 0.55; }
+.wc-line.s1, .wc-endkey.s1 { stroke: var(--series-1); }
+.wc-line.s2, .wc-endkey.s2 { stroke: var(--series-2); }
+.wc-line.s3, .wc-endkey.s3 { stroke: var(--series-3); }
+.wc-line.s4, .wc-endkey.s4 { stroke: var(--series-4); }
+.wc-line.s5, .wc-endkey.s5 { stroke: var(--series-5); }
+.wc-endkey { stroke-width: 3; stroke-linecap: round; }
+
+/* A 2px surface ring keeps a dot legible where it sits on another line. */
+.wc-dot { stroke: var(--card); stroke-width: 2; }
+.wc-dot.s1 { fill: var(--series-1); }
+.wc-dot.s2 { fill: var(--series-2); }
+.wc-dot.s3 { fill: var(--series-3); }
+.wc-dot.s4 { fill: var(--series-4); }
+.wc-dot.s5 { fill: var(--series-5); }
+
+.wc-crosshair { stroke: var(--text); stroke-width: 1; opacity: 0.6; pointer-events: none; }
+
+.wc-axis { border-top: var(--border-w) solid var(--muted); }
+.wc-tick { cursor: pointer; }
+.wc-tick line { stroke: var(--muted); }
+.wc-tick text { fill: var(--muted); font-size: 12.5px; font-weight: 600; }
+.wc-tick.buff text { fill: var(--green); }
+.wc-tick.nerf text { fill: var(--red); }
+.wc-tick.soft text, .wc-tick.elsewhere text { fill: var(--soft); }
+.wc-tick:hover text, .wc-tick.selected text { fill: var(--text); }
+.wc-tick.selected text { text-decoration: underline; }
+
+/* ── Tooltip ── */
+.wc-tip {
+  position: absolute;
+  z-index: 5;
+  min-width: 13rem;
+  max-width: 20rem;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg);
+  border: var(--border-w) solid var(--muted);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  font-size: var(--fs-small);
+}
+.wc-tip-head {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.35rem;
+  border-bottom: var(--border-w) solid var(--border);
+}
+.wc-tip-head strong { font-size: 1.05em; }
+.wc-tip-head span { color: var(--muted); font-size: var(--fs-micro); }
+.wc-tip-panel { margin-top: 0.4rem; color: var(--muted); font-size: var(--fs-micro); font-weight: 600; }
+.wc-tip-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.1rem 0; }
+.wc-tip-row strong { font-variant-numeric: tabular-nums; }
+.wc-tip-name { color: var(--muted); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wc-tip-delta { font-weight: 700; font-variant-numeric: tabular-nums; }
+.wc-tip-delta.buff { color: var(--green); }
+.wc-tip-delta.nerf { color: var(--red); }
+.wc-tip-hint { margin-top: 0.4rem; color: var(--muted); font-size: var(--fs-micro); }
+
+/* ── Table view ── */
+.wc-table-wrap { max-height: 32rem; overflow: auto; border: var(--border-w) solid var(--border); }
+.wc-table th.right, .wc-table td.right { text-align: right; }
+.wc-table tr.changed td { background: var(--surface); }
+
+/* ── Compare popover ── */
+.wc-pop {
+  position: absolute;
+  top: calc(100% - 0.4rem);
+  left: 0;
+  z-index: 20;
+  width: min(36rem, 100%);
+  max-height: 28rem;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: var(--border-w) solid var(--muted);
+  border-radius: var(--radius-md);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
+}
+.wc-pop-tabs { display: flex; border-bottom: var(--border-w) solid var(--border); }
+.wc-pop-tabs button {
+  flex: 1;
+  padding: var(--space-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  cursor: pointer;
+}
+.wc-pop-tabs button.active { color: var(--text); border-bottom-color: var(--series-1); }
+.wc-pop-tabs span { margin-left: 0.35rem; font-weight: 400; color: var(--muted); }
+.wc-pop-body { overflow-y: auto; padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-3); }
+.wc-pop-label { font-size: var(--fs-micro); font-weight: 600; color: var(--muted); margin-bottom: 0.35rem; }
+.wc-pop-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.wc-search { width: 100%; font-family: var(--font-body); font-size: var(--fs-small); padding: 0.45rem 0.7rem; }
+
+.wc-opt {
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  color: var(--text);
+  background: var(--surface);
+  border: var(--border-w) solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+}
+.wc-opt:hover:not(:disabled) { border-color: var(--muted); }
+.wc-opt.on { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 600; }
+.wc-opt:disabled { opacity: 0.4; cursor: not-allowed; }
+.wc-opt[hidden], .wc-pop-group[hidden] { display: none; }
+
+/* ── What a change did ── */
+.impact { padding: var(--space-3); border-bottom: var(--border-w) solid var(--border); }
+.impact.compact { padding: var(--space-2) 0; border-bottom: none; }
+.impact .section-label { margin-bottom: var(--space-2); }
+.impact-list { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.impact-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.35rem 0.65rem;
+  border: var(--border-w) solid var(--border);
+  border-left-width: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: var(--fs-small);
+}
+.impact-item.buff { border-left-color: var(--green); }
+.impact-item.nerf { border-left-color: var(--red); }
+.impact-item.buff .glyph { color: var(--green); }
+.impact-item.nerf .glyph { color: var(--red); }
+.impact-item.breakpoint { font-weight: 700; }
+.impact-label { color: var(--muted); }
+.impact-values { font-variant-numeric: tabular-nums; }
+.impact-pct { color: var(--muted); font-size: var(--fs-micro); }
+
+@media (max-width: 980px) {
+  .weapon-hero { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .hero-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wc-right { margin-left: 0; }
+  .wc-panel-head { padding-left: 52px; }
+  .wc-pop { width: 100%; }
+}
+
+/* ── Export menu ── */
+.export-wrap { position: relative; display: inline-block; }
+.export-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  min-width: 16rem;
+  padding: 0.35rem;
+  background: var(--bg);
+  border: var(--border-w) solid var(--muted);
+  border-radius: var(--radius-md);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
+  text-align: left;
+}
+.export-group {
+  padding: 0.55rem 0.6rem 0.25rem;
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  color: var(--muted);
+}
+.export-item {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.export-item:hover, .export-item:focus-visible { background: var(--surface); outline: none; }
+.export-hint { font-size: var(--fs-micro); font-weight: 400; color: var(--muted); }
+
+.export-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  z-index: 1000;
+  transform: translate(-50%, 1rem);
+  padding: 0.6rem 1rem;
+  background: var(--text);
+  color: var(--bg);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s, transform 0.18s;
+}
+.export-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+.chart-head .export-wrap, .sustain-section-head .export-wrap { margin-left: auto; }
+.sustain-section-head { display: flex; align-items: center; gap: var(--space-2); }
+.heat-export-slot { margin-left: auto; align-self: end; }
+
+/* Tabular numerals where numbers stack in columns. Not page-wide: Inter's
+   tabular set includes the hyphen, which spaces out names like "ARN-220". */
+.data-table td:not(:first-child), .sval, .stat-val, .range-val, .ttk-value, .ttk-delta,
+.sustain-rank td, .chg-values, .chg-delta, .impact-values, .tile-value, .wc-table td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* A checkbox label is a sentence, not a field label. */
+label.check-row {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+.check-row span { color: var(--text); font-size: var(--fs-small); }
+
+/* ── Field band: the pack behind the highlighted weapons ──
+   Neutral grey on purpose — it is context, not a series, and must never be
+   mistaken for one of the five coloured lines. */
+.wc-field { fill: var(--muted); fill-opacity: 0.22; stroke: none; }
+.wc-field-mid { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 5 4; opacity: 0.9; }
+.wc-key.field, .wc-tip-key.field {
+  width: 16px;
+  height: 10px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--muted) 30%, transparent);
+  border-top: 2px dashed var(--muted);
+}
+.wc-chip.field { border-style: dashed; }
+.wc-chip.field .wc-chip-main { cursor: default; color: var(--muted); font-weight: 500; }
+
+/* ── Compare on the Stats page ── */
+.stats-compare { margin-bottom: var(--space-5); }
+.compare-empty { padding: var(--space-5) var(--space-3); }
+.compare-empty .empty-sub { max-width: 34rem; margin: 0 auto; }
+
+.data-table th.pick-col, .data-table td.pick-col {
+  width: 2.6rem;
+  text-align: center;
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
+}
+.data-table th.pick-col { cursor: default; color: var(--muted); }
+.pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  cursor: pointer;
+}
+.pick input { accent-color: var(--series-1); width: 1rem; height: 1rem; cursor: pointer; }
+.pick input:disabled { cursor: not-allowed; opacity: 0.35; }
+.pick .wc-key { width: 10px; }
+.data-table tr.picked td { background: color-mix(in srgb, var(--surface) 70%, var(--series-1) 6%); }
+
+.compare-detail-row {
+  padding: var(--space-3) 0;
+  border-bottom: var(--border-w) solid var(--border);
+}
+.compare-detail-row:last-child { border-bottom: none; }
+.compare-detail-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.compare-detail-name .weapon-link { font-weight: 700; font-size: var(--fs-body); }
+.compare-detail-name .tally-row { margin: 0; }
+
+.home-aside {
+  margin-top: var(--space-4);
+  color: var(--muted);
+  font-size: var(--fs-small);
+  text-align: center;
+}
+.home-aside .linkish { font-size: inherit; }
+/* Arriving at #/compare scrolls here; clear the sticky header. */
+.stats-compare { scroll-margin-top: calc(var(--header-h) + var(--space-3)); }

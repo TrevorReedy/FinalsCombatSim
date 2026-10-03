@@ -658,16 +658,18 @@ function updateWeaponInfo(p) {
     <span class="badge">${w.type}</span>
     ${w.firing_mode ? `<span class="badge">${w.firing_mode}</span>` : ''}
     ${w.body_dmg ? `<span class="badge">DMG ${w.body_dmg}</span>` : ''}
+    ${w.pellets > 1 ? `<span class="badge">${w.pellets} × ${+(w.body_dmg / w.pellets).toFixed(1)} pellets</span>` : ''}
     ${w.head_damage ? `<span class="badge">HEAD ${w.head_damage}</span>` : ''}
     ${w.rpm ? `<span class="badge">${w.rpm} RPM</span>` : ''}
     <span class="badge ${w.class}">${spdLabel} ${spd}m/s</span>
   `;
-  // damage_reduction_at_max is stored as a fraction (0.5) for guns and as a
-  // percentage (100) for melee — normalise before showing it.
+  // damage_reduction_at_max is the fraction of damage KEPT past the curve — a
+  // fraction (0.65) or a percentage (65), and 0 for a melee reach limit, which
+  // keeps nothing past the swing.
   const rawDrop = w.damage_reduction_at_max;
   const dropPct = rawDrop == null ? null : Math.round(parseFloat(rawDrop) <= 1 ? parseFloat(rawDrop) * 100 : parseFloat(rawDrop));
   const ddInfo = w.damage_dropoff_min_range
-    ? `DROP: ${w.damage_dropoff_min_range}–${w.damage_dropoff_max_range}m${dropPct != null ? ` (−${dropPct}% dmg)` : ''}`
+    ? `DROP: ${w.damage_dropoff_min_range}–${w.damage_dropoff_max_range}m${dropPct != null ? ` (keeps ${dropPct}% dmg)` : ''}`
     : 'No dropoff data';
   note.innerHTML = ddInfo + (w.notes ? ` &nbsp;|&nbsp; ${w.notes}` : '');
   drawIdle();

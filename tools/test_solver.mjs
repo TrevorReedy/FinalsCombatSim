@@ -29,11 +29,18 @@ function parseNum(s) {
 
 const engineSrc = readFileSync(join(ROOT, 'simulate.js'), 'utf8');
 const buildEngine = new Function('CLASS_SPEED', 'CLASS_HP', 'MELEE_RANGE', 'DT', 'parseNum',
-  engineSrc + '\nreturn { simulate, getStats, dropMult, useSeededRandom };');
+  engineSrc + '\nreturn { simulate, getStats, dropMult, useSeededRandom, configureDispersion };');
 
 // The tick size is injectable so a disagreement can be tested for what it
 // is: a real difference survives a finer tick, an artefact does not.
-const engineAtTick = tick => buildEngine(CLASS_SPEED, CLASS_HP, MELEE_RANGE, tick, parseNum);
+//
+// Dispersion is switched off: these cases check the timing model with every
+// shot landing whole, and tools/test_dispersion.mjs cross-checks the cone.
+const engineAtTick = tick => {
+  const engine = buildEngine(CLASS_SPEED, CLASS_HP, MELEE_RANGE, tick, parseNum);
+  engine.configureDispersion({ enabled: false });
+  return engine;
+};
 const { simulate, getStats, dropMult } = engineAtTick(DT);
 
 const {

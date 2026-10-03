@@ -134,3 +134,12 @@ order.
 the roster, and the `Mesh_Shield` and `Dome_Shield` pages for the stats and
 their patch-history tables. Retrieved 2026-08-19, current as of game version
 11.4.1, except the Mesh's 900 as noted above.
+
+The official patch notes have since been read through **11.10.0** (2026-09-17).
+Neither shield moved. Several other items on the roster did — the Lockbolt's
+reload, the Dematerializer's and Evasive Dash's cooldowns, the Zipline's cooldown
+and placement range, Shockwave gaining a two-second glitch, the Cloaking Device
+becoming easier to spot while stationary, and the Guardian Turret going from 280
+to 300 health in 11.6.0 — and every one of them is on a `model: none` row that
+carries no numbers, so there was nothing to update. The Turret is the one to
+revisit first if a deployable ever gets simulated.

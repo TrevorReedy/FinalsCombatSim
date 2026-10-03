@@ -558,7 +558,10 @@ const PATCH_ONLY_FIELDS = [
   { key: 'precision_angle', label: 'Precision zone angle', polarity: 1 },
   { key: 'lunge_distance', label: 'Lunge distance', polarity: 1 },
   { key: 'lunge_angle', label: 'Lunge target angle', polarity: 1 },
-  { key: 'stamina_regen', label: 'Stamina regeneration', polarity: -1 }
+  { key: 'stamina_regen', label: 'Stamina regeneration', polarity: -1 },
+  // Neither direction is better on its own: a pellet-count change always
+  // comes with a damage change, and that row carries the buff or nerf.
+  { key: 'pellets', label: 'Pellet count', polarity: 0 }
 ];
 
 const PATCH_FIELDS = new Set([
@@ -632,7 +635,8 @@ const FIELD_ALIASES = {
   'lunge distance': 'lunge_distance',
   'lunge angle': 'lunge_angle', 'lunge target angle': 'lunge_angle',
   'stamina regen': 'stamina_regen', 'stamina regeneration': 'stamina_regen',
-  'stamina regeneration time': 'stamina_regen'
+  'stamina regeneration time': 'stamina_regen',
+  'pellet count': 'pellets', 'pellet': 'pellets'
 };
 
 function canonicalField(raw) {
@@ -834,12 +838,17 @@ function patchChangeEvents(id, patchRecords, snapshots) {
         .find(e => e.value != null);
 
       const meta = record.meta[field] || {};
-      const from = earlier ? earlier.value : null;
+      // A pellet count before any patch touched it comes from the alias
+      // file, since no sheet records one. It is a starting point, not a
+      // version, so it supplies the value and leaves from_version empty.
+      const baseline = !earlier && field === 'pellets' ? ALIASES.weapons[id]?.pellets ?? null : null;
+      const from = earlier ? earlier.value : baseline;
       const confirmed = shadowCheck(field, version, value);
 
       const provenance = [
         earlier?.kind === 'sheet' ? `Previous value measured in the ${earlier.version} sheet.` : null,
-        earlier ? null : 'No earlier record of this stat, so there is nothing to compare against — the patch note states where it landed, not where it came from.',
+        baseline != null ? 'Previous value is the launch pellet count in tools/weapon_aliases.json.' : null,
+        earlier || baseline != null ? null : 'No earlier record of this stat, so there is nothing to compare against — the patch note states where it landed, not where it came from.',
         confirmed && !confirmed.agrees
           ? `Stated as ${value}, but the ${confirmed.version} sheet measures ${confirmed.measured}.`
             + (confirmed.measurement_trust === 'measured'
@@ -858,9 +867,9 @@ function patchChangeEvents(id, patchRecords, snapshots) {
         field, label: fieldLabel(field),
         from,
         to: value,
-        delta: earlier ? +(value - earlier.value).toFixed(3) : null,
-        delta_pct: earlier && earlier.value
-          ? +(((value - earlier.value) / earlier.value) * 100).toFixed(1)
+        delta: from != null ? +(value - from).toFixed(3) : null,
+        delta_pct: from
+          ? +(((value - from) / from) * 100).toFixed(1)
           : null,
         // Stated by the developer rather than measured off the game, which
         // is the strongest provenance available here.
@@ -1385,6 +1394,44 @@ function validate(snapshots) {
   return report;
 }
 
+/**
+ * Walks every shotgun through every version, carrying body damage the way
+ * the UI does (a sheet replaces it, a patch overrides it) and the pellet
+ * count from its baseline through the `pellets` patch rows, and reports each
+ * version where damage over pellets is not a whole number.
+ */
+function checkPelletCounts(timeline) {
+  const versions = [...new Set(timeline.versions.map(v => v.version))].sort(compareVersions);
+  const mismatches = [];
+  let checked = 0;
+
+  for (const [id, w] of Object.entries(timeline.weapons)) {
+    if (w.pellets_baseline == null) continue;
+    let damage = null, pellets = w.pellets_baseline;
+
+    for (const version of versions) {
+      const snap = w.snapshots[version];
+      const patch = w.patches[version];
+      if (patch?.fields?.pellets != null) pellets = patch.fields.pellets;
+      if (snap?.body_dmg != null) damage = snap.body_dmg;
+      else if (patch?.fields?.body_dmg != null) damage = patch.fields.body_dmg;
+      if (damage == null || !(snap || patch)) continue;
+
+      checked++;
+      const perPellet = damage / pellets;
+      if (Math.abs(perPellet - Math.round(perPellet)) > 1e-6) {
+        mismatches.push(`${id} ${version}: ${damage} damage over ${pellets} pellets is ${perPellet.toFixed(2)} a pellet`);
+      }
+    }
+  }
+
+  return {
+    versions_checked: checked,
+    mismatches,
+    note: 'Pellet counts come from the launch count in tools/weapon_aliases.json plus `pellets` rows in csv/patches. A mismatch is a version whose body damage does not divide into whole pellets at that count.'
+  };
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // MAIN
 // ═══════════════════════════════════════════════════════════════════
@@ -1552,6 +1599,10 @@ function main() {
       // engine needs type to know what is melee, so it travels with the weapon.
       type: meta.type || null,
       firing_mode: meta.firing_mode || null,
+      // Pellet count before any patch on record; `pellets` patch rows move it
+      // from there. The UI resolves it per version — see pelletsAt().
+      pellets_baseline: meta.pellets ?? null,
+      dispersion: !!meta.dispersion,
       alias_note: ALIASES.notes[id] || null,
       snapshots: snaps,
       patches: patchRecords,
@@ -1561,6 +1612,14 @@ function main() {
       ].sort((a, b) => compareVersions(a.to_version, b.to_version))
     };
   }
+
+  // Pellet counts are reconstructed rather than measured, so they are
+  // checked against the one thing that is: body damage, the whole shot,
+  // has to split into whole pellets. A version where it does not is a
+  // missing pellet-count change or a mis-converted damage row.
+  const pelletCheck = checkPelletCounts(timeline);
+  history.validation.pellet_counts = pelletCheck;
+  writeFileSync(join(OUT_DIR, 'weapon_history.json'), JSON.stringify(history, null, 2) + '\n');
 
   writeFileSync(join(OUT_DIR, 'weapon_timeline.json'), JSON.stringify(timeline) + '\n');
   console.log(`  ${Object.keys(timeline.weapons).length} weapons  →  csv/cleaned/weapon_timeline.json`);
@@ -1577,6 +1636,8 @@ function main() {
   }
 
   console.log('\n  VALIDATION');
+  console.log(`    pellet counts: ${pelletCheck.versions_checked} weapon-versions checked, ${pelletCheck.mismatches.length} where damage does not split into whole pellets`);
+  for (const m of pelletCheck.mismatches) console.log('      ' + m);
   console.log('    8.3.0 recomputed vs published:',
     validation.recomputed_vs_published_8_3_0.stk_agreement, 'STK,',
     validation.recomputed_vs_published_8_3_0.ttk_agreement, 'TTK');

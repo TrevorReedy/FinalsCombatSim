@@ -55,7 +55,7 @@ const byName = n => {
   return w;
 };
 const stack = (...ids) => ids.length
-  ? combineSchedules(ids.map(id => resolveHealAt(timeline, id, '11.4.1')))
+  ? combineSchedules(ids.map(id => resolveHealAt(timeline, id, '11.10.0')))
   : null;
 
 let failures = 0;

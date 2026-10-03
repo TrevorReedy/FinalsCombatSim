@@ -173,20 +173,24 @@ if (s2.isMelee) {
 
 const p1InRange = !s1.isMelee || dist <= meleeRange1;
 
-if (p1InRange && rollRandom() < p1acc) {
-  const isHS = (s1.headDmg > s1.bodyDmg) && rollRandom() < p1hs;
-  const dmg  = (isHS ? s1.headDmg : s1.bodyDmg) * dropMult(dist, s1);
+const shot1 = rollShot(s1, p1acc, p1hs, dist, p1InRange, p2w.class);
+
+if (shot1.landed) {
+  const { isHS, dmg } = shot1;
   pendingDmgToP2 += dmg;
   dmg1 += dmg; hits1++;
   if (isHS) hs1count++;
   p1hit = true; p1isHS = isHS;
-  if (log) log.push({ type: isHS ? 'hs' : 'hp1', text: `[${time.toFixed(2)}s] P1 ${isHS ? '🎯 HEADSHOT' : '→ HIT'} for ${dmg.toFixed(1)} @ ${dist.toFixed(1)}m` });
+  const spread1 = s1.pellets > 1 ? ` (${shot1.pellets}/${s1.pellets} pellets)` : '';
+  if (log) log.push({ type: isHS ? 'hs' : 'hp1', text: `[${time.toFixed(2)}s] P1 ${isHS ? '🎯 HEADSHOT' : '→ HIT'} for ${dmg.toFixed(1)}${spread1} @ ${dist.toFixed(1)}m` });
   if (frames) projectiles.push({ x: (p1pos + p2pos) / 2, owner: 1, isHS, age: 0 });
 } else {
   if (log) {
     const reason = s1.isMelee && !p1InRange
       ? `OUT OF RANGE @ ${dist.toFixed(1)}m`
-      : `MISS (${mag1 === Infinity ? '∞' : mag1} left)`;
+      : shot1.onTarget
+        ? `SPREAD MISSED @ ${dist.toFixed(1)}m (${mag1 === Infinity ? '∞' : mag1} left)`
+        : `MISS (${mag1 === Infinity ? '∞' : mag1} left)`;
     log.push({ type: 'info', text: `[${time.toFixed(2)}s] P1 → ${reason}` });
   }
 }
@@ -219,20 +223,22 @@ if (p1InRange && rollRandom() < p1acc) {
 
         const p2InRange = !s2.isMelee || dist <= meleeRange2;
 
-        if (p2InRange && rollRandom() < p2acc) {
-        const isHS = (s2.headDmg > s2.bodyDmg) && rollRandom() < p2hs;
-        const dmg  = (isHS ? s2.headDmg : s2.bodyDmg) * dropMult(dist, s2);
+        const shot2 = rollShot(s2, p2acc, p2hs, dist, p2InRange, p1w.class);
+
+        if (shot2.landed) {
+        const { isHS, dmg } = shot2;
         pendingDmgToP1 += dmg;
         dmg2 += dmg; hits2++;
         if (isHS) hs2count++;
         p2hit = true; p2isHS = isHS;
-        if (log) log.push({ type: isHS ? 'hs' : 'hp2', text: `[${time.toFixed(2)}s] P2 ${isHS ? '🎯 HEADSHOT' : '→ HIT'} for ${dmg.toFixed(1)} @ ${dist.toFixed(1)}m` });
+        const spread2 = s2.pellets > 1 ? ` (${shot2.pellets}/${s2.pellets} pellets)` : '';
+        if (log) log.push({ type: isHS ? 'hs' : 'hp2', text: `[${time.toFixed(2)}s] P2 ${isHS ? '🎯 HEADSHOT' : '→ HIT'} for ${dmg.toFixed(1)}${spread2} @ ${dist.toFixed(1)}m` });
         if (frames) projectiles.push({ x: (p1pos + p2pos) / 2, owner: 2, isHS, age: 0 });
         } else {
         if (log) {
             const reason = s2.isMelee && !p2InRange
             ? `OUT OF RANGE @ ${dist.toFixed(1)}m`
-            : 'MISS';
+            : shot2.onTarget ? `SPREAD MISSED @ ${dist.toFixed(1)}m` : 'MISS';
             log.push({ type: 'info', text: `[${time.toFixed(2)}s] P2 → ${reason}` });
         }
         }
@@ -343,6 +349,92 @@ if (p1InRange && rollRandom() < p1acc) {
 }
 
 
+// ═══════════════════════════════════════════════════════════════════
+// DISPERSION
+//
+// The accuracy slider says whether the crosshair is on the target. For
+// most guns that is the whole story; for a shotgun or the minigun it is
+// only half of it, because the shot leaves the barrel as a cone and only
+// the part of the cone that overlaps the target lands.
+//
+// The model, kept deliberately simple:
+//   * the cone has a half-angle θ, so at distance d it covers a disc of
+//     radius r = d · tan θ, centred on the target;
+//   * pellets (or minigun bullets) land uniformly over that disc;
+//   * the target is a disc of radius R, set by class.
+// Each pellet then lands with probability q = min(1, (R / r)²), and the
+// pellets are independent, so a shot lands Binomial(N, q) of them.
+//
+// LIMITATION — the numbers are not measured. No source publishes per-weapon
+// spread, so every dispersed weapon shares one standard cone, calibrated to
+// the only figure anyone states: the minigun note "100% accurate only at
+// extreme close range (within ~5m)", read against a Medium. The hitbox
+// radii are placeholders of the same standing. Real patterns are not
+// uniform discs either — the Model 1887 has an inner and an outer ring. All
+// of this is user-adjustable, and switching dispersion off restores the old
+// "accuracy is the hit chance" reading exactly.
+// ═══════════════════════════════════════════════════════════════════
+const HITBOX_RADIUS = { light: 0.35, medium: 0.45, heavy: 0.55 };   // metres, placeholders
+const DISPERSION_CALIBRATION_RANGE = 5;                              // metres, minigun note
+
+const DEFAULT_DISPERSION = Object.freeze({
+  enabled: true,
+  halfAngleDeg: +(Math.atan(HITBOX_RADIUS.medium / DISPERSION_CALIBRATION_RANGE) * 180 / Math.PI).toFixed(2)
+});
+
+// One setting for the whole page. Workers have their own copy of this
+// global, so the pool hands the current value over on every job — see
+// configureDispersion() in cross_analysis_worker.js.
+let dispersionSettings = { ...DEFAULT_DISPERSION };
+
+function configureDispersion(settings) {
+  dispersionSettings = { ...DEFAULT_DISPERSION, ...(settings || {}) };
+  return dispersionSettings;
+}
+
+function currentDispersion() {
+  return { ...dispersionSettings };
+}
+
+/**
+ * Chance one pellet (or one minigun bullet) lands, given the crosshair is on
+ * a target of `targetClass` at `distance`. 1 for any weapon without a cone,
+ * and for every weapon while dispersion is switched off.
+ */
+function pelletHitChance(stats, distance, targetClass) {
+  if (!stats.dispersed || !dispersionSettings.enabled) return 1;
+  const radius = HITBOX_RADIUS[targetClass] ?? HITBOX_RADIUS.medium;
+  const spread = distance * Math.tan(dispersionSettings.halfAngleDeg * Math.PI / 180);
+  return spread <= radius ? 1 : (radius / spread) ** 2;
+}
+
+/**
+ * One trigger pull, rolled: was it on target, how many pellets connected,
+ * and what that came to. Shared by both fighters so the two sides of the
+ * duel cannot drift apart.
+ *
+ * Shotguns have no headshot bonus in any sheet, so a pellet weapon never
+ * rolls for one; the minigun is a single bullet and rolls as before once it
+ * has landed.
+ */
+function rollShot(s, acc, hsChance, dist, inRange, targetClass) {
+  if (!inRange || rollRandom() >= acc) return { landed: false, onTarget: false };
+
+  const q = pelletHitChance(s, dist, targetClass);
+  const drop = dropMult(dist, s);
+
+  if (s.pellets > 1) {
+    let pellets = 0;
+    for (let i = 0; i < s.pellets; i++) if (rollRandom() < q) pellets++;
+    if (pellets === 0) return { landed: false, onTarget: true };
+    return { landed: true, isHS: false, pellets, dmg: s.bodyDmg * (pellets / s.pellets) * drop };
+  }
+
+  if (q < 1 && rollRandom() >= q) return { landed: false, onTarget: true };
+  const isHS = (s.headDmg > s.bodyDmg) && rollRandom() < hsChance;
+  return { landed: true, isHS, pellets: 1, dmg: (isHS ? s.headDmg : s.bodyDmg) * drop };
+}
+
 function getStats(w) {
 
 
@@ -359,9 +451,24 @@ function getStats(w) {
   const bDelay = isBurst ? parseFloat(w.delay_in_bursts) : 0;
   const dropMin = parseNum(w.damage_dropoff_min_range);
   const dropMax = parseNum(w.damage_dropoff_max_range);
-  const dropR = w.damage_reduction_at_max
-    ? parseFloat(String(w.damage_reduction_at_max).replace(/[~%]/g, ''))
-    : 0;
+  // Damage KEPT at max range, as a fraction. Every source records it that way:
+  // the sheets print "~72%", the patch notes write it as a multiplier ("falloff
+  // multiplier from 0.65 to 0.7, increasing the weapon's damage at range"), and
+  // the history screen labels the column "Damage kept at max range".
+  //
+  // It used to be read here as damage LOST, which silently ran every gun at the
+  // complement of its recorded falloff — an SR-84 at 100m did 25% of its damage
+  // rather than 75% — and inverted the direction of every falloff change: the
+  // KS-23's 11.6.0 nerf came out as a buff. A melee weapon's hard reach limit is
+  // the same field with 0 in it: nothing is kept past the swing.
+  //
+  // A missing value means "no falloff recorded", which is 1 and not 0. Values
+  // above 1 are read as percentages, so "72%" and 0.72 both work.
+  const rawKeep = w.damage_reduction_at_max;
+  const parsedKeep = (rawKeep === null || rawKeep === undefined || rawKeep === '')
+    ? 1
+    : parseFloat(String(rawKeep).replace(/[~%]/g, ''));
+  const dropKeep = !Number.isFinite(parsedKeep) ? 1 : (parsedKeep > 1 ? parsedKeep / 100 : parsedKeep);
   const interval = 60 / rpm;
   const classSpd = CLASS_SPEED[w.class];
 
@@ -369,7 +476,14 @@ function getStats(w) {
   const tacticalReload = parseNum(w.tactical_reload_time) || 0;
   const emptyReload = parseNum(w.empty_reload_time) || tacticalReload || 0;
 
+  // body_dmg is the whole shot, every pellet landing — the sheets' unit.
+  // `dispersion` marks the single-bullet weapons with a cone (the minigun).
+  const pellets = Math.max(1, parseInt(w.pellets) || 1);
+  const dispersed = pellets > 1 || !!w.dispersion;
+
   return {
+    pellets,
+    dispersed,
     bodyDmg,
     headDmg,
     rpm,
@@ -380,7 +494,7 @@ function getStats(w) {
     bDelay,
     dropMin,
     dropMax,
-    dropR,
+    dropKeep,
     classSpd,
     magSize,
     tacticalReload,
@@ -391,6 +505,6 @@ function getStats(w) {
 function dropMult(dist, s) {
   if (!s.dropMin || !s.dropMax) return 1;
   if (dist <= s.dropMin) return 1;
-  if (dist >= s.dropMax) return 1 - s.dropR;
-  return 1 - ((dist - s.dropMin) / (s.dropMax - s.dropMin)) * s.dropR;
+  if (dist >= s.dropMax) return s.dropKeep;
+  return 1 - ((dist - s.dropMin) / (s.dropMax - s.dropMin)) * (1 - s.dropKeep);
 }

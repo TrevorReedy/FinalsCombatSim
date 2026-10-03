@@ -187,14 +187,14 @@ console.log('\nREPRODUCIBILITY');
 
 console.log('\nDROPOFF');
 {
-  const lh1 = byName('LH1');                       // 50m -> 55m, ~72% reduction
+  const lh1 = byName('LH1');                       // 50m -> 55m, keeps ~72%
   const s = getStats(lh1);
   const near = ttk('LH1', 'medium', { dist: 5 });
   const far = ttk('LH1', 'medium', { dist: 60 });
   const worse = far > near;
   if (!worse) failures++;
   console.log(`  ${worse ? 'PASS' : 'FAIL'}  ${'LH1 kills slower past its dropoff range'.padEnd(52)} ${near.toFixed(2)}s at 5m vs ${far.toFixed(2)}s at 60m`);
-  console.log(`        (body ${s.bodyDmg}, dropoff ${s.dropMin}-${s.dropMax}m, reduction ${s.dropR})`);
+  console.log(`        (body ${s.bodyDmg}, dropoff ${s.dropMin}-${s.dropMax}m, keeps ${s.dropKeep})`);
 }
 
 console.log(failures ? `\n${failures} FAILURE(S)\n` : '\nall checks passed\n');

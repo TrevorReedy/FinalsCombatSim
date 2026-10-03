@@ -31,9 +31,9 @@ const { resolveGadgetAt, combineShields, isLegalKit, allLegalKits, shieldCoverag
 
 const parseNum = s => { if (!s) return null; const m = String(s).match(/[\d.]+/); return m ? parseFloat(m[0]) : null; };
 const engineSrc = readFileSync(join(ROOT, 'simulate.js'), 'utf8');
-const { getStats, dropMult } = new Function(
+const { getStats, dropMult, configureDispersion, currentDispersion, pelletHitChance } = new Function(
   'CLASS_SPEED', 'CLASS_HP', 'MELEE_RANGE', 'DT', 'parseNum',
-  engineSrc + '\nreturn { simulate, getStats, dropMult, useSeededRandom };'
+  engineSrc + '\nreturn { simulate, getStats, dropMult, useSeededRandom, configureDispersion, currentDispersion, pelletHitChance };'
 )(CLASS_SPEED, CLASS_HP, MELEE_RANGE, DT, parseNum);
 
 const {
@@ -44,7 +44,7 @@ const WEAPONS = JSON.parse(readFileSync(join(ROOT, 'weapons_s10_cleaned.json'), 
 const healTimeline = JSON.parse(readFileSync(join(ROOT, 'csv', 'cleaned', 'heal_timeline.json'), 'utf8'));
 const gadgetTimeline = JSON.parse(readFileSync(join(ROOT, 'csv', 'cleaned', 'gadget_timeline.json'), 'utf8'));
 
-const VERSION = '11.4.1';
+const VERSION = '11.10.0';
 const byName = n => {
   const w = WEAPONS.find(x => x.name.toUpperCase() === n.toUpperCase());
   if (!w) throw new Error(`weapon not found: ${n}`);
@@ -313,19 +313,21 @@ console.log('\nJOB ROUND TRIP  (pool builder -> worker, no browser)');
 
 {
   const poolSrc = readFileSync(join(ROOT, 'cross_analysis_pool.js'), 'utf8');
-  const { buildSustainJobs } = new Function('navigator', 'window', 'document',
+  const { buildSustainJobs } = new Function('navigator', 'window', 'document', 'currentDispersion',
     poolSrc + '\nreturn { buildSustainJobs };'
-  )({ hardwareConcurrency: 4 }, {}, { getElementById: () => null });
+  )({ hardwareConcurrency: 4 }, {}, { getElementById: () => null }, currentDispersion);
 
   const workerSrc = readFileSync(join(ROOT, 'cross_analysis_worker.js'), 'utf8');
   const runJob = new Function(
     'importScripts', 'self', 'CLASS_HP', 'MAX_TIME', 'getStats', 'dropMult',
     'combineSchedules', 'combineShields', 'shieldCoverageAt', 'solveSurvival',
+    'configureDispersion', 'pelletHitChance',
     workerSrc + '\nreturn runJob;'
   )(
     () => {}, { addEventListener: () => {}, postMessage: () => {} },
     CLASS_HP, 20, getStats, dropMult,
-    combineSchedules, combineShields, shieldCoverageAt, solveSurvival
+    combineSchedules, combineShields, shieldCoverageAt, solveSurvival,
+    configureDispersion, pelletHitChance
   );
 
   const kit = {

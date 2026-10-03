@@ -88,6 +88,28 @@ Each screen has its own hash route (`#/help`, `#/stats`, `#/weapon/<id>`, `#/wea
   - Final range
   - Remaining HP
 
+### Pellet Dispersion
+
+Shotguns and the minigun fire from a cone, so at range only part of each shot
+lands. With dispersion on, the accuracy slider means "crosshair on the target"
+and the cone decides how much connects. Each pellet lands with chance
+`min(1, (R / (d · tan θ))²)`, where `R` is the target's hitbox radius by class
+and `θ` is the cone's half-angle. A shotgun shot lands `Binomial(pellets, q)`
+of its pellets. The toggle and the cone angle are on every simulator view, and
+switching dispersion off restores the old behaviour exactly.
+
+Pellet counts are tracked through every patch (see `csv/patches/README.md`).
+
+**Limitations:**
+
+- No source publishes per-weapon spread, so every dispersed weapon shares one
+  standard cone. The default (≈5.1°) is calibrated to the minigun note "100%
+  accurate only within ~5m" against a Medium.
+- The hitbox radii (Light 0.35m, Medium 0.45m, Heavy 0.55m) are placeholders.
+- Real patterns are not uniform discs. The Model 1887, for example, has inner
+  and outer rings.
+- Minigun spin-up is still not modelled.
+
 ---
 
 ### Multi-Run Simulation

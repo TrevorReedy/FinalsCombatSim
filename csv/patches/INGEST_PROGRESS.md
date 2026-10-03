@@ -27,13 +27,19 @@ rather than picking a side.
 
 ## Coverage
 
-Every season is ingested: **136 patch records, 1.5.1 through 11.4.1**, of which 88
+Every season is ingested: **142 patch records, 1.5.1 through 11.10.0**, of which 93
 are header-only ("read, changed no weapon stats"). Delete this file whenever you
 like — it is a working note, not part of the data.
 
 The only patches deliberately not recorded are those before the earliest data
 sheet with no bearing on any interval (1.0.0-1.5.0), and gadget/specialization
 changes throughout, which this weapons-keyed schema has no home for.
+
+Season 11 is covered to 11.10.0 (2026-09-17). Of 11.5.0-11.10.0, only **11.6.0**
+moved a weapon stat; the rest are header-only, and what they did change was
+gadgets and specializations (Lockbolt, Dematerializer, Evasive Dash, Guardian
+Turret, Zipline, Shockwave, Cloaking Device) or was scoped to Respec Order 3.0 —
+see the note on mode-scoped balance in README.md. Season 12 launches 2026-10-20.
 
 ## Remaining sheet-diff gaps
 
@@ -49,6 +55,20 @@ measuring them, so their diffs are low-confidence by construction.
 | 7.3.0 → 8.3.0 | 3 | 14 |
 | 8.3.0 → 10.0.0 | 8 | 34 |
 | 10.0.0 → 11.3.0 | 11 | 25 |
+
+Nothing measures the interval after 11.3.0 yet: 11.6.0's stated values are the
+newest records in the set and no sheet has been published since, so every one of
+them is unchecked rather than confirmed. Three are worth re-reading when one is:
+
+- **ARN-220 empty reload.** The note says "from 2.73s"; the 11.3.0 sheet measures
+  2.8s. Recorded as the stated 2.7, with both figures in the note.
+- **Riot Shield base damage.** The note says "from 58"; the records have 57 from
+  11.0.0. 11.3.0 raised the precise-hit value by 1 and looks to have raised the
+  base by 1 silently.
+- **Dual Blades per-swipe damage.** Not recorded from 11.6.0 at all, but the
+  Respec Order 3.0 post compares against 37/57 per swipe where 11.0.0 set 39/57.
+  A sheet would settle whether the main-game value moved or the blog post is
+  working from its own baseline.
 
 ## Conventions worth not re-deriving
 

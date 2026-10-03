@@ -121,7 +121,10 @@ function buildJobs(attacker, weapons, distances, profiles, speedOverride, meleeA
           // Resolved heal items, or null. Resolved on the main thread so
           // the worker never needs the timeline or the selected version.
           attackerHeal: attackerHeal || null,
-          defenderHeal: defenderHeal || null
+          defenderHeal: defenderHeal || null,
+
+          // The page's pellet-dispersion setting; workers apply it per job.
+          dispersion: currentDispersion()
         });
       });
     });
@@ -179,7 +182,8 @@ function buildSustainJobs({
               defenderHeal: kit.healItems,
               defenderShield: kit.shieldItems,
               sampleStep,
-              sampleMax
+              sampleMax,
+              dispersion: currentDispersion()
             });
           });
         });
@@ -590,6 +594,24 @@ function runCrossAnalysis(opts = {}) {
         window.LAST_RESULTS_BY_MOUNT[mountId] = finalResults;
         window.LAST_RESULTS = finalResults;
         window.LAST_ANALYSIS_SEED = analysisSeed;
+
+        // Everything needed to run this table again, for the JSON export.
+        window.LAST_RUN_SETTINGS_BY_MOUNT = window.LAST_RUN_SETTINGS_BY_MOUNT || {};
+        window.LAST_RUN_SETTINGS_BY_MOUNT[mountId] = {
+          attacker: attacker.name,
+          attacker_class: attacker.class,
+          attacker_accuracy: attackerAcc,
+          attacker_headshot: attackerHs,
+          seed: analysisSeed,
+          method: opts.method || 'exact',
+          runs_per_scenario: opts.method === 'sampled' ? RUNS : null,
+          distances,
+          aim_profiles: profiles,
+          stand_and_fight: STAND_AND_FIGHT,
+          attacker_heal: (opts.attackerHeal || []).map(item => item.id),
+          defender_heal: (opts.defenderHeal || []).map(item => item.id),
+          dispersion: typeof currentDispersion === 'function' ? currentDispersion() : null
+        };
 
         const __analysisEnd = performance.now();
         console.log(`🏁 TOTAL ANALYSIS TIME: ${(__analysisEnd - __analysisStart).toFixed(2)}ms`);

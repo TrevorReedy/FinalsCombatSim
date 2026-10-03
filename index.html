@@ -11,6 +11,8 @@
 <script src="./simulate.js" defer></script>
 <script src="./duel_solver.js" defer></script>
 <script src="./battle_simulator.js" defer></script>
+<script src="./weapon_chart.js" defer></script>
+<script src="./export.js" defer></script>
 <script src="./cross_analysis_pool.js" defer></script>
 <script src="./heatgraph.js" defer></script>
 <script src="./ui_shell.js" defer></script>
@@ -18,7 +20,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link
-    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,900;1,700&family=Share+Tech+Mono&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,900;1,700&family=Inter:wght@400;500;600;700&family=Share+Tech+Mono&display=swap"
     rel="stylesheet"
   >
 
@@ -33,7 +35,7 @@
     <nav class="topnav" id="topnav" aria-label="Sections">
       <button class="navbtn" type="button" data-route="help">Help</button>
       <button class="navbtn" type="button" data-route="stats">Stats</button>
-      <button class="navbtn" type="button" data-route="sim">Simulation</button>
+      <button class="navbtn" type="button" data-route="compare">Compare</button>
       <button class="navbtn" type="button" data-route="meta">Meta</button>
       <button class="navbtn" type="button" data-route="sustain">Sustain</button>
     </nav>
@@ -60,7 +62,7 @@
 
         <h1 class="home-title">Combat Simulator</h1>
         <p class="home-tagline">
-          A tick-accurate time-to-kill sandbox built on Season 10 weapon data.
+          A tick-accurate time-to-kill sandbox built on The Finals weapon data.
           Duel any two loadouts, or run one weapon against the entire arsenal.
         </p>
 
@@ -83,11 +85,11 @@
             <span class="menu-arrow">▶</span>
           </button>
 
-          <button class="menu-card" type="button" data-route="sim">
+          <button class="menu-card" type="button" data-route="compare">
             <span class="menu-num">03</span>
             <span class="menu-body">
-              <span class="menu-title">Simulation</span>
-              <span class="menu-desc">A single 1v1 duel played out shot by shot — or batched into a win-rate distribution.</span>
+              <span class="menu-title">Compare</span>
+              <span class="menu-desc">Put up to five weapons side by side across every patch — damage, DPS, time to kill — against the rest of the pack.</span>
             </span>
             <span class="menu-arrow">▶</span>
           </button>
@@ -111,10 +113,14 @@
           </button>
         </nav>
 
+        <p class="home-aside">
+          Want to watch a fight? <button class="linkish" type="button" data-route="sim">Open the 1v1 arena →</button>
+        </p>
+
         <div class="home-foot">
           <span id="home-weapon-count">Loading weapon data…</span>
           <span class="dot">·</span>
-          <span>Season 10.0 data sheet</span>
+          <span>The Finals data sheet</span>
           <span class="dot">·</span>
           <span>Unofficial — not affiliated with Embark Studios</span>
         </div>
@@ -139,6 +145,7 @@
                 <option value="heavy">Heavy — 350 HP</option>
               </select>
             </label>
+            <div class="chart-control" id="ttk-export-slot"></div>
           </div>
         </div>
 
@@ -292,7 +299,8 @@
 
         <div class="doc-actions">
           <button class="btn-run btn-ghost" type="button" data-route="stats">Weapon / Gadget Stats</button>
-          <button class="btn-run" type="button" data-route="sim">Start a simulation</button>
+          <button class="btn-run" type="button" data-route="compare">Compare weapons</button>
+          <button class="btn-run btn-ghost" type="button" data-route="sim">1v1 arena</button>
         </div>
       </div>
     </section>
@@ -305,10 +313,24 @@
         <div class="page-head">
           <h1 class="page-title">Weapon / Gadget Stats</h1>
           <p class="page-lead">
-            Raw Season 10 values on the left, engine-derived numbers on the right.
+            Raw values on the left, engine-derived numbers on the right.
             Click any column header to sort.
           </p>
         </div>
+
+        <section class="panel chart-panel stats-compare" id="stats-compare" aria-labelledby="stats-compare-title">
+          <div class="panel-head">
+            <div>
+              <h2 id="stats-compare-title">Compare</h2>
+              <p class="panel-sub">Tick weapons in the table · hover to read every line · click a version to see what changed for each</p>
+            </div>
+            <div class="panel-actions" id="sc-export-slot"></div>
+          </div>
+          <div class="wc-toolbar" id="sc-toolbar" role="toolbar" aria-label="Compare controls"></div>
+          <div class="wc-legend" id="sc-legend"></div>
+          <div class="chart-wrap" id="sc-chart"></div>
+          <div id="sc-detail"></div>
+        </section>
 
         <div class="stats-toolbar">
           <div class="field">
@@ -407,27 +429,29 @@
           <button class="linkish back-link" type="button" data-route="stats">← All weapons</button>
         </div>
 
-        <div class="weapon-grid">
-          <section class="panel chart-panel">
-            <div class="panel-head">
-              <h2>Stat history</h2>
-              <select id="wp-metric" aria-label="Metric to plot"></select>
-            </div>
-            <div class="chart-wrap" id="wp-chart"></div>
-            <div id="wp-chart-detail"></div>
-            <p class="doc-note" id="wp-chart-note"></p>
-          </section>
-
-          <aside class="panel hero-panel">
+        <section class="panel weapon-hero">
+          <div class="weapon-hero-id">
             <h1 class="page-title" id="wp-name">—</h1>
             <div class="weapon-badge" id="wp-badges"></div>
             <p class="page-lead" id="wp-lead"></p>
-            <div class="hero-section">
-              <div class="section-label">Jump to a version</div>
-              <div class="version-chips" id="wp-versions"></div>
+          </div>
+          <div class="hero-tiles" id="wp-tiles" aria-live="polite"></div>
+        </section>
+
+        <section class="panel chart-panel">
+          <div class="panel-head">
+            <div>
+              <h2>Stat history</h2>
+              <p class="panel-sub">Hover to read every line at a version · click to open it · click a season to zoom</p>
             </div>
-          </aside>
-        </div>
+            <div class="panel-actions" id="wp-export-slot"></div>
+          </div>
+          <div class="wc-toolbar" id="wp-toolbar" role="toolbar" aria-label="Chart controls"></div>
+          <div class="wc-legend" id="wp-legend"></div>
+          <div class="chart-wrap" id="wp-chart"></div>
+          <div id="wp-chart-detail"></div>
+          <p class="doc-note" id="wp-chart-note"></p>
+        </section>
 
         <section class="panel">
           <div class="panel-head">
@@ -452,6 +476,16 @@
             <label style="margin-top:12px;">Weapon Data Version</label>
             <select class="data-version-picker" aria-label="Weapon data version"></select>
             <p class="sidebar-hint data-version-note"></p>
+
+            <label class="check-row" style="margin-top:12px;">
+              <input type="checkbox" class="dispersion-toggle" checked>
+              <span>Pellet dispersion (shotguns, minigun)</span>
+            </label>
+            <div class="range-row">
+              <input type="range" class="dispersion-angle" min="1" max="15" step="0.1" value="5.1" aria-label="Spread cone half-angle">
+              <span class="range-val dispersion-angle-v">5.1°</span>
+            </div>
+            <p class="sidebar-hint dispersion-note"></p>
           </div>
 
           <div class="fighter-tabs">
@@ -703,6 +737,16 @@
             <select class="data-version-picker" aria-label="Weapon data version"></select>
             <p class="sidebar-hint data-version-note"></p>
 
+            <label class="check-row" style="margin-top:12px;">
+              <input type="checkbox" class="dispersion-toggle" checked>
+              <span>Pellet dispersion (shotguns, minigun)</span>
+            </label>
+            <div class="range-row">
+              <input type="range" class="dispersion-angle" min="1" max="15" step="0.1" value="5.1" aria-label="Spread cone half-angle">
+              <span class="range-val dispersion-angle-v">5.1°</span>
+            </div>
+            <p class="sidebar-hint dispersion-note"></p>
+
             <label>Class Filter</label>
             <select id="meta-class">
               <option value="">All Classes</option>
@@ -803,6 +847,16 @@
             <label style="margin-top:12px;">Weapon Data Version</label>
             <select class="data-version-picker" aria-label="Weapon data version"></select>
             <p class="sidebar-hint data-version-note"></p>
+
+            <label class="check-row" style="margin-top:12px;">
+              <input type="checkbox" class="dispersion-toggle" checked>
+              <span>Pellet dispersion (shotguns, minigun)</span>
+            </label>
+            <div class="range-row">
+              <input type="range" class="dispersion-angle" min="1" max="15" step="0.1" value="5.1" aria-label="Spread cone half-angle">
+              <span class="range-val dispersion-angle-v">5.1°</span>
+            </div>
+            <p class="sidebar-hint dispersion-note"></p>
           </div>
 
           <div class="fighter-panel active">

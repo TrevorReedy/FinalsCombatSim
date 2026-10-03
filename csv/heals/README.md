@@ -99,6 +99,10 @@ tables these rows were reconstructed from: `Healing_Beam`, `Healing_Emitter`,
 `Infuser`, `Healing_Barrel`. Retrieved 2026-08-15, current as of game version
 11.4.1.
 
+The official patch notes have since been read through **11.10.0** (2026-09-17) and
+none of them moves a number recorded here, so these rows still describe the live
+game. The wiki itself has not been re-retrieved since the date above.
+
 ## Stacking
 
 Two supports on one fighter deliver both rates. The Healing Beam and the H+

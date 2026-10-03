@@ -27,13 +27,21 @@ Valid `field` values:
     empty_reload      tactical_reload   shots_per_burst   burst_delay
     dropoff_min       dropoff_max       dropoff_reduction
 
-and four the patch notes state but no data sheet records:
+and five the patch notes state but no data sheet records:
 
     precision_angle   lunge_distance    lunge_angle       stamina_regen
+    pellets
 
-These four exist because the 11.0.0 melee rework is written almost entirely in
-terms of them. They never take part in the sheet-to-sheet diff and never get
+The first four exist because the 11.0.0 melee rework is written almost entirely
+in terms of them. They never take part in the sheet-to-sheet diff and never get
 checked against a measurement, because there is no measurement to check.
+
+`pellets` is a shotgun's pellet count. Its starting value is the `pellets`
+entry on the weapon in `tools/weapon_aliases.json` (the count before any patch
+on record), and a `pellets` row moves it from there. It is never classified as
+a buff or nerf on its own — the damage row beside it carries that. The ingest
+checks every version for body damage that does not split into whole pellets,
+which is what a missed pellet-count change looks like.
 
 Unknown weapons, field names or kinds stop the ingest with the file and line,
 rather than being skipped quietly.
@@ -110,6 +118,23 @@ of gap it is:
 
 The middle case is worth recording for a patch you have read and confirmed changes
 nothing — it is the difference between "nothing happened" and "nobody checked".
+
+### Balance that only exists in one mode
+
+Some patches ship a second set of weapon values that apply in a single game mode
+for a few weeks. The recurring case is **Respec Order**, the Light/Heavy health
+and movement test that ran in 10.3, 10.12 and again in 11.10, each time with its
+own weapon numbers, in Cashout only, expiring two updates later.
+
+None of that belongs in these files. A record here is read as the state of the
+game at a version, and there is no version at which the Respec Order values were
+*the* values — they sat beside the live ones. Writing them in would move a
+weapon's damage for every screen in the app on the strength of a two-week event
+in one mode.
+
+So a patch whose only weapon changes are mode-scoped is recorded **header-only**:
+read, and nothing moved in the core game. 10.12.0 and 11.10.0 are both that, and
+the mode's own numbers stay in its blog post, cited from `index.csv`.
 
 ## How a value gets chosen
 

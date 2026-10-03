@@ -27,6 +27,7 @@ Pike-556,dropoff_reduction,75,"Decreased damage falloff multiplier from 0.85 to 
 Pike-556,,,"Significantly reduced the amount of visual recoil experienced when aiming-down-sights, causing the bullets to land closer to where your reticle indicates",buff
 Pike-556,,,"We want to bring it back in line with other weapons and we feel these reductions to its effective range should help achieve that. We also noticed it had a stronger visual recoil than other weapons, which has been reduced to make playing the weapon feel slightly nicer.",dev
 SA1216,body_dmg,72,"Decreased pellet count from 13 to 12, so total damage per shot decreased from 78 to 72. Recorded as the per-shot total to match the sheets' column, as the note's own wording gives it.",
+SA1216,pellets,12,"Decreased pellet count from 13 to 12.",
 SA1216,dropoff_min,12.5,"Increased damage falloff minimum range from 10m to 12.5m, giving the weapon a slightly longer effective range",
 SA1216,dropoff_max,20,"Increased damage falloff max range from 15m to 20m, giving the weapon a slightly longer effective range",
 SA1216,,,"Pellet pattern has been adjusted, to move it towards a better closer-range role after the removal of a pellet",soft

@@ -15,6 +15,9 @@
     home:   { view: 'view-home',   title: 'Combat Simulator v2.0',           nav: null   },
     help:   { view: 'view-help',   title: 'Help — how the model works',       nav: 'help' },
     stats:  { view: 'view-stats',  title: 'Weapon / Gadget Stats',            nav: 'stats'},
+    // Compare is the Stats page with the comparison in focus — same view,
+    // its own nav slot and title.
+    compare:{ view: 'view-stats',  title: 'Compare weapons across patches',   nav: 'compare'},
     weapon: { view: 'view-weapon', title: 'Weapon history',                   nav: 'stats'},
     sim:    { view: 'view-sim',    title: '1v1 Simulation — visual mode',     nav: 'sim'  },
     meta:   { view: 'view-meta',   title: 'Meta Simulation — cross analysis', nav: 'meta' },
@@ -38,10 +41,13 @@
   function navigate(route, { push = true, params = [] } = {}) {
     if (!ROUTES[route]) { route = 'home'; params = []; }
 
-    Object.entries(ROUTES).forEach(([name, cfg]) => {
-      const el = document.getElementById(cfg.view);
+    // By view, not by route: two routes share the Stats view, and walking
+    // the routes would let the second one hide what the first just showed.
+    const activeView = ROUTES[route].view;
+    new Set(Object.values(ROUTES).map(cfg => cfg.view)).forEach(view => {
+      const el = document.getElementById(view);
       if (!el) return;
-      const active = name === route;
+      const active = view === activeView;
       el.classList.toggle('active', active);
       el.hidden = !active;
     });
@@ -78,10 +84,15 @@
   function onRouteEntered(route, params = []) {
     if (route === 'home') renderKillTimeChart();
     if (route === 'sim') redrawArena();
-    if (route === 'stats') { renderStatsTable(); renderHealStats(); renderGadgetStats(); loadTimeline().then(t => { if (t && currentRoute === 'stats') renderStatsTable(); }); }
+    if (route === 'stats' || route === 'compare') {
+      renderStatsTable(); renderHealStats(); renderGadgetStats();
+      loadTimeline().then(t => { if (t && (currentRoute === 'stats' || currentRoute === 'compare')) renderStatsTable(); });
+      renderStatsCompare(params);
+      if (route === 'compare') requestAnimationFrame(() => document.getElementById('stats-compare')?.scrollIntoView({ block: 'start' }));
+    }
     if (route === 'meta') updateMetaEstimate();
     if (route === 'sustain') updateSustainEstimate();
-    if (route === 'weapon') renderWeaponPage(params[0], params[1]);
+    if (route === 'weapon') renderWeaponPage(...params);
   }
 
   // Any element with data-route acts as a link.
@@ -192,13 +203,49 @@ function idealTTK(w, hp) {
 
   function dropoffText(w) {
     if (!w.damage_dropoff_min_range || !w.damage_dropoff_max_range) return '—';
-    const red = w.damage_reduction_at_max;
-    const pct = red == null ? null : Math.round(parseFloat(String(red).replace(/[~%]/g, '')) * (parseFloat(red) <= 1 ? 100 : 1));
-    return `${w.damage_dropoff_min_range}–${w.damage_dropoff_max_range}m` + (pct != null ? ` (−${pct}%)` : '');
+    // The number is damage KEPT past the curve, not damage lost, so it reads as
+    // "keeps 65%" and never as "−65%". Printing it with a minus sign was how the
+    // engine came to treat it as a loss in the first place.
+    const kept = w.damage_reduction_at_max;
+    const pct = kept == null ? null : Math.round(parseFloat(String(kept).replace(/[~%]/g, '')) * (parseFloat(kept) <= 1 ? 100 : 1));
+    return `${w.damage_dropoff_min_range}–${w.damage_dropoff_max_range}m` + (pct != null ? ` (keeps ${pct}%)` : '');
   }
 
   // ═════════════════════════════════════════════════════════════════
   // STATS TABLE
+//   const COLUMNS: ({
+//  key: string;
+//  label: string;
+//  align: string;
+//  get: (w: any) => any;
+//  fmt: (v: any) => string;
+//  html: boolean;
+//  derived?: undefined;
+// } | {
+//  key: string;
+//  label: string;
+//  align: string;
+//  derived: boolean;
+//  get: (w: any) => any;
+//  fmt: (v: any) => string;
+//  html?: undefined;
+// } | {
+//  key: string;
+//  label: string;
+//  align: string;
+//  get: (w: any) => any;
+//  fmt: (v: any) => any;
+//  html?: undefined;
+//  derived?: undefined;
+// } | {
+//  key: string;
+//  label: string;
+//  align: string;
+//  get: (w: any) => number | null;
+//  fmt: (v: any) => any;
+//  derived: boolean;
+//  html?: undefined;
+// })[]
   // ═════════════════════════════════════════════════════════════════
   const COLUMNS = [
     { key: 'name',   label: 'Weapon',  align: 'left',  get: w => w.name,
@@ -208,6 +255,7 @@ function idealTTK(w, hp) {
           ? `<button class="weapon-link" type="button" data-weapon="${esc(id)}" title="Stat history for ${esc(v)}">${esc(v)}</button>`
           : esc(v);
       }, html: true },
+
     { key: 'class',  label: 'Class',   align: 'left',  get: w => w.class,                   fmt: v => `<span class="cls ${v}">${v.toUpperCase()}</span>`, html: true },
     { key: 'type',   label: 'Type',    align: 'left',  get: w => w.type || '—',             fmt: v => v },
     { key: 'mode',   label: 'Mode',    align: 'left',  get: w => w.firing_mode || '—',      fmt: v => v },
@@ -217,10 +265,18 @@ function idealTTK(w, hp) {
     { key: 'mag',    label: 'Mag',     align: 'right', get: w => num(w.magazine_size),      fmt: v => fmt(v, 0) },
     { key: 'reload', label: 'Reload',  align: 'right', get: w => num(w.empty_reload_time) ?? num(w.tactical_reload_time), fmt: v => v == null ? '—' : v.toFixed(2) + 's' },
     { key: 'drop',   label: 'Dropoff', align: 'left',  get: w => dropoffText(w),            fmt: v => v },
+        { key: 'changes', label: 'Changes', align: 'right', derived: true,
+  get: w => {
+    const id = weaponIdFor(w.name);
+    const history = timeline?.weapons[id];
+    if (!history) return null;
+    return history.changes.filter(c => c.type === 'change').length;
+  },fmt: v => v == null ? '—' : String(v) },
     { key: 'dps',    label: 'DPS',     align: 'right', get: w => sustainedDPS(w),           fmt: v => v == null ? '—' : v.toFixed(0), derived: true },
     { key: 'ttkL',   label: `TTK ${CLASS_HP.light}`,  align: 'right', get: w => idealTTK(w, CLASS_HP.light),  fmt: v => v == null ? '—' : v.toFixed(2) + 's', derived: true },
     { key: 'ttkM',   label: `TTK ${CLASS_HP.medium}`, align: 'right', get: w => idealTTK(w, CLASS_HP.medium), fmt: v => v == null ? '—' : v.toFixed(2) + 's', derived: true },
-    { key: 'ttkH',   label: `TTK ${CLASS_HP.heavy}`,  align: 'right', get: w => idealTTK(w, CLASS_HP.heavy),  fmt: v => v == null ? '—' : v.toFixed(2) + 's', derived: true }
+    { key: 'ttkH',   label: `TTK ${CLASS_HP.heavy}`,  align: 'right', get: w => idealTTK(w, CLASS_HP.heavy),  fmt: v => v == null ? '—' : v.toFixed(2) + 's', derived: true },
+    
   ];
 
   function num(v) {
@@ -243,7 +299,7 @@ function idealTTK(w, hp) {
   function renderStatsHead() {
     const head = document.getElementById('stats-head');
     if (!head) return;
-    head.innerHTML = '<tr>' + COLUMNS.map(c => {
+    head.innerHTML = '<tr><th class="pick-col" title="Tick to compare">⇄</th>' + COLUMNS.map(c => {
       const arrow = sortKey === c.key ? (sortDir === 1 ? ' ▲' : ' ▼') : '';
       const cls = [
         'th',
@@ -254,7 +310,7 @@ function idealTTK(w, hp) {
       return `<th class="${cls}" data-sort="${c.key}">${c.label}${arrow}</th>`;
     }).join('') + '</tr>';
 
-    head.querySelectorAll('th').forEach(th => {
+    head.querySelectorAll('th[data-sort]').forEach(th => {
       th.addEventListener('click', () => {
         const key = th.dataset.sort;
         if (sortKey === key) sortDir = -sortDir;
@@ -271,7 +327,7 @@ function idealTTK(w, hp) {
 
     const all = weapons();
     if (all.length === 0) {
-      body.innerHTML = `<tr><td colspan="${COLUMNS.length}" class="table-empty">Loading weapon data…</td></tr>`;
+      body.innerHTML = `<tr><td colspan="${COLUMNS.length + 1}" class="table-empty">Loading weapon data…</td></tr>`;
       if (countEl) countEl.textContent = '—';
       return;
     }
@@ -296,17 +352,34 @@ function idealTTK(w, hp) {
       return String(va).localeCompare(String(vb)) * sortDir;
     });
 
+    // The tick box feeds the Compare panel above the table. Its colour key
+    // is the weapon's line colour there, so the two read as one thing.
+    const pickCell = w => {
+      const id = weaponIdFor(w.name);
+      if (!id || !timeline?.weapons[id]) return '<td class="pick-col"></td>';
+      const slot = statsWs.state.weapons.find(x => x.id === id)?.slot;
+      const full = !slot && statsWs.state.weapons.length >= statsWs.maxWeapons;
+      return `<td class="pick-col"><label class="pick" title="${full ? 'Five weapons is the most a chart can tell apart' : `Compare ${esc(w.name)}`}">
+        <input type="checkbox" data-pick="${esc(id)}" ${slot ? 'checked' : ''} ${full ? 'disabled' : ''} aria-label="Compare ${esc(w.name)}">
+        ${slot ? `<span class="wc-key s${slot}"></span>` : ''}</label></td>`;
+    };
+
     body.innerHTML = rows.length
-      ? rows.map(w => '<tr>' + COLUMNS.map(c => {
+      ? rows.map(w => `<tr${statsWs.has(weaponIdFor(w.name)) ? ' class="picked"' : ''}>` + pickCell(w) + COLUMNS.map(c => {
           const cls = [c.align === 'right' ? 'right' : '', c.derived ? 'derived' : ''].filter(Boolean).join(' ');
           const rendered = c.fmt(c.get(w));
           return `<td class="${cls}">${c.html ? rendered : esc(rendered)}</td>`;
         }).join('') + '</tr>').join('')
-      : `<tr><td colspan="${COLUMNS.length}" class="table-empty">No weapons match those filters.</td></tr>`;
+      : `<tr><td colspan="${COLUMNS.length + 1}" class="table-empty">No weapons match those filters.</td></tr>`;
 
     if (countEl) countEl.textContent = `${rows.length} of ${all.length} weapons`;
     renderStatsHead();
   }
+
+  document.getElementById('stats-body')?.addEventListener('change', e => {
+    const box = e.target.closest('[data-pick]');
+    if (box) statsWs.toggleWeapon(box.dataset.pick);
+  });
 
   function populateTypeFilter() {
     const sel = document.getElementById('stats-type');
@@ -413,6 +486,81 @@ function idealTTK(w, hp) {
   }
 
   document.getElementById('ttk-target')?.addEventListener('change', renderKillTimeChart);
+
+  // The bars are HTML; the exported picture is the same rows redrawn as SVG.
+  function killTimeSvg() {
+    const targetClass = document.getElementById('ttk-target')?.value || 'medium';
+    const rows = killTimeRows(targetClass);
+    if (!rows.length) return null;
+    const NS = 'http://www.w3.org/2000/svg';
+    const css = name => getComputedStyle(document.body).getPropertyValue(name).trim();
+    const colour = { light: css('--blue'), medium: css('--purple'), heavy: css('--red') };
+    const ink = css('--text'), muted = css('--muted'), border = css('--border');
+    const green = css('--green'), red = css('--red');
+    const FONT = 'Inter, system-ui, sans-serif';
+
+    const average = rows.reduce((sum, r) => sum + r.killTime, 0) / rows.length;
+    const widest = Math.max(...rows.map(r => Math.abs(r.killTime - average))) || 1;
+    const W = 860, ROW = 22, TOP = 26, NAME_W = 190, VAL_W = 150;
+    const trackX = NAME_W, trackW = W - NAME_W - VAL_W, mid = trackX + trackW / 2;
+    const H = TOP + rows.length * ROW + 6;
+
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('xmlns', NS);
+    svg.setAttribute('width', W);
+    svg.setAttribute('height', H);
+    const add = (tag, attrs, text) => {
+      const n = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+      if (text != null) n.textContent = text;
+      svg.appendChild(n);
+    };
+    add('text', { x: trackX, y: 14, fill: green, 'font-family': FONT, 'font-size': 12 }, '← kills faster');
+    add('text', { x: mid, y: 14, fill: muted, 'font-family': FONT, 'font-size': 12, 'text-anchor': 'middle' }, `average ${average.toFixed(2)}s`);
+    add('text', { x: trackX + trackW, y: 14, fill: red, 'font-family': FONT, 'font-size': 12, 'text-anchor': 'end' }, 'kills slower →');
+    add('line', { x1: mid, x2: mid, y1: TOP - 4, y2: H, stroke: muted, 'stroke-width': 1 });
+
+    rows.forEach((row, i) => {
+      const y = TOP + i * ROW;
+      const gap = row.killTime - average;
+      const w = (Math.abs(gap) / widest) * (trackW / 2);
+      const cls = row.weapon.class;
+      add('text', { x: 0, y: y + 15, fill: colour[cls], 'font-family': FONT, 'font-size': 12, 'font-weight': 700 }, cls[0].toUpperCase());
+      add('text', { x: 18, y: y + 15, fill: ink, 'font-family': FONT, 'font-size': 13 }, row.weapon.name);
+      add('rect', { x: trackX, y: y + 3, width: trackW, height: ROW - 6, fill: 'none', stroke: border });
+      add('rect', { x: gap < 0 ? mid - w : mid, y: y + 4, width: Math.max(1, w), height: ROW - 8, fill: colour[cls], opacity: gap < 0 ? 1 : 0.55 });
+      add('text', { x: trackX + trackW + 12, y: y + 15, fill: ink, 'font-family': FONT, 'font-size': 13, 'font-weight': 700 }, `${row.killTime.toFixed(2)}s`);
+      add('text', { x: W, y: y + 15, fill: gap < 0 ? green : red, 'font-family': FONT, 'font-size': 12, 'text-anchor': 'end' },
+        `${gap < 0 ? '−' : '+'}${Math.abs(gap).toFixed(2)}s`);
+    });
+    return svg;
+  }
+
+  {
+    const slot = document.getElementById('ttk-export-slot');
+    if (slot && typeof attachExportMenu === 'function') {
+      const target = () => document.getElementById('ttk-target')?.value || 'medium';
+      attachExportMenu(slot, {
+        name: () => `kill-time-vs-${target()}`,
+        title: () => ({
+          title: `Kill time vs average — shooting a ${target()[0].toUpperCase() + target().slice(1)} (${HP[target()]} HP)`,
+          subtitle: 'Ideal time to kill with every body shot landing, against the roster average'
+        }),
+        getSvg: killTimeSvg,
+        getData: () => {
+          const rows = killTimeRows(target());
+          const average = rows.reduce((sum, r) => sum + r.killTime, 0) / (rows.length || 1);
+          return {
+            rows: rows.map(r => ({
+              weapon: r.weapon.name, class: r.weapon.class, target: target(),
+              ttk: +r.killTime.toFixed(4), gap_from_average: +(r.killTime - average).toFixed(4)
+            })),
+            settings: { target_class: target(), target_hp: HP[target()], average_ttk: +average.toFixed(4), model: 'ideal TTK, every body shot lands' }
+          };
+        }
+      });
+    }
+  }
 
   // ═════════════════════════════════════════════════════════════════
   // WEAPON HISTORY
@@ -615,6 +763,21 @@ function idealTTK(w, hp) {
     return out;
   }
 
+  // Pellet count as of a version: the launch count, moved by every `pellets`
+  // patch row at or before it. Kept out of RUNTIME_FIELDS on purpose — no
+  // sheet records pellets, so a sheet replacing the carried state wholesale
+  // would wipe a count no sheet could restore.
+  function pelletsAt(weapon, version) {
+    if (weapon.pellets_baseline == null) return null;
+    let pellets = weapon.pellets_baseline;
+    for (const v of Object.keys(weapon.patches || {}).sort(compareVersions)) {
+      if (compareVersions(v, version) > 0) break;
+      const stated = weapon.patches[v].fields?.pellets;
+      if (stated != null) pellets = stated;
+    }
+    return pellets;
+  }
+
   // Builds a WEAPONS-shaped roster for a version, in the field names getStats()
   // and the rest of the engine expect.
   function materializeWeapons(version) {
@@ -648,14 +811,20 @@ function idealTTK(w, hp) {
         tactical_reload_time: f.tactical_reload,
         shots_per_burst: f.shots_per_burst,
         delay_in_bursts: f.burst_delay,
+        pellets: pelletsAt(weapon, version),
+        dispersion: !!weapon.dispersion,
         // A hard reach limit (melee swing, flamethrower cone) is engine
         // knowledge no sheet records, so it fills in only where the sheet is
         // silent — never overriding a measured dropoff curve.
+        //
+        // damage_reduction_at_max is the fraction of damage KEPT past the curve,
+        // matching the sheets and the engine, so a reach limit is 0: nothing is
+        // kept past the swing.
         damage_dropoff_min_range: f.dropoff_min ?? defaults.reach ?? null,
         damage_dropoff_max_range: f.dropoff_max ?? defaults.reach ?? null,
         damage_reduction_at_max: f.dropoff_reduction != null
           ? f.dropoff_reduction / 100
-          : (defaults.reach != null ? 1 : null),
+          : (defaults.reach != null ? 0 : null),
         notes: resolved.inheritedFrom
           ? `Not recorded in the ${version} sheet — stats carried forward from ${resolved.inheritedFrom}.`
           : null,
@@ -800,9 +969,90 @@ function idealTTK(w, hp) {
   };
   const metricPolarity = key => METRIC_POLARITY[key] ?? 1;
 
-  let activeWeaponId = null;
-  let activeVersion = null;
-  let activeMetric = 'body_dmg';
+  // ═════════════════════════════════════════════════════════════════
+  // COMPARE
+  //
+  // One comparison workspace — stacked stat panels, weapons layered in,
+  // a field band behind them — mounted in two places:
+  //
+  //   * the Compare panel on the Stats page, where every weapon is equal
+  //     and they are picked by ticking rows in the table;
+  //   * a weapon's own history page, where that weapon is fixed in place
+  //     and others are layered against it.
+  //
+  // Each mount owns its state; the code is shared. State lives in the hash
+  // so a comparison can be shared or reloaded.
+  // ═════════════════════════════════════════════════════════════════
+  const MAX_PANELS = 4;
+  const ALL_SLOTS = [1, 2, 3, 4, 5];   // the five validated series colours
+
+  // Metric groups for the "add a stat" picker.
+  const METRIC_GROUPS = [
+    { label: 'Damage', keys: ['body_dmg', 'head_dmg', 'dps', 'raw_dps', 'damage_per_mag'] },
+    { label: 'Lethality', keys: ['ttk_light', 'ttk_medium', 'ttk_heavy', 'stk_light', 'stk_medium', 'stk_heavy'] },
+    { label: 'Handling', keys: ['rpm', 'magazine_size', 'empty_reload', 'tactical_reload'] },
+    { label: 'Range', keys: ['dropoff_min', 'dropoff_max', 'dropoff_reduction'] }
+  ];
+
+  // "Why it mattered": the damage number the patch notes talk about, and the
+  // two numbers that decide fights.
+  const WHY_PRESET = ['body_dmg', 'dps', 'ttk_medium'];
+
+  // What the band behind the lines is drawn from.
+  const FIELD_OPTIONS = [
+    { key: 'off', label: 'No field' },
+    { key: 'type', label: 'Same type' },
+    { key: 'class', label: 'Same class' },
+    { key: 'all', label: 'All weapons' }
+  ];
+
+  function defaultCompare() {
+    return { metrics: ['body_dmg'], weapons: [], hidden: new Set(), mode: 'abs', baseline: null, zoom: null, table: false, field: 'off' };
+  }
+
+  // m=body_dmg,dps;w=sa1216.2,m26_matter.4;mode=pct;base=4.9.0;z=4-6;f=type;view=table
+  function serializeCompare(c) {
+    const parts = [`m=${c.metrics.join(',')}`];
+    if (c.weapons.length) parts.push(`w=${c.weapons.map(w => `${w.id}.${w.slot}`).join(',')}`);
+    if (c.mode === 'pct') parts.push('mode=pct');
+    if (c.baseline) parts.push(`base=${c.baseline}`);
+    if (c.zoom) parts.push(`z=${c.zoom[0]}-${c.zoom[1]}`);
+    if (c.field !== 'off') parts.push(`f=${c.field}`);
+    if (c.table) parts.push('view=table');
+    return parts.join(';');
+  }
+
+  function parseCompare(str, { exclude = null, slots = ALL_SLOTS } = {}) {
+    const c = defaultCompare();
+    if (!str) return c;
+    for (const part of String(str).split(';')) {
+      const [k, v = ''] = part.split('=');
+      if (k === 'm') {
+        const keys = v.split(',').filter(key => METRICS.some(m => m.key === key));
+        if (keys.length) c.metrics = [...new Set(keys)].slice(0, MAX_PANELS);
+      } else if (k === 'w') {
+        const used = new Set();
+        for (const item of v.split(',')) {
+          const [id, slotRaw] = item.split('.');
+          const slot = Number(slotRaw);
+          if (!id || id === exclude || c.weapons.some(w => w.id === id)) continue;
+          if (!slots.includes(slot) || used.has(slot)) continue;
+          used.add(slot);
+          c.weapons.push({ id, slot });
+        }
+        c.weapons = c.weapons.slice(0, slots.length);
+      } else if (k === 'mode') c.mode = v === 'pct' ? 'pct' : 'abs';
+      else if (k === 'base') c.baseline = v || null;
+      else if (k === 'z') {
+        const [a, b] = v.split('-').map(Number);
+        if (Number.isFinite(a) && Number.isFinite(b)) c.zoom = [Math.min(a, b), Math.max(a, b)];
+      } else if (k === 'f') c.field = FIELD_OPTIONS.some(o => o.key === v) ? v : 'off';
+      else if (k === 'view') c.table = v === 'table';
+    }
+    return c;
+  }
+
+  const seasonOf = v => parseInt(String(v).split('.')[0], 10) || 0;
 
   function fmtMetric(metric, v) {
     if (v == null) return '—';
@@ -810,17 +1060,594 @@ function idealTTK(w, hp) {
     return v.toFixed(digits) + (metric.unit || '');
   }
 
-  function initWeaponPage() {
-    const sel = document.getElementById('wp-metric');
-    if (!sel) return;
-    sel.innerHTML = METRICS.map(m => `<option value="${m.key}">${esc(m.label)}</option>`).join('');
-    sel.addEventListener('change', () => {
-      activeMetric = sel.value;
-      drawWeaponChart();
-    });
+  function fmtPct(v) {
+    if (v == null) return '—';
+    const a = Math.abs(v);
+    const body = a >= 10 || Number.isInteger(+a.toFixed(1)) ? a.toFixed(0) : a.toFixed(1);
+    return `${v > 0 ? '+' : v < 0 ? '−' : ''}${body}%`;
   }
 
-  function renderWeaponPage(id, version) {
+  // ── Model ────────────────────────────────────────────────────────
+  // One series per weapon per metric, indexed by the full version list. The
+  // buff/nerf call is made on the resolved line rather than on which fields
+  // a patch happened to name — a stated damage change moves DPS and TTK too,
+  // and the reader may be looking at one of those.
+  function seriesFor(id, metric, versions) {
+    const w = timeline.weapons[id];
+    if (!w) return null;
+    const resolved = statsByVersion(w);
+    const polarity = metricPolarity(metric.key);
+    const touchedAt = new Set(w.changes.filter(c => c.type !== 'coverage').map(c => c.to_version));
+
+    const values = versions.map(v => {
+      const state = resolved.get(v.version);
+      const val = state ? metric.get(state.fields, w.class) : null;
+      return Number.isFinite(val) ? val : null;
+    });
+    const kinds = new Array(versions.length).fill(null);
+    const landed = versions.map(v => touchedAt.has(v.version));
+
+    let prev = null;
+    values.forEach((val, i) => {
+      if (val == null) return;
+      if (prev != null && Math.abs(val - prev) > 1e-9) kinds[i] = Math.sign(val - prev) * polarity > 0 ? 'buff' : 'nerf';
+      else if (landed[i]) kinds[i] = 'elsewhere';
+      prev = val;
+    });
+    return { id, name: w.name, values, kinds, landed };
+  }
+
+  function chartVersions() {
+    return orderedVersions().map(v => ({ version: v, season: seasonOf(v), date: versionMeta(v)?.date || null }));
+  }
+
+  // Who the field band is made of. "Same type" and "same class" are read
+  // off a reference weapon — the page's own, or the first one picked — and
+  // the highlighted weapons are left out, so the band is the pack they are
+  // being compared against rather than partly themselves.
+  function fieldMembers(field, ref, exclude) {
+    if (field === 'off' || !timeline) return { ids: [], label: '' };
+    const refW = ref ? timeline.weapons[ref] : null;
+    const ids = Object.entries(timeline.weapons)
+      .filter(([id, w]) => !exclude.has(id) && w.type !== 'Melee')
+      .filter(([, w]) => field === 'all' || !refW
+        || (field === 'type' ? w.type === refW.type : w.class === refW.class))
+      .map(([id]) => id);
+    const label = field === 'all' || !refW ? 'All weapons'
+      : field === 'type' ? `${refW.type}s`
+      : `${refW.class[0].toUpperCase()}${refW.class.slice(1)} class`;
+    return { ids, label };
+  }
+
+  // ── Popover: one open at a time, page-wide ──
+  let openPop = null;
+
+  function closeComparePopover() {
+    if (!openPop) return;
+    openPop.el.remove();
+    openPop.button?.setAttribute('aria-expanded', 'false');
+    openPop = null;
+  }
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.wc-pop, .wc-compare-btn')) closeComparePopover();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeComparePopover(); });
+
+  /**
+   * A comparison workspace bound to a set of elements.
+   *
+   * cfg: {
+   *   ids: { toolbar, legend, chart, exportSlot },
+   *   primary: () => id | null        a weapon fixed in place, or none
+   *   isActive: () => bool            whether its page is on screen
+   *   selected: () => version | null  the version opened for reading
+   *   onSelect(version), onChange(), onWeaponsChange(), afterDraw(model)
+   *   exportName: () => string, emptyHtml, legendHint
+   * }
+   */
+  function createCompareWorkspace(cfg) {
+    const ws = { state: defaultCompare(), handle: null, model: null, tab: cfg.primary ? 'stats' : 'weapons' };
+    const $ = key => document.getElementById(cfg.ids[key]);
+    const slots = cfg.primary ? ALL_SLOTS.slice(1) : ALL_SLOTS;
+    const primaryId = () => (cfg.primary ? cfg.primary() : null);
+
+    function roster() {
+      const p = primaryId();
+      return [...(p ? [{ id: p, slot: 1, primary: true }] : []), ...ws.state.weapons];
+    }
+
+    ws.roster = roster;
+    ws.maxWeapons = slots.length;
+    ws.parse = str => {
+      ws.state = parseCompare(str, { exclude: primaryId(), slots });
+      if (timeline) ws.state.weapons = ws.state.weapons.filter(w => timeline.weapons[w.id]);
+    };
+    ws.serialize = () => serializeCompare(ws.state);
+    ws.has = id => roster().some(r => r.id === id);
+
+    ws.addWeapon = id => {
+      if (ws.has(id)) return false;
+      // The first free colour, so the weapons already on the chart keep
+      // theirs — colour follows the weapon, never its position in a list.
+      const used = new Set(ws.state.weapons.map(w => w.slot));
+      const slot = slots.find(s => !used.has(s));
+      if (!slot) return false;
+      ws.state.weapons.push({ id, slot });
+      return true;
+    };
+    ws.removeWeapon = id => {
+      ws.state.weapons = ws.state.weapons.filter(w => w.id !== id);
+      ws.state.hidden.delete(id);
+    };
+    ws.toggleWeapon = id => {
+      if (ws.state.weapons.some(w => w.id === id)) ws.removeWeapon(id);
+      else ws.addWeapon(id);
+      ws.draw();
+      cfg.onChange?.();
+      cfg.onWeaponsChange?.();
+    };
+
+    function buildModel() {
+      const versions = chartVersions();
+      const r = roster();
+      const ref = r[0]?.id || null;
+      const field = fieldMembers(ws.state.field, ref, new Set(r.map(x => x.id)));
+
+      const panels = ws.state.metrics.map(key => {
+        const metric = METRICS.find(m => m.key === key) || METRICS[0];
+        const series = r.map(({ id, slot, primary }) => {
+          const s = seriesFor(id, metric, versions);
+          return s && { ...s, slot, primary: !!primary, hidden: !primary && ws.state.hidden.has(id) };
+        }).filter(Boolean);
+        return {
+          key: metric.key,
+          label: metric.label,
+          polarity: metricPolarity(metric.key),
+          format: v => fmtMetric(metric, v),
+          formatPct: fmtPct,
+          series,
+          field: field.ids.length
+            ? { label: field.label, ids: field.ids, series: field.ids.map(id => seriesFor(id, metric, versions).values) }
+            : null
+        };
+      });
+
+      // Seasons worth drawing attention to: where the page's weapon changed,
+      // or where any picked weapon did.
+      const touchedSeasons = new Set();
+      for (const { id, primary } of r) {
+        if (primaryId() && !primary) continue;
+        for (const c of timeline.weapons[id]?.changes || []) {
+          if (c.type !== 'coverage' && c.type !== 'dev_note') touchedSeasons.add(seasonOf(c.to_version));
+        }
+      }
+
+      return {
+        versions, panels, touchedSeasons, fieldLabel: field.label, fieldCount: field.ids.length,
+        zoom: ws.state.zoom, mode: ws.state.mode, baseline: ws.state.baseline,
+        selected: cfg.selected ? cfg.selected() : null
+      };
+    }
+
+    ws.draw = () => {
+      const mount = $('chart');
+      if (!mount || !timeline || typeof WeaponChart === 'undefined') return;
+      const model = buildModel();
+      ws.model = model;
+      renderToolbar(model);
+      renderLegend(model);
+
+      if (!roster().length) {
+        ws.handle = null;
+        mount.innerHTML = cfg.emptyHtml || '';
+      } else if (ws.state.table) {
+        ws.handle = null;
+        WeaponChart.renderWeaponTable(mount, model);
+      } else {
+        ws.handle = WeaponChart.renderWeaponChart(mount, model, {
+          onSelect: version => cfg.onSelect?.(version),
+          onZoom: (season, extend) => {
+            const z = ws.state.zoom;
+            if (extend && z) ws.state.zoom = [Math.min(z[0], season), Math.max(z[1], season)];
+            else if (z && z[0] === season && z[1] === season) ws.state.zoom = null;
+            else ws.state.zoom = [season, season];
+            ws.draw();
+            cfg.onChange?.();
+          },
+          onRemovePanel: key => {
+            ws.state.metrics = ws.state.metrics.filter(k => k !== key);
+            ws.draw();
+            cfg.onChange?.();
+          }
+        });
+      }
+      cfg.afterDraw?.(model);
+    };
+
+    // ── Toolbar ──
+    function renderToolbar(model) {
+      const bar = $('toolbar');
+      if (!bar) return;
+      const st = ws.state;
+      const hasWeapons = roster().length > 0;
+
+      const withData = model.versions.filter((v, i) => model.panels.some(p => p.series.some(s => s.values[i] != null)));
+      const zoomLabel = !st.zoom ? 'All seasons'
+        : st.zoom[0] === st.zoom[1] ? `Season ${st.zoom[0]}` : `Seasons ${st.zoom[0]}–${st.zoom[1]}`;
+      const isWhy = st.metrics.length === WHY_PRESET.length && WHY_PRESET.every((k, i) => st.metrics[i] === k);
+
+      bar.innerHTML = `
+        <div class="wc-group">
+          <button class="wc-btn wc-compare-btn" type="button" aria-haspopup="dialog" aria-expanded="false">+ ${cfg.primary ? 'Compare' : 'Add'}</button>
+          ${hasWeapons ? `<button class="wc-btn wc-why${isWhy ? ' active' : ''}" type="button"
+            title="Damage per shot, sustained DPS and time to kill a Medium, stacked — follow a change from cause to effect">Why it mattered</button>` : ''}
+        </div>
+        ${hasWeapons ? `
+        <div class="wc-group wc-seg" role="group" aria-label="Value scale">
+          <button class="wc-btn${st.mode === 'abs' ? ' active' : ''}" type="button" data-mode="abs" aria-pressed="${st.mode === 'abs'}">Absolute</button>
+          <button class="wc-btn${st.mode === 'pct' ? ' active' : ''}" type="button" data-mode="pct" aria-pressed="${st.mode === 'pct'}">% change</button>
+        </div>
+        ${st.mode === 'pct' ? `
+          <label class="wc-inline">From
+            <select class="wc-baseline" aria-label="Baseline version for % change">
+              <option value="">${st.zoom ? 'start of view' : 'first on record'}</option>
+              ${withData.map(v => `<option value="${esc(v.version)}"${v.version === st.baseline ? ' selected' : ''}>${esc(v.version)}</option>`).join('')}
+            </select>
+          </label>` : ''}
+        <label class="wc-inline" title="Shade the middle half of a group of other weapons behind the lines, with its median dashed">Field
+          <select class="wc-field-select" aria-label="Field band">
+            ${FIELD_OPTIONS.map(o => `<option value="${o.key}"${o.key === st.field ? ' selected' : ''}>${o.label}</option>`).join('')}
+          </select>
+        </label>
+        <div class="wc-group">
+          <span class="wc-zoom">${esc(zoomLabel)}</span>
+          ${st.zoom ? '<button class="wc-btn wc-unzoom" type="button">Show all seasons</button>' : ''}
+        </div>
+        <div class="wc-group wc-right">
+          ${cfg.openInCompare ? '<button class="wc-btn wc-open" type="button" title="Open these weapons and stats in Compare, where no weapon is fixed in place">Open in Compare ↗</button>' : ''}
+          <div class="wc-group wc-seg" role="group" aria-label="View">
+            <button class="wc-btn${!st.table ? ' active' : ''}" type="button" data-view="chart" aria-pressed="${!st.table}">Chart</button>
+            <button class="wc-btn${st.table ? ' active' : ''}" type="button" data-view="table" aria-pressed="${st.table}">Table</button>
+          </div>
+        </div>` : ''}`;
+
+      const redraw = () => { ws.draw(); cfg.onChange?.(); };
+      bar.querySelector('.wc-compare-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        togglePopover(e.currentTarget);
+      });
+      bar.querySelector('.wc-why')?.addEventListener('click', () => {
+        st.metrics = isWhy ? ['body_dmg'] : [...WHY_PRESET];
+        redraw();
+      });
+      bar.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { st.mode = b.dataset.mode; redraw(); }));
+      bar.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => { st.table = b.dataset.view === 'table'; redraw(); }));
+      bar.querySelector('.wc-baseline')?.addEventListener('change', e => { st.baseline = e.target.value || null; redraw(); });
+      bar.querySelector('.wc-field-select')?.addEventListener('change', e => { st.field = e.target.value; redraw(); });
+      bar.querySelector('.wc-unzoom')?.addEventListener('click', () => { st.zoom = null; redraw(); });
+      bar.querySelector('.wc-open')?.addEventListener('click', () => cfg.openInCompare());
+    }
+
+    // ── Legend ──
+    // Identity is never colour alone: every line has a named chip here and
+    // a direct label at its end.
+    function renderLegend(model) {
+      const mount = $('legend');
+      if (!mount) return;
+      mount.replaceChildren();
+      for (const { id, slot, primary } of roster()) {
+        const w = timeline.weapons[id];
+        if (!w) continue;
+        const hidden = !primary && ws.state.hidden.has(id);
+        const chip = document.createElement('span');
+        chip.className = `wc-chip${hidden ? ' off' : ''}${primary ? ' primary' : ''}`;
+
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'wc-chip-main';
+        toggle.disabled = !!primary;
+        toggle.setAttribute('aria-pressed', String(!hidden));
+        toggle.title = primary ? 'This weapon' : hidden ? `Show ${w.name}` : `Hide ${w.name}`;
+        const key = document.createElement('span');
+        key.className = `wc-key s${slot}`;
+        toggle.append(key, document.createTextNode(w.name));
+        if (!primary) toggle.addEventListener('click', () => {
+          if (ws.state.hidden.has(id)) ws.state.hidden.delete(id); else ws.state.hidden.add(id);
+          ws.draw();
+        });
+        chip.appendChild(toggle);
+
+        if (!primary) {
+          const x = document.createElement('button');
+          x.type = 'button';
+          x.className = 'wc-chip-x';
+          x.textContent = '×';
+          x.setAttribute('aria-label', `Remove ${w.name}`);
+          x.addEventListener('click', () => {
+            ws.removeWeapon(id);
+            ws.draw();
+            cfg.onChange?.();
+            cfg.onWeaponsChange?.();
+          });
+          chip.appendChild(x);
+        }
+        mount.appendChild(chip);
+      }
+
+      if (model.fieldCount) {
+        const chip = document.createElement('span');
+        chip.className = 'wc-chip field';
+        const inner = document.createElement('span');
+        inner.className = 'wc-chip-main';
+        const key = document.createElement('span');
+        key.className = 'wc-key field';
+        inner.append(key, document.createTextNode(`${model.fieldLabel} — middle half & median (${model.fieldCount})`));
+        chip.appendChild(inner);
+        mount.appendChild(chip);
+      }
+
+      if (roster().length && roster().length < 2 && cfg.legendHint) {
+        const hint = document.createElement('span');
+        hint.className = 'wc-legend-hint';
+        hint.textContent = cfg.legendHint;
+        mount.appendChild(hint);
+      }
+    }
+
+    // ── Popover ──
+    function togglePopover(button) {
+      if (openPop?.ws === ws) { closeComparePopover(); return; }
+      closeComparePopover();
+      const el = document.createElement('div');
+      el.className = 'wc-pop';
+      el.setAttribute('role', 'dialog');
+      el.setAttribute('aria-label', 'Compare');
+      // Every click in here re-renders the popover, which detaches the
+      // button that was clicked — so the "click outside closes it" check
+      // would no longer find the popover above it. Clicks inside never
+      // reach that check.
+      el.addEventListener('click', e => e.stopPropagation());
+      button.setAttribute('aria-expanded', 'true');
+      $('toolbar').appendChild(el);
+      openPop = { el, button, ws };
+      renderPopover();
+    }
+
+    // The toolbar is rebuilt on every redraw, which takes the popover with
+    // it; put it back where it was, on the same tab.
+    function reopenPopover() {
+      const button = $('toolbar')?.querySelector('.wc-compare-btn');
+      if (!button) return;
+      openPop = null;
+      togglePopover(button);
+    }
+
+    function renderPopover() {
+      if (openPop?.ws !== ws) return;
+      const pop = openPop.el;
+      const st = ws.state;
+      const panelsFull = st.metrics.length >= MAX_PANELS;
+      const weaponsFull = st.weapons.length >= slots.length;
+      const ref = roster()[0]?.id ? timeline.weapons[roster()[0].id] : null;
+
+      const statsTab = METRIC_GROUPS.map(g => `
+        <div class="wc-pop-group">
+          <div class="wc-pop-label">${esc(g.label)}</div>
+          <div class="wc-pop-chips">
+            ${g.keys.map(key => {
+              const m = METRICS.find(x => x.key === key);
+              if (!m) return '';
+              const on = st.metrics.includes(key);
+              const last = on && st.metrics.length === 1;
+              return `<button type="button" class="wc-opt${on ? ' on' : ''}" data-metric="${key}" aria-pressed="${on}"
+                ${(!on && panelsFull) || last ? 'disabled' : ''}>${esc(m.label)}</button>`;
+            }).join('')}
+          </div>
+        </div>`).join('');
+
+      // Same type first — the comparison people actually want is usually
+      // "this shotgun against the other shotguns".
+      const all = Object.entries(timeline.weapons)
+        .filter(([id]) => id !== primaryId())
+        .map(([id, w]) => ({ id, name: w.name, type: w.type || 'Other' }));
+      const same = ref ? all.filter(w => w.type === ref.type) : [];
+      const byType = new Map();
+      for (const w of all) {
+        if (!byType.has(w.type)) byType.set(w.type, []);
+        byType.get(w.type).push(w);
+      }
+      const weaponBtn = w => {
+        const on = st.weapons.some(cw => cw.id === w.id);
+        return `<button type="button" class="wc-opt${on ? ' on' : ''}" data-weapon-id="${esc(w.id)}" data-name="${esc(w.name.toLowerCase())}"
+          aria-pressed="${on}" ${!on && weaponsFull ? 'disabled' : ''}>${esc(w.name)}</button>`;
+      };
+      const weaponsTab = `
+        <input type="search" class="wc-search" placeholder="Search weapons" aria-label="Search weapons">
+        ${same.length ? `<div class="wc-pop-group"><div class="wc-pop-label">${cfg.primary ? 'Other ' : 'More '}${esc(ref.type || 'weapon')}s</div>
+          <div class="wc-pop-chips">${same.sort((a, b) => a.name.localeCompare(b.name)).map(weaponBtn).join('')}</div></div>` : ''}
+        ${[...byType.entries()].filter(([t]) => !ref || t !== ref.type).sort(([a], [b]) => a.localeCompare(b)).map(([type, list]) => `
+          <div class="wc-pop-group"><div class="wc-pop-label">${esc(type)}</div>
+            <div class="wc-pop-chips">${list.sort((a, b) => a.name.localeCompare(b.name)).map(weaponBtn).join('')}</div></div>`).join('')}`;
+
+      pop.innerHTML = `
+        <div class="wc-pop-tabs" role="tablist">
+          <button type="button" role="tab" class="${ws.tab === 'weapons' ? 'active' : ''}" data-tab="weapons" aria-selected="${ws.tab === 'weapons'}">${cfg.primary ? 'Add a weapon' : 'Weapons'} <span>${st.weapons.length}/${slots.length}</span></button>
+          <button type="button" role="tab" class="${ws.tab === 'stats' ? 'active' : ''}" data-tab="stats" aria-selected="${ws.tab === 'stats'}">${cfg.primary ? 'Add a stat' : 'Stats'} <span>${st.metrics.length}/${MAX_PANELS}</span></button>
+        </div>
+        <div class="wc-pop-body">${ws.tab === 'stats' ? statsTab : weaponsTab}</div>`;
+
+      pop.querySelectorAll('[data-tab]').forEach(t => t.addEventListener('click', () => {
+        ws.tab = t.dataset.tab;
+        renderPopover();
+      }));
+      pop.querySelectorAll('[data-metric]').forEach(b => b.addEventListener('click', () => {
+        const key = b.dataset.metric;
+        st.metrics = st.metrics.includes(key) ? st.metrics.filter(k => k !== key) : [...st.metrics, key];
+        ws.draw();
+        cfg.onChange?.();
+        reopenPopover();
+      }));
+      pop.querySelectorAll('[data-weapon-id]').forEach(b => b.addEventListener('click', () => {
+        ws.toggleWeapon(b.dataset.weaponId);
+        reopenPopover();
+      }));
+      const search = pop.querySelector('.wc-search');
+      search?.addEventListener('input', () => {
+        const q = search.value.trim().toLowerCase();
+        pop.querySelectorAll('[data-weapon-id]').forEach(b => { b.hidden = q && !b.dataset.name.includes(q); });
+        pop.querySelectorAll('.wc-pop-group').forEach(g => {
+          g.hidden = !!q && ![...g.querySelectorAll('[data-weapon-id]')].some(b => !b.hidden);
+        });
+      });
+    }
+
+    // ── Export ──
+    ws.data = () => {
+      const model = ws.model || buildModel();
+      const zoomed = model.zoom ? new Set(model.versions.filter(v => v.season >= model.zoom[0] && v.season <= model.zoom[1]).map(v => v.version)) : null;
+      const baselineIndex = WeaponChart.baselineIndexFor(model);
+      const rows = [];
+      const push = (weapon, id, panel, i, value, pct, kind) => {
+        const v = model.versions[i];
+        if (zoomed && !zoomed.has(v.version)) return;
+        if (value == null) return;
+        rows.push({
+          weapon, weapon_id: id, metric: panel.label, metric_key: panel.key,
+          version: v.version, season: v.season, date: v.date || '',
+          value: +value.toFixed(4),
+          pct_change: pct == null ? '' : +pct.toFixed(3),
+          kind: kind || ''
+        });
+      };
+      for (const panel of model.panels) {
+        for (const s of panel.series) {
+          if (s.hidden) continue;
+          const pct = WeaponChart.toPercent(s.values, baselineIndex);
+          model.versions.forEach((_, i) => push(s.name, s.id, panel, i, s.values[i], pct[i], s.kinds[i]));
+        }
+        // The band as three more series, so the CSV holds what the chart
+        // shows. Its % columns are the band of each member's own % change.
+        if (panel.field) {
+          const abs = WeaponChart.fieldBand(panel.field.series, { mode: 'abs' });
+          const pct = WeaponChart.fieldBand(panel.field.series, { mode: 'pct', baselineIndex });
+          for (const [part, q] of [['p25', 'lo'], ['median', 'mid'], ['p75', 'hi']]) {
+            model.versions.forEach((_, i) => push(`${panel.field.label} ${part}`, `field_${part}`, panel, i, abs[q][i], pct[q][i], ''));
+          }
+        }
+      }
+      return {
+        rows,
+        settings: {
+          primary: primaryId(),
+          compare: ws.serialize(),
+          hash: location.hash,
+          metrics: ws.state.metrics,
+          weapons: ws.state.weapons,
+          hidden: [...ws.state.hidden],
+          mode: ws.state.mode,
+          baseline: ws.state.baseline,
+          zoom: ws.state.zoom,
+          field: ws.state.field,
+          field_members: model.panels[0]?.field?.ids || [],
+          selected_version: cfg.selected ? cfg.selected() : null
+        }
+      };
+    };
+
+    ws.attachExport = () => {
+      const slot = $('exportSlot');
+      if (!slot || typeof attachExportMenu !== 'function' || slot.dataset.attached) return;
+      slot.dataset.attached = '1';
+      attachExportMenu(slot, {
+        name: () => cfg.exportName(),
+        title: () => {
+          const names = roster().map(r => timeline.weapons[r.id]?.name).filter(Boolean);
+          const stats = ws.state.metrics.map(k => METRICS.find(m => m.key === k)?.label).filter(Boolean);
+          const st = ws.state;
+          return {
+            title: `${names.join(' vs ') || 'Compare'} — stat history`,
+            subtitle: [
+              stats.join(' · '),
+              st.mode === 'pct' ? `% change from ${st.baseline || (st.zoom ? 'start of view' : 'first on record')}` : null,
+              st.zoom ? `Seasons ${st.zoom[0]}–${st.zoom[1]}` : null,
+              ws.model?.fieldCount ? `band: middle half of ${ws.model.fieldLabel.toLowerCase()}` : null
+            ].filter(Boolean).join(' · ')
+          };
+        },
+        getSvg: () => {
+          if (!ws.handle && roster().length) { ws.state.table = false; ws.draw(); cfg.onChange?.(); }
+          return ws.handle ? ws.handle.composeSvg() : null;
+        },
+        getData: () => ws.data()
+      });
+    };
+
+    // The chart draws at real pixel width, so a resize is a redraw.
+    if (typeof ResizeObserver !== 'undefined') {
+      let lastWidth = 0, frame = 0;
+      const mount = $('chart');
+      if (mount) new ResizeObserver(entries => {
+        const w = Math.round(entries[0].contentRect.width);
+        if (!w || Math.abs(w - lastWidth) < 2) return;
+        lastWidth = w;
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(() => { if (cfg.isActive()) ws.draw(); });
+      }).observe(mount);
+    }
+
+    return ws;
+  }
+
+  // ═════════════════════════════════════════════════════════════════
+  // WEAPON HISTORY PAGE
+  // ═════════════════════════════════════════════════════════════════
+  let activeWeaponId = null;
+  let expandedVersion = null;
+
+  const weaponWs = createCompareWorkspace({
+    ids: { toolbar: 'wp-toolbar', legend: 'wp-legend', chart: 'wp-chart', exportSlot: 'wp-export-slot' },
+    primary: () => activeWeaponId,
+    isActive: () => currentRoute === 'weapon',
+    selected: () => expandedVersion,
+    onSelect: version => selectChartVersion(version),
+    onChange: () => syncWeaponHash(),
+    afterDraw: model => {
+      const weapon = timeline?.weapons[activeWeaponId];
+      if (!weapon) return;
+      renderChartDetail(weapon);
+      renderHeroTiles(weapon);
+      renderWeaponNote(weapon, model);
+    },
+    // Moves this comparison to the Stats page, where the page's weapon
+    // becomes one weapon among equals.
+    openInCompare: () => {
+      const st = weaponWs.state;
+      const c = { ...defaultCompare(), metrics: [...st.metrics], mode: st.mode, baseline: st.baseline, zoom: st.zoom, field: st.field };
+      c.weapons = [{ id: activeWeaponId, slot: 1 }, ...st.weapons.map(w => ({ id: w.id, slot: w.slot }))];
+      navigate('compare', { params: ['-', serializeCompare(c)] });
+    },
+    exportName: () => `weapon-${activeWeaponId}`,
+    legendHint: 'Use Compare to layer in other weapons or stats, or Field to shade the pack behind it.'
+  });
+
+  // Rewrites the hash in place — no history entry per click, and no
+  // hashchange, so the page is not torn down and rebuilt.
+  function syncWeaponHash() {
+    if (currentRoute !== 'weapon' || !activeWeaponId) return;
+    const params = [activeWeaponId, expandedVersion || '-', weaponWs.serialize()];
+    currentParams = params;
+    history.replaceState(null, '', hashFor('weapon', params));
+  }
+
+  function drawWeaponChart() { weaponWs.draw(); }
+
+  function initWeaponPage() {
+    // Nothing to set up any more: each compare workspace wires its own
+    // resize handling, and the popover listeners are page-wide.
+  }
+
+  function renderWeaponPage(id, ...rest) {
     loadTimeline().then(() => {
       const nameEl = document.getElementById('wp-name');
       const chartEl = document.getElementById('wp-chart');
@@ -832,7 +1659,6 @@ function idealTTK(w, hp) {
         chartEl.innerHTML = '';
         document.getElementById('wp-chart-detail').innerHTML = '';
         document.getElementById('wp-changes').innerHTML = '';
-        document.getElementById('wp-versions').innerHTML = '';
         return;
       }
 
@@ -843,289 +1669,129 @@ function idealTTK(w, hp) {
         return;
       }
 
-      activeWeaponId = id;
-      const availableVersions = Object.keys(weapon.snapshots);
-      // Some sheets list a weapon with no numbers at all (11.3.0 records melee
-      // shots-to-kill only). Landing on a blank snapshot would look broken, so
-      // default to the newest version that actually carries data.
-      const withData = availableVersions.filter(v => {
-        const s = weapon.snapshots[v];
-        return s.body_dmg != null || s.rpm != null;
-      });
-      activeVersion = version && weapon.snapshots[version]
-        ? version
-        : (withData[withData.length - 1] || availableVersions[availableVersions.length - 1]);
+      // Params after the id: an optional version (or "-") and an optional
+      // compare string, recognisable by its "=".
+      const cmpParam = rest.find(p => p && p.includes('='));
+      const versionParam = rest.find(p => p && !p.includes('=') && p !== '-');
 
+      const switched = id !== activeWeaponId;
+      activeWeaponId = id;
+      if (switched || cmpParam) weaponWs.parse(cmpParam);
+      expandedVersion = versionParam && orderedVersions().includes(versionParam) ? versionParam : null;
+
+      const availableVersions = Object.keys(weapon.snapshots);
       nameEl.textContent = weapon.name;
       document.getElementById('wp-badges').innerHTML = `
         <span class="badge ${weapon.class}">${weapon.class} — ${HP[weapon.class]}HP</span>
+        ${weapon.type ? `<span class="badge">${esc(weapon.type)}</span>` : ''}
         <span class="badge">measured in ${availableVersions.length} of ${orderedVersions().length} versions</span>
         <span class="badge" title="The version the simulator is currently running on">sim: ${esc(activeDataVersion)}</span>
         <span class="badge">${(n => `${n} recorded change${n === 1 ? '' : 's'}`)(weapon.changes.filter(c => c.type === 'change').length)}</span>
       `;
       document.getElementById('wp-lead').textContent = weapon.alias_note
-        || `Tracked across the community data sheets from ${availableVersions[0]} to ${availableVersions[availableVersions.length - 1]}.`;
+        || `Tracked across the community data sheets from ${availableVersions[0]} to ${availableVersions[availableVersions.length - 1]}, with every patch note in between.`;
 
-      document.getElementById('wp-metric').value = activeMetric;
-      expandedVersion = null;
-      drawWeaponChart();
-      renderVersionChips(weapon);
+      weaponWs.draw();
       renderLedgerFilters(weapon);
       renderChangeLog(weapon);
+      weaponWs.attachExport();
+      syncWeaponHash();
     });
   }
 
-  // ── Chart ────────────────────────────────────────────────────────
-  function drawWeaponChart() {
-    const mount = document.getElementById('wp-chart');
+  // The headline under the chart reads the first panel's line for this weapon.
+  function renderWeaponNote(weapon, model) {
     const noteEl = document.getElementById('wp-chart-note');
-    const weapon = timeline?.weapons[activeWeaponId];
-    if (!mount || !weapon) return;
-
-    const metric = METRICS.find(m => m.key === activeMetric) || METRICS[0];
-    const versions = orderedVersions();
-    const resolved = statsByVersion(weapon);
-    const polarity = metricPolarity(metric.key);
-
-    // Every version gets a value, not just the ones a sheet measured — that is
-    // the whole point of folding the patch records in.
-    const points = versions.map((v, i) => {
-      const state = resolved.get(v);
-      const value = state ? metric.get(state.fields, weapon.class) : null;
-      const landed = weapon.changes.filter(c => c.to_version === v && c.type !== 'coverage');
-      return {
-        version: v, i,
-        value: Number.isFinite(value) ? value : null,
-        carried: !!state?.carried,
-        // Stated HERE, not merely inherited from a patch further back — every
-        // version after a patch keeps pointing at it as the source.
-        stated: state?.source?.kind === 'patch' && !state.carried,
-        disputed: !!weapon.snapshots[v]?.rpm_disputed,
-        landed
-      };
-    });
-
-    // What happened to THIS metric at each version, judged by the resolved line
-    // rather than by which fields the patch happened to name — a stated damage
-    // change moves DPS and TTK too, and the reader is looking at one of those.
-    let prevValue = null;
-    for (const p of points) {
-      if (p.value == null) continue;
-      if (prevValue != null && Math.abs(p.value - prevValue) > 1e-9) {
-        p.moved = true;
-        p.kind = Math.sign(p.value - prevValue) * polarity > 0 ? 'buff' : 'nerf';
-      } else if (p.landed.length) {
-        // Touched here, but nothing this metric can show.
-        p.kind = 'elsewhere';
-      }
-      prevValue = p.value;
-    }
-
-    const present = points.filter(p => p.value != null);
-    if (present.length === 0) {
-      mount.innerHTML = `<div class="empty-state"><div class="empty-icon">◌</div>
-        <div class="empty-title">No data for this metric</div>
-        <div class="empty-sub">None of the sheets covering ${esc(weapon.name)} record ${esc(metric.label.toLowerCase())}.</div></div>`;
-      noteEl.textContent = '';
+    if (!noteEl) return;
+    const panel = model.panels[0];
+    const primary = panel?.series.find(s => s.primary);
+    const metric = METRICS.find(m => m.key === panel?.key);
+    const present = primary ? primary.values.map((value, i) => ({ value, version: model.versions[i].version })).filter(p => p.value != null) : [];
+    if (!present.length) {
+      noteEl.textContent = primary ? `None of the sheets covering ${weapon.name} record ${metric.label.toLowerCase()}.` : '';
       return;
     }
 
-    // Deeper bottom padding than a plain chart needs: the version ticks sit on
-    // three alternating rows so adjacent updates do not collide, and the season
-    // band labels get a row of their own beneath them.
-    const W = 1100, H = 430, pad = { l: 64, r: 26, t: 28, b: 104 };
-    const TICK_ROWS = 3;
-    const plotW = W - pad.l - pad.r, plotH = H - pad.t - pad.b;
-
-    let min = Math.min(...present.map(p => p.value));
-    let max = Math.max(...present.map(p => p.value));
-    if (min === max) { min = min - Math.abs(min || 1) * 0.2; max = max + Math.abs(max || 1) * 0.2; }
-    else { const padding = (max - min) * 0.15; min -= padding; max += padding; }
-    if (min > 0 && min < (max - min)) min = 0;   // keep bar-like metrics honest about zero
-
-    // ── Season bands ──
-    // Spacing versions by their position in a flat list makes the axis a
-    // popularity contest: season 9 shipped 15 patches and season 1 shipped 9,
-    // so a flat axis silently gives season 9 nearly twice the width and squeezes
-    // the early history into a corner. Each season instead gets an equal band
-    // with its versions spread evenly inside it. The axis is then ordinal, not a
-    // time scale — it reads as "when in the game's life", which is the question
-    // this chart is actually asked.
-    const seasonOf = v => parseInt(String(v).split('.')[0], 10) || 0;
-    const seasons = [...new Set(versions.map(seasonOf))].sort((a, b) => a - b);
-    const bandW = plotW / seasons.length;
-
-    const slotX = new Map();
-    const bandOf = new Map();
-    seasons.forEach((season, si) => {
-      const inSeason = versions.filter(v => seasonOf(v) === season);
-      bandOf.set(season, { start: pad.l + si * bandW, index: si });
-      inSeason.forEach((v, j) => {
-        slotX.set(v, pad.l + si * bandW + ((j + 0.5) / inSeason.length) * bandW);
-      });
-    });
-
-    const x = i => slotX.get(versions[i]) ?? pad.l + plotW / 2;
-    const y = v => pad.t + plotH - ((v - min) / (max - min)) * plotH;
-
-    const ticks = 4;
-    let grid = '';
-    for (let t = 0; t <= ticks; t++) {
-      const value = min + ((max - min) * t) / ticks;
-      const yy = y(value);
-      grid += `<line class="chart-grid" x1="${pad.l}" y1="${yy}" x2="${W - pad.r}" y2="${yy}" />`;
-      grid += `<text class="chart-axis" x="${pad.l - 10}" y="${yy + 4}" text-anchor="end">${fmtMetric(metric, value)}</text>`;
-    }
-
-    // Segments are drawn one at a time so a gap in coverage shows as a dashed
-    // connector instead of pretending the value moved smoothly.
-    let lines = '';
-    for (let a = 0; a < present.length - 1; a++) {
-      const p1 = present[a], p2 = present[a + 1];
-      const gap = p2.i - p1.i > 1;
-      lines += `<line class="chart-line${gap ? ' gap' : ''}" x1="${x(p1.i)}" y1="${y(p1.value)}" x2="${x(p2.i)}" y2="${y(p2.value)}" />`;
-    }
-
-    const GLYPH = { buff: '↑', nerf: '↓', soft: '—', elsewhere: '·' };
-
-    // An update is a version where something happened to this weapon. Those get
-    // a full marker, a label and a click target; every other version stays a
-    // plain dot so the eye goes to the events rather than to the grid.
-    const dots = present.map(p => {
-      const isUpdate = p.landed.length > 0;
-      const tone = p.kind || 'soft';
-      const summary = p.landed.length
-        ? `${p.landed.length} change${p.landed.length === 1 ? '' : 's'}`
-        : 'no recorded change';
-
-      if (!isUpdate) {
-        return `<circle class="chart-dot${p.carried ? ' carried' : ''}" cx="${x(p.i)}" cy="${y(p.value)}" r="2.5">
-          <title>${esc(p.version)} — ${esc(fmtMetric(metric, p.value))} (carried forward, ${esc(summary)})</title></circle>`;
-      }
-
-      return `<g class="chart-mark ${tone}${p.version === activeVersion ? ' selected' : ''}"
-          role="button" tabindex="0" data-version="${esc(p.version)}"
-          aria-label="${esc(p.version)}: ${esc(fmtMetric(metric, p.value))}, ${esc(summary)}">
-        <circle class="hit" cx="${x(p.i)}" cy="${y(p.value)}" r="14" />
-        <circle class="ring" cx="${x(p.i)}" cy="${y(p.value)}" r="6.5" />
-        <circle class="core" cx="${x(p.i)}" cy="${y(p.value)}" r="4.5" />
-        <title>${esc(p.version)} — ${esc(fmtMetric(metric, p.value))}${p.moved ? '' : ' (unchanged on this metric)'}, ${esc(summary)}${p.disputed ? ' · disputed source value' : ''}</title>
-      </g>`;
-    }).join('');
-
-    // Direct-label only the updates that actually moved this metric, plus the
-    // endpoints. A number over all 29 versions is unreadable.
-    const labelled = new Set([present[0], present[present.length - 1], ...present.filter(p => p.moved)]);
-    const valueLabels = [...labelled].map(p => `
-      <text class="chart-value ${p.kind || ''}" x="${x(p.i)}" y="${y(p.value) - 13}"
-        text-anchor="middle">${esc(fmtMetric(metric, p.value))}</text>`).join('');
-
-    // Version ticks, only where something landed — a label per version would be
-    // mush. The trailing ".0" is dropped because it is the same on almost every
-    // version and buys nothing but width; the full number stays in the tooltip.
-    const updates = points.filter(p => p.landed.length && p.value != null);
-    const shortVersion = v => v.replace(/\.0$/, '');
-    const xLabels = updates.map((p, n) => `
-      <g class="chart-xlabel ${p.kind || 'soft'}${p.version === activeVersion ? ' selected' : ''}"
-         role="button" tabindex="0" data-version="${esc(p.version)}">
-        <text x="${x(p.i)}" y="${H - 6 - (TICK_ROWS - 1 - (n % TICK_ROWS)) * 14}" text-anchor="middle">
-          <tspan class="glyph">${GLYPH[p.kind] || GLYPH.soft}</tspan> ${esc(shortVersion(p.version))}
-          <title>${esc(p.version)}</title></text>
-      </g>`).join('');
-
-    // Alternating fills rather than divider rules: a band you can see the width
-    // of tells you which season a point sits in without tracing a line down to
-    // the axis, and it stays readable behind the plot.
-    const seasonBands = seasons.map(season => {
-      const { start, index } = bandOf.get(season);
-      const hasUpdate = updates.some(p => seasonOf(p.version) === season);
-      return `
-        <g class="season-band${index % 2 ? ' alt' : ''}${hasUpdate ? ' live' : ''}">
-          <rect x="${start}" y="${pad.t}" width="${bandW}" height="${plotH}" />
-          <text x="${start + bandW / 2}" y="${H - 6}" text-anchor="middle">S${season}</text>
-        </g>`;
-    }).join('');
-
-    mount.innerHTML = `
-      <svg viewBox="0 0 ${W} ${H}" role="img"
-        aria-label="${esc(metric.label)} for ${esc(weapon.name)} across ${versions.length} versions in ${seasons.length} seasons, ${updates.length} of them updates">
-        ${seasonBands}
-        ${grid}
-        <line class="chart-axis-line" x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${pad.t + plotH}" />
-        <line class="chart-axis-line" x1="${pad.l}" y1="${pad.t + plotH}" x2="${W - pad.r}" y2="${pad.t + plotH}" />
-        ${lines}${dots}${valueLabels}${xLabels}
-      </svg>`;
-
-    // Marker and axis tick are two handles on the same thing, so both open it.
-    mount.querySelectorAll('[data-version]').forEach(el => {
-      const open = () => selectChartVersion(el.dataset.version);
-      el.addEventListener('click', open);
-      el.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
-      });
-    });
-
-    renderChartDetail(weapon);
-
-    const missing = points.filter(p => p.value == null).map(p => p.version);
     const first = present[0], last = present[present.length - 1];
     const change = last.value - first.value;
     const pctChange = first.value ? ((change / first.value) * 100).toFixed(1) : null;
-
-    // Endpoints matching does not mean the value never moved, so check the
-    // whole series before claiming anything was unchanged.
     const flat = present.every(p => p.value === first.value);
     const peak = present.reduce((a, b) => (b.value > a.value ? b : a));
     const low = present.reduce((a, b) => (b.value < a.value ? b : a));
-    const excursion = peak.value > Math.max(first.value, last.value)
-      || low.value < Math.min(first.value, last.value);
+    const excursion = peak.value > Math.max(first.value, last.value) || low.value < Math.min(first.value, last.value);
+    const moves = primary.kinds.filter(k => k === 'buff' || k === 'nerf').length;
 
     const headline = flat
-      ? `Unchanged at ${fmtMetric(metric, first.value)} across every version on record.`
+      ? `${esc(weapon.name)}'s ${esc(metric.label.toLowerCase())} has been ${fmtMetric(metric, first.value)} in every version on record.`
       : `${esc(metric.label)}: ${fmtMetric(metric, first.value)} at ${first.version} → ${fmtMetric(metric, last.value)} at ${last.version}`
-        + (change === 0
-          ? ' — back where it started.'
-          : ` (${change > 0 ? '+' : ''}${fmtMetric(metric, change)}${pctChange ? `, ${change > 0 ? '+' : ''}${pctChange}%` : ''}).`);
-
+        + (change === 0 ? ' — back where it started' : ` (${change > 0 ? '+' : ''}${fmtMetric(metric, change)}${pctChange ? `, ${change > 0 ? '+' : ''}${pctChange}%` : ''})`)
+        + `, across ${moves} change${moves === 1 ? '' : 's'}.`;
     const excursionNote = !flat && excursion
       ? ` Peaked at ${fmtMetric(metric, peak.value)} in ${peak.version}, lowest ${fmtMetric(metric, low.value)} in ${low.version}.`
       : '';
-
-    // The line is two kinds of evidence spliced together, and saying which is
-    // which matters more than the shape does: a measured point is somebody
-    // capturing the game, a stated one is the developers describing it.
-    const measured = present.filter(p => !p.carried && !p.stated).length;
-    const stated = present.filter(p => p.stated).length;
+    const firstIdx = model.versions.findIndex(v => v.version === first.version);
 
     noteEl.innerHTML = [
       headline + excursionNote,
-      `Plotted across ${present.length} versions — ${measured} measured from a data sheet, ${stated} stated in a patch note, the rest carried forward unchanged.`,
-      updates.length ? `${updates.length} update${updates.length === 1 ? '' : 's'} touched this weapon; click one to read what landed.` : '',
-      missing.length ? `Nothing recorded before ${first.version} (${missing.length} earlier version${missing.length === 1 ? '' : 's'}); dashed segments span a coverage gap, not a straight-line change.` : ''
+      firstIdx > 0 ? `Nothing recorded before ${first.version}; dashed segments span a gap in coverage, not a straight-line change.` : ''
     ].filter(Boolean).join(' ');
   }
 
-  // ── Update detail, expanded from the chart ───────────────────────
-  let expandedVersion = null;
+  // ── Hero tiles ───────────────────────────────────────────────────
+  // The numbers that decide fights, at the version being looked at, each
+  // with how it moved at the last change.
+  const HERO_METRICS = ['body_dmg', 'dps', 'ttk_medium', 'rpm'];
 
+  function renderHeroTiles(weapon) {
+    const mount = document.getElementById('wp-tiles');
+    if (!mount) return;
+    const versions = orderedVersions();
+    const resolved = statsByVersion(weapon);
+    const at = expandedVersion && resolved.get(expandedVersion)
+      ? expandedVersion
+      : [...versions].reverse().find(v => resolved.get(v)) || null;
+    if (!at) { mount.innerHTML = ''; return; }
+
+    mount.innerHTML = HERO_METRICS.map(key => {
+      const metric = METRICS.find(m => m.key === key);
+      const valueAt = v => { const st = resolved.get(v); const x = st ? metric.get(st.fields, weapon.class) : null; return Number.isFinite(x) ? x : null; };
+      const value = valueAt(at);
+      // The change that set this number: walk back to the last version with
+      // a different value; the one after it is where the change landed.
+      let prev = null, prevVersion = null;
+      for (let i = versions.indexOf(at) - 1; i >= 0; i--) {
+        const x = valueAt(versions[i]);
+        if (x != null && value != null && Math.abs(x - value) > 1e-9) { prev = x; prevVersion = versions[i + 1]; break; }
+      }
+      let delta = '';
+      if (prev != null) {
+        const better = Math.sign(value - prev) * metricPolarity(key) > 0;
+        const kind = better ? 'buff' : 'nerf';
+        const d = value - prev;
+        delta = `<span class="tile-delta ${kind}"><span class="glyph">${KIND_MARK[kind].glyph}</span>${d > 0 ? '+' : '−'}${fmtMetric(metric, Math.abs(d))} in ${esc(prevVersion)}</span>`;
+      }
+      return `<div class="hero-tile">
+        <div class="tile-label">${esc(metric.label)}</div>
+        <div class="tile-value">${fmtMetric(metric, value)}</div>
+        ${delta || '<span class="tile-delta flat">unchanged on record</span>'}
+      </div>`;
+    }).join('') + `<div class="tile-at">at ${esc(at)}${expandedVersion ? '' : ' (latest)'}</div>`;
+  }
+
+  // ── Update detail, expanded from the chart ───────────────────────
   function selectChartVersion(version, opts = {}) {
     // Clicking the open one closes it, so the chart can be read unobstructed.
-    // Clicking the open one closes it — except when the click came from a
-    // version chip, where "snap to this" should never mean "close it".
-    expandedVersion = (expandedVersion === version && opts.scrollTo !== 'chart') ? null : version;
+    expandedVersion = expandedVersion === version ? null : version;
     const weapon = timeline?.weapons[activeWeaponId];
     if (!weapon) return;
-    drawWeaponChart();
-    // The chart, the chips and the ledger are three views of one selection, so
-    // opening an update in any of them opens it in all.
-    renderVersionChips(weapon);
+    weaponWs.draw();
+    // The chart and the ledger are two views of one selection, so opening
+    // an update in either opens it in both.
     renderChangeLog(weapon);
+    syncWeaponHash();
     if (!expandedVersion) return;
-
-    const target = opts.scrollTo === 'chart'
-      ? document.getElementById('wp-chart')
-      : document.getElementById('wp-chart-detail');
-    target?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    document.getElementById(opts.scrollTo === 'chart' ? 'wp-chart' : 'wp-chart-detail')
+      ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 
   // Where a version is both, the two entries carry different halves of the
@@ -1140,29 +1806,92 @@ function idealTTK(w, hp) {
     return merged;
   }
 
+  // ── What a change did ────────────────────────────────────────────
+  // The patch notes say "damage 128 → 117". What a player feels is the
+  // consequence: DPS, time to kill, and above all the shots-to-kill
+  // breakpoints. This compares the weapon's resolved state just before a
+  // version with its state at it, across the derived numbers.
+  const IMPACT_METRICS = ['body_dmg', 'dps', 'ttk_light', 'ttk_medium', 'ttk_heavy',
+    'stk_light', 'stk_medium', 'stk_heavy', 'damage_per_mag', 'rpm', 'magazine_size'];
+
+  function impactOf(weapon, version) {
+    const versions = orderedVersions();
+    const i = versions.indexOf(version);
+    if (i <= 0) return [];
+    const resolved = statsByVersion(weapon);
+    const before = resolved.get(versions[i - 1]);
+    const after = resolved.get(version);
+    if (!before || !after) return [];
+
+    const out = [];
+    for (const key of IMPACT_METRICS) {
+      const metric = METRICS.find(m => m.key === key);
+      const a = metric.get(before.fields, weapon.class);
+      const b = metric.get(after.fields, weapon.class);
+      if (!Number.isFinite(a) || !Number.isFinite(b) || Math.abs(a - b) < 1e-9) continue;
+      const kind = Math.sign(b - a) * metricPolarity(key) > 0 ? 'buff' : 'nerf';
+      const stk = key.startsWith('stk_');
+      out.push({
+        key, label: metric.label, from: a, to: b, kind,
+        text: stk
+          ? `now a ${b}-shot vs ${key.slice(4)[0].toUpperCase() + key.slice(5)} (was ${a})`
+          : `${fmtMetric(metric, a)} → ${fmtMetric(metric, b)}`,
+        pct: a ? ((b - a) / Math.abs(a)) * 100 : null,
+        breakpoint: stk
+      });
+    }
+    // Breakpoints first: they are the part of a change you feel in a fight.
+    return out.sort((x, y) => Number(y.breakpoint) - Number(x.breakpoint));
+  }
+
+  function impactHtml(weapon, version, compact = false) {
+    const items = impactOf(weapon, version);
+    if (!items.length) return '';
+    return `<div class="impact${compact ? ' compact' : ''}">
+      <div class="section-label">What this did</div>
+      <div class="impact-list">${items.map(it => `
+        <span class="impact-item ${it.kind}${it.breakpoint ? ' breakpoint' : ''}">
+          <span class="glyph">${KIND_MARK[it.kind].glyph}</span>
+          ${it.breakpoint ? '' : `<span class="impact-label">${esc(it.label)}</span>`}
+          <span class="impact-values">${esc(it.text)}</span>
+          ${it.pct != null && !it.breakpoint ? `<span class="impact-pct">${fmtPct(it.pct)}</span>` : ''}
+        </span>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  function updateHeadHtml(version, extra = '') {
+    const meta = versionMeta(version);
+    return `
+      <div class="update-head">
+        <div>
+          <span class="update-version">${esc(version)}</span>
+          ${meta?.title ? `<span class="update-title">${esc(meta.title)}</span>` : ''}
+        </div>
+        <div class="update-meta">
+          ${meta?.date ? `<span>${esc(meta.date)}</span>` : ''}
+          ${meta?.kind === 'sheet' ? `<span>measured by ${esc(meta.author)}${meta.alsoPatched ? ', and stated in the patch notes' : ''}</span>` : ''}
+          ${meta?.url ? `<a href="${esc(meta.url)}" target="_blank" rel="noopener">patch notes ↗</a>` : ''}
+          ${extra}
+          <button class="update-close" type="button" aria-label="Close">✕</button>
+        </div>
+      </div>`;
+  }
+
   function renderChartDetail(weapon) {
     const mount = document.getElementById('wp-chart-detail');
     if (!mount) return;
     if (!expandedVersion) { mount.innerHTML = ''; return; }
 
-    const meta = versionMeta(expandedVersion);
     const landed = weapon.changes.filter(c => c.to_version === expandedVersion && c.type !== 'coverage');
+    const st = weaponWs.state;
 
     mount.innerHTML = `
       <div class="update-card">
-        <div class="update-head">
-          <div>
-            <span class="update-version">${esc(expandedVersion)}</span>
-            ${meta?.title ? `<span class="update-title">${esc(meta.title)}</span>` : ''}
-          </div>
-          <div class="update-meta">
-            ${meta?.date ? `<span>${esc(meta.date)}</span>` : ''}
-            ${meta?.kind === 'sheet' ? `<span>measured by ${esc(meta.author)}${meta.alsoPatched ? ', and stated in the patch notes' : ''}</span>` : ''}
-            ${meta?.url ? `<a href="${esc(meta.url)}" target="_blank" rel="noopener">patch notes ↗</a>` : ''}
-            <button class="update-close" type="button" aria-label="Close">✕</button>
-          </div>
-        </div>
+        ${updateHeadHtml(expandedVersion, st.mode === 'pct' && st.baseline !== expandedVersion
+          ? '<button class="wc-btn small update-baseline" type="button">Use as % baseline</button>' : '')}
         ${tallyRow(landed)}
+        ${impactHtml(weapon, expandedVersion)}
         <div class="update-body">
           ${landed.length
             ? landed.map(changeLine).join('')
@@ -1171,6 +1900,11 @@ function idealTTK(w, hp) {
       </div>`;
 
     mount.querySelector('.update-close')?.addEventListener('click', () => selectChartVersion(expandedVersion));
+    mount.querySelector('.update-baseline')?.addEventListener('click', () => {
+      st.baseline = expandedVersion;
+      weaponWs.draw();
+      syncWeaponHash();
+    });
   }
 
   // Counts by kind. Dev notes are excluded — they explain changes, they are not
@@ -1187,31 +1921,90 @@ function idealTTK(w, hp) {
     return chips.length ? `<div class="tally-row">${chips.join('')}</div>` : '';
   }
 
-  // ── Version chips + snapshot ─────────────────────────────────────
-  // Only the versions where something happened to THIS weapon get a chip. With
-  // 137 versions on record a full list is a wall, and a chip for a version that
-  // changed nothing snaps the chart to a point with nothing to read.
-  function renderVersionChips(weapon) {
-    const mount = document.getElementById('wp-versions');
-    const touched = orderedVersions().filter(v =>
-      weapon.snapshots[v] || weapon.changes.some(c => c.to_version === v && c.type !== 'coverage')
-    );
+  // ═════════════════════════════════════════════════════════════════
+  // COMPARE ON THE STATS PAGE
+  //
+  // The same workspace with no weapon fixed in place. Weapons come and go
+  // by ticking rows in the table below it, by the Add picker, or by the
+  // chips' ×, and all three stay in step.
+  // ═════════════════════════════════════════════════════════════════
+  let statsSelected = null;
 
-    mount.innerHTML = touched.map(version => {
-      const measured = !!weapon.snapshots[version];
-      return `<button class="vchip${version === expandedVersion ? ' active' : ''}${measured ? ' measured' : ''}"
-        type="button" data-version="${esc(version)}"
-        title="${measured ? 'Measured by a data sheet' : 'Stated in the patch notes'}">${esc(version)}</button>`;
+  const statsWs = createCompareWorkspace({
+    ids: { toolbar: 'sc-toolbar', legend: 'sc-legend', chart: 'sc-chart', exportSlot: 'sc-export-slot' },
+    primary: null,
+    isActive: () => currentRoute === 'stats' || currentRoute === 'compare',
+    selected: () => statsSelected,
+    onSelect: version => {
+      statsSelected = statsSelected === version ? null : version;
+      statsWs.draw();
+      syncStatsHash();
+      if (statsSelected) document.getElementById('sc-detail')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    },
+    onChange: () => syncStatsHash(),
+    onWeaponsChange: () => renderStatsTable(),
+    afterDraw: () => renderStatsCompareDetail(),
+    exportName: () => `compare-${statsWs.roster().map(r => r.id).join('-') || 'empty'}`,
+    emptyHtml: `<div class="empty-state compare-empty">
+      <div class="empty-icon">⇄</div>
+      <div class="empty-title">Pick weapons to compare</div>
+      <div class="empty-sub">Tick up to five rows in the table below, or use <strong>+ Add</strong>. Their stats are charted
+        against each other across every patch — and <strong>Field</strong> shades the rest of the pack behind them.</div>
+    </div>`,
+    legendHint: 'Tick more rows below to layer them in.'
+  });
+
+  function syncStatsHash() {
+    if (currentRoute !== 'stats' && currentRoute !== 'compare') return;
+    const params = statsWs.roster().length || currentRoute === 'compare'
+      ? [statsSelected || '-', statsWs.serialize()]
+      : [];
+    currentParams = params;
+    history.replaceState(null, '', hashFor(currentRoute, params));
+  }
+
+  function renderStatsCompare(params = []) {
+    loadTimeline().then(() => {
+      if (!timeline) return;
+      const cmpParam = params.find(p => p && p.includes('='));
+      const versionParam = params.find(p => p && !p.includes('=') && p !== '-');
+      if (cmpParam) statsWs.parse(cmpParam);
+      statsSelected = versionParam && orderedVersions().includes(versionParam) ? versionParam : null;
+      statsWs.draw();
+      statsWs.attachExport();
+      renderStatsTable();
+      syncStatsHash();
+    });
+  }
+
+  // Clicking a version on the shared chart opens what happened to each of
+  // the compared weapons there, side by side.
+  function renderStatsCompareDetail() {
+    const mount = document.getElementById('sc-detail');
+    if (!mount) return;
+    if (!statsSelected || !statsWs.roster().length) { mount.innerHTML = ''; return; }
+
+    const rows = statsWs.roster().map(({ id, slot }) => {
+      const w = timeline.weapons[id];
+      if (!w) return '';
+      const landed = w.changes.filter(c => c.to_version === statsSelected && c.type !== 'coverage');
+      return `<div class="compare-detail-row">
+        <div class="compare-detail-name">
+          <span class="wc-key s${slot}"></span>
+          <button class="weapon-link" type="button" data-weapon="${esc(id)}" title="Open ${esc(w.name)}'s history">${esc(w.name)}</button>
+          ${tallyRow(landed)}
+        </div>
+        ${landed.length
+          ? impactHtml(w, statsSelected, true) + landed.filter(c => c.type !== 'dev_note').map(changeLine).join('')
+          : '<div class="change-line coverage">No change in this version.</div>'}
+      </div>`;
     }).join('');
 
-    // Snapping to a version is the same act as clicking its marker, so it runs
-    // through the same path — the chart, the detail card and the ledger all
-    // follow one selection rather than three.
-    mount.querySelectorAll('.vchip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        activeVersion = chip.dataset.version;
-        selectChartVersion(chip.dataset.version, { scrollTo: 'chart' });
-      });
+    mount.innerHTML = `<div class="update-card">${updateHeadHtml(statsSelected)}<div class="update-body">${rows}</div></div>`;
+    mount.querySelector('.update-close')?.addEventListener('click', () => {
+      statsSelected = null;
+      statsWs.draw();
+      syncStatsHash();
     });
   }
 
@@ -1417,6 +2210,7 @@ function idealTTK(w, hp) {
           </summary>
           <div class="ledger-body">
             ${meta?.url ? `<a class="ledger-link" href="${esc(meta.url)}" target="_blank" rel="noopener">${esc(meta.title || 'Patch notes')} ↗</a>` : ''}
+            ${impactHtml(weapon, version, true)}
             ${list.map(changeLine).join('')}
             ${statBlock(weapon, version)}
           </div>
@@ -2368,7 +3162,10 @@ function idealTTK(w, hp) {
         panel facing one way, and that is the share of engagements it is assumed to be facing the
         right way for. Change it in the panel; it re-reads the same solved grid rather than re-running it.</p>` : ''}
 
-      <div class="sustain-section-title">Survival over time</div>
+      <div class="sustain-section-head">
+        <div class="sustain-section-title">Survival over time</div>
+        <div class="sustain-export-slot"></div>
+      </div>
       <div class="sustain-curves">${curvesHtml(ranked)}</div>
 
       <p class="sustain-note">
@@ -2381,6 +3178,45 @@ function idealTTK(w, hp) {
         dropped late to cover the end of a steal is a real play this grid cannot see,
         and a Mesh that is destroyed does not come back inside the window.
       </p>`;
+
+    const slot = mount.querySelector('.sustain-export-slot');
+    if (slot && typeof attachExportMenu === 'function') {
+      attachExportMenu(slot, {
+        name: `sustain-${sustainClass()}-${distance}m-${sustainAttackers}v1`,
+        title: () => ({
+          title: `Holding ${sustainWindow}s as ${sustainClass()} under ${squadWord}`,
+          subtitle: `Chance of still standing over time · ${distance}m · ${profile} aim · top ${Math.min(6, ranked.length)} kits`
+        }),
+        getSvg: () => mount.querySelector('.sustain-curves svg')?.cloneNode(true) || null,
+        getData: () => {
+          const rows = [];
+          ranked.forEach((kit, rank) => {
+            for (const row of kit.rows) {
+              row.survival.forEach((p, k) => rows.push({
+                kit: kit.label, kit_rank: rank + 1, attacker: row.attacker,
+                defender_class: sustainClass(), distance, profile, squad: sustainAttackers,
+                t: +(k * SUSTAIN_SAMPLE_STEP).toFixed(3), survival: +p.toFixed(6)
+              }));
+            }
+          });
+          return {
+            rows,
+            jsonData: ranked.flatMap((kit, rank) => kit.rows.map(row => ({
+              kit: kit.label, kit_rank: rank + 1, attacker: row.attacker,
+              survival: row.survival.map(p => +p.toFixed(6))
+            }))),
+            settings: {
+              defender_class: sustainClass(), hold_window: sustainWindow, distance, profile,
+              attackers: sustainAttackers, mesh_coverage: meshCoverage,
+              sample_step: SUSTAIN_SAMPLE_STEP, sample_max: SUSTAIN_SAMPLE_MAX,
+              kits: ranked.map(k => ({ label: k.label, ids: k.ids, hold: k.hold, theoretical: k.theoretical })),
+              dropped_shields: droppedNames,
+              run: window.LAST_RUN_SETTINGS_BY_MOUNT?.[mountId] || null
+            }
+          };
+        }
+      });
+    }
   }
 
   function rankingHtml(ranked, squadSizes) {
@@ -2478,15 +3314,20 @@ function idealTTK(w, hp) {
   }
 
   function curvesHtml(ranked) {
-    const W = 820, H = 300, PAD_L = 46, PAD_B = 34, PAD_T = 12, PAD_R = 12;
-    const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
+    // Six lines is the most that stays readable; the rest are in the table.
+    const shown = ranked.slice(0, 6);
+    // The legend sits under the axis in two columns. Inside the plot it
+    // landed on exactly the corner the curves start from — every kit is at
+    // 100% for the first seconds.
+    const LEGEND_ROW = 18, legendRows = Math.ceil(shown.length / 2);
+    const W = 820, PLOT_H = 300, PAD_L = 46, PAD_B = 34, PAD_T = 12, PAD_R = 12;
+    const H = PLOT_H + legendRows * LEGEND_ROW + 8;
+    const plotW = W - PAD_L - PAD_R, plotH = PLOT_H - PAD_T - PAD_B;
     const n = Math.round(SUSTAIN_SAMPLE_MAX / SUSTAIN_SAMPLE_STEP);
 
     const x = t => PAD_L + (t / SUSTAIN_SAMPLE_MAX) * plotW;
     const y = p => PAD_T + (1 - p) * plotH;
 
-    // Six lines is the most that stays readable; the rest are in the table.
-    const shown = ranked.slice(0, 6);
     const colours = ['#39d974', '#4a9eff', '#9d7fff', '#e08a1e', '#e84040', '#8b93a7'];
 
     const paths = shown.map((r, i) => {
@@ -2502,9 +3343,9 @@ function idealTTK(w, hp) {
     }).join('');
 
     const legend = shown.map((r, i) =>
-      `<g transform="translate(${PAD_L + 8},${PAD_T + 8 + i * 15})">
+      `<g transform="translate(${PAD_L + (i % 2) * (plotW / 2)},${PLOT_H + 4 + Math.floor(i / 2) * LEGEND_ROW})">
          <rect width="10" height="3" y="4" fill="${colours[i]}"/>
-         <text x="16" y="9" fill="#8b93a7" font-size="11" font-family="Share Tech Mono, monospace">${esc(r.label)}${r.theoretical ? ' ⚠' : ''}</text>
+         <text x="16" y="9" fill="#c3c8d4" font-size="12" font-family="Inter, system-ui, sans-serif">${esc(r.label)}${r.theoretical ? ' ⚠' : ''}</text>
        </g>`).join('');
 
     const gridY = [0, 0.25, 0.5, 0.75, 1].map(p =>
@@ -2513,13 +3354,13 @@ function idealTTK(w, hp) {
 
     const gridX = [0, 5, 10, 15, 20].map(t =>
       `<line x1="${x(t)}" y1="${PAD_T}" x2="${x(t)}" y2="${PAD_T + plotH}" stroke="#1e232e"/>
-       <text x="${x(t)}" y="${H - 12}" text-anchor="middle" fill="#8b93a7" font-size="11">${t}s</text>`).join('');
+       <text x="${x(t)}" y="${PLOT_H - 12}" text-anchor="middle" fill="#8b93a7" font-size="11">${t}s</text>`).join('');
 
     const marker = `
       <line x1="${x(sustainWindow)}" y1="${PAD_T}" x2="${x(sustainWindow)}" y2="${PAD_T + plotH}"
             stroke="#e84040" stroke-width="1.5" stroke-dasharray="4 3"/>
       <text x="${x(sustainWindow) + 5}" y="${PAD_T + 12}" fill="#e84040" font-size="11"
-            font-family="Share Tech Mono, monospace">${sustainWindow}s</text>`;
+            font-family="Inter, system-ui, sans-serif">${sustainWindow}s</text>`;
 
     return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img"
       aria-label="Probability of surviving over time, one line per heal stack">
@@ -2611,6 +3452,64 @@ function idealTTK(w, hp) {
     const picker = e.target.closest('.data-version-picker');
     if (picker) applyDataVersion(picker.value);
   });
+
+  // ── Pellet dispersion ──
+  // One page-wide setting with a copy of the control on each simulator view,
+  // kept in step the same way the data-version pickers are. The engine holds
+  // the live value (simulate.js configureDispersion); the meta and sustain
+  // pools copy it onto every job, so the workers see it too.
+  const DISPERSION_KEY = 'finals-sim:dispersion';
+
+  function renderDispersionControls() {
+    const d = currentDispersion();
+    document.querySelectorAll('.dispersion-toggle').forEach(el => { el.checked = d.enabled; });
+    document.querySelectorAll('.dispersion-angle').forEach(el => {
+      el.value = d.halfAngleDeg;
+      el.disabled = !d.enabled;
+    });
+    document.querySelectorAll('.dispersion-angle-v').forEach(el => {
+      el.textContent = `${Number(d.halfAngleDeg).toFixed(1)}°`;
+    });
+
+    // Where the cone stops fitting inside each class's hitbox — the range
+    // past which a shotgun starts losing pellets.
+    const tan = Math.tan(d.halfAngleDeg * Math.PI / 180);
+    const fullRange = cls => (HITBOX_RADIUS[cls] / tan).toFixed(1);
+    document.querySelectorAll('.dispersion-note').forEach(el => {
+      el.textContent = d.enabled
+        ? `Accuracy is the crosshair on target; the cone decides how much lands. Every pellet lands within ${fullRange('light')}m on a Light, ${fullRange('medium')}m on a Medium, ${fullRange('heavy')}m on a Heavy. One standard cone for every weapon: real spread is not published.`
+        : 'Off: accuracy is the chance the whole shot lands, as before.';
+    });
+  }
+
+  function setDispersion(changes) {
+    const next = configureDispersion({ ...currentDispersion(), ...changes });
+    try { localStorage.setItem(DISPERSION_KEY, JSON.stringify(next)); } catch { /* private mode */ }
+    renderDispersionControls();
+  }
+
+  try {
+    const saved = JSON.parse(localStorage.getItem(DISPERSION_KEY) || 'null');
+    if (saved && typeof saved === 'object') {
+      configureDispersion({
+        enabled: saved.enabled !== false,
+        halfAngleDeg: Number.isFinite(saved.halfAngleDeg) ? saved.halfAngleDeg : DEFAULT_DISPERSION.halfAngleDeg
+      });
+    }
+  } catch { /* unreadable or blocked storage: keep the default */ }
+
+  document.addEventListener('change', e => {
+    if (e.target.closest('.dispersion-toggle')) setDispersion({ enabled: e.target.checked });
+  });
+  document.addEventListener('input', e => {
+    if (e.target.closest('.dispersion-angle')) setDispersion({ halfAngleDeg: parseFloat(e.target.value) });
+  });
+  renderDispersionControls();
+
+  // The arena canvas draws in Share Tech Mono, which nothing else on the page
+  // uses any more — so the browser never fetches it on its own, and the
+  // canvas would fall back to a serif. Ask for it, then repaint.
+  document.fonts?.load('11px "Share Tech Mono"').then(() => { if (currentRoute === 'sim') redrawArena(); });
 
   renderStatsHead();
   initSidebarToggles();

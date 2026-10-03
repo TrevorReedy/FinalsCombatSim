@@ -7,6 +7,7 @@ weapon,field,value,note,kind
 ARN-220,,,"Decreased the length of the quick reload animation from 0.95s to 0.75s",buff
 ARN-220,,,"This is a small buff to the ARN, partially to boost its power but mostly aimed at making it feel a little less clunky.",dev
 Cerberus 12GA,body_dmg,110,"Decreased pellet count from 12 to 11, effectively lowering the max damage per shot (minus fire damage) from 120 to 110. Recorded as the per-shot total to match the sheets' column, as the note's own wording gives it.",
+Cerberus 12GA,pellets,11,"Decreased pellet count from 12 to 11.",
 Cerberus 12GA,,,"Updated pellet pattern to retain a similar coverage per shot, despite the removal of one pellet, meaning the weapon should retain a similar accuracy to before",soft
 Cerberus 12GA,,,"The Cerberus has been performing very well this season and we've decided we need to bring it back in line with other weapons. This small reduction in damage should help achieve that while still keeping the weapon viable.",dev
 FAMAS,dropoff_min,35,"Decreased damage falloff minimum range from 37.5m to 35m, giving the weapon a slightly shorter effective range",

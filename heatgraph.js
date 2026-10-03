@@ -359,6 +359,115 @@
     `;
   }
 
+  // ── Export ───────────────────────────────────────────────────────
+  // The table is HTML, so the picture is redrawn as SVG from the same view —
+  // same rows, same order, same colours — rather than screenshotted.
+  function heatSvg(view) {
+    const NS = 'http://www.w3.org/2000/svg';
+    const NAME_W = 210, CELL_W = 84, CELL_H = 46, HEAD_H = 30, LEGEND_H = 34;
+    const width = NAME_W + view.distances.length * CELL_W;
+    const height = LEGEND_H + HEAD_H + Math.max(1, view.rows.length) * CELL_H;
+    const css = name => getComputedStyle(document.body).getPropertyValue(name).trim();
+    const ink = css('--text') || '#f3f3f0', muted = css('--muted') || '#8b93a7';
+    const border = css('--border') || '#1e232e', surface = css('--surface') || '#0f1115';
+    const FONT = "Inter, system-ui, sans-serif";
+
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('xmlns', NS);
+    svg.setAttribute('width', width);
+    svg.setAttribute('height', height);
+    const add = (tag, attrs, text) => {
+      const n = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+      if (text != null) n.textContent = text;
+      svg.appendChild(n);
+      return n;
+    };
+
+    const defs = add('defs', {});
+    const grad = document.createElementNS(NS, 'linearGradient');
+    grad.setAttribute('id', 'heat-legend');
+    [['0%', 'rgb(220,70,70)'], ['50%', 'rgb(220,180,70)'], ['100%', 'rgb(70,210,70)']].forEach(([o, c]) => {
+      const st = document.createElementNS(NS, 'stop');
+      st.setAttribute('offset', o); st.setAttribute('stop-color', c);
+      grad.appendChild(st);
+    });
+    defs.appendChild(grad);
+    const hatch = document.createElementNS(NS, 'pattern');
+    hatch.setAttribute('id', 'heat-hatch');
+    hatch.setAttribute('width', 8); hatch.setAttribute('height', 8);
+    hatch.setAttribute('patternUnits', 'userSpaceOnUse');
+    hatch.setAttribute('patternTransform', 'rotate(45)');
+    const hl = document.createElementNS(NS, 'rect');
+    hl.setAttribute('width', 3); hl.setAttribute('height', 8); hl.setAttribute('fill', 'rgba(255,255,255,0.12)');
+    hatch.appendChild(hl);
+    defs.appendChild(hatch);
+
+    add('text', { x: 0, y: 16, fill: muted, 'font-family': FONT, 'font-size': 12 }, 'Low win rate');
+    add('rect', { x: 92, y: 6, width: width - 190, height: 12, fill: 'url(#heat-legend)', stroke: border });
+    add('text', { x: width, y: 16, fill: muted, 'font-family': FONT, 'font-size': 12, 'text-anchor': 'end' }, 'High win rate');
+
+    const top = LEGEND_H;
+    add('text', { x: 10, y: top + 20, fill: muted, 'font-family': FONT, 'font-size': 12, 'font-weight': 600 }, 'Defender');
+    view.distances.forEach((d, i) => add('text', {
+      x: NAME_W + i * CELL_W + CELL_W / 2, y: top + 20, fill: muted, 'font-family': FONT,
+      'font-size': 12, 'font-weight': 600, 'text-anchor': 'middle'
+    }, `${d}m`));
+
+    view.rows.forEach((row, r) => {
+      const y = top + HEAD_H + r * CELL_H;
+      add('rect', { x: 0, y, width: NAME_W, height: CELL_H, fill: surface, stroke: border });
+      add('text', { x: 10, y: y + 20, fill: ink, 'font-family': FONT, 'font-size': 13.5, 'font-weight': 700 }, row.defender);
+      add('text', { x: 10, y: y + 36, fill: muted, 'font-family': FONT, 'font-size': 11 }, String(row.class || ''));
+      row.cells.forEach((cell, c) => {
+        const x = NAME_W + c * CELL_W;
+        if (cell.winRate == null) {
+          add('rect', { x, y, width: CELL_W, height: CELL_H, fill: surface, stroke: border });
+          add('text', { x: x + CELL_W / 2, y: y + 28, fill: muted, 'font-family': FONT, 'font-size': 12, 'text-anchor': 'middle' }, '—');
+          return;
+        }
+        if (cell.timeoutRate != null && cell.timeoutRate > 0.5) {
+          add('rect', { x, y, width: CELL_W, height: CELL_H, fill: surface, stroke: border });
+          add('rect', { x, y, width: CELL_W, height: CELL_H, fill: 'url(#heat-hatch)' });
+          add('text', { x: x + CELL_W / 2, y: y + 27, fill: muted, 'font-family': FONT, 'font-size': 10.5, 'text-anchor': 'middle' }, 'stalemate');
+          return;
+        }
+        const fg = textColorForBg(cell.winRate);
+        add('rect', { x, y, width: CELL_W, height: CELL_H, fill: winRateColor(cell.winRate), stroke: border });
+        add('text', { x: x + CELL_W / 2, y: y + 21, fill: fg, 'font-family': FONT, 'font-size': 14, 'font-weight': 700, 'text-anchor': 'middle' },
+          `${(cell.winRate * 100).toFixed(1)}%`);
+        if (cell.avgAttackerTTK != null) {
+          add('text', { x: x + CELL_W / 2, y: y + 37, fill: fg, 'font-family': FONT, 'font-size': 11, 'text-anchor': 'middle' },
+            `${cell.avgAttackerTTK.toFixed(2)}s`);
+        }
+      });
+    });
+    return svg;
+  }
+
+  function heatData(view) {
+    const rows = view.results
+      .filter(r => !view.filters.profile || r.profile === view.filters.profile)
+      .map(r => ({
+        attacker: view.settings?.attacker ?? '',
+        defender: r.defender,
+        class: r.class,
+        distance: r.distance,
+        profile: r.profile,
+        defender_accuracy: r.defenderAcc,
+        defender_headshot: r.defenderHs,
+        win_rate: r.winRate,
+        loss_rate: r.lossRate,
+        tie_rate: r.tieRate,
+        timeout_rate: r.timeoutRate,
+        avg_attacker_ttk: r.avgAttackerTTK,
+        avg_defender_ttk: r.avgDefenderTTK,
+        method: r.method,
+        samples: r.samples
+      }));
+    return { rows, settings: { run: view.settings || null, filters: view.filters } };
+  }
+
   function renderHeatGraph(results, mountId = 'cross-table') {
     console.log("🔥 HeatGraph INIT");
     console.log("📦 Incoming results:", results?.length);
@@ -381,6 +490,7 @@
     console.log("🎯 Profiles:", profiles);
 
     const bodyId = 'heatgraph-body';
+    let currentView = null;
 
     function draw() {
       console.log("🎨 DRAW CALLED");
@@ -404,6 +514,14 @@
 
       const grouped = groupRows(filtered);
       const sortedGrouped = sortGroupedRows(grouped, distances, profileFilter, sortFilter);
+
+      currentView = {
+        distances,
+        rows: sortedGrouped,
+        results: filtered,
+        filters: { class: classFilter, profile: profileFilter, sort: sortFilter },
+        settings: window.LAST_RUN_SETTINGS_BY_MOUNT?.[mountId] || null
+      };
 
       console.log("📊 Grouped defenders:", sortedGrouped.length);
 
@@ -606,6 +724,8 @@
               <option value="alpha">Alphabetical</option>
             </select>
           </div>
+
+          <div class="heat-export-slot"></div>
         </div>
 
         <div id="${bodyId}"></div>
@@ -617,6 +737,28 @@
     document.getElementById('heat-sort-filter')?.addEventListener('change', draw);
 
     draw();
+
+    const slot = mount.querySelector('.heat-export-slot');
+    if (slot && typeof attachExportMenu === 'function') {
+      attachExportMenu(slot, {
+        name: () => `meta-heatmap-${currentView?.settings?.attacker || 'run'}`,
+        title: () => {
+          const st = currentView?.settings;
+          const f = currentView?.filters || {};
+          return {
+            title: `${st?.attacker || 'Attacker'} vs the field — win rate by range`,
+            subtitle: [
+              st ? `${Math.round(st.attacker_accuracy * 100)}% accuracy, ${Math.round(st.attacker_headshot * 100)}% headshots` : null,
+              f.class ? `${f.class} defenders` : 'all classes',
+              f.profile ? `${f.profile} opponents` : 'averaged over every opponent profile',
+              st ? (st.method === 'sampled' ? `sampled, seed ${st.seed}` : 'solved exactly') : null
+            ].filter(Boolean).join(' · ')
+          };
+        },
+        getSvg: () => (currentView ? heatSvg(currentView) : null),
+        getData: () => (currentView ? heatData(currentView) : { rows: [], settings: {} })
+      });
+    }
   }
 
   window.renderHeatGraph = renderHeatGraph;

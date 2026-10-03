@@ -126,6 +126,10 @@ function shieldFrom(resolvedShields, distance) {
 }
 
 function runJob(job) {
+  // The dispersion setting lives on the page, and this worker has its own
+  // copy of simulate.js, so every job brings the value it was built under.
+  configureDispersion(job.dispersion);
+
   if (job.kind === 'sustain') return runSustainJob(job);
 
   const {
@@ -225,6 +229,8 @@ function runSustainJob(job) {
     sampleSeconds,
     attackerCount: attackerCount || 1,
     attackerStagger: attackerStagger || 'spread',
+    pelletHitChanceFor: pelletHitChance,
+    defenderClass,
     // Solving only as far as the longest window anyone can ask about is
     // what keeps this affordable: it cuts the shot count and the heal that
     // can pile up, which are the two things that size the solver's grid.
@@ -270,7 +276,10 @@ function resolveExactly(s) {
     maxTime: MAX_TIME,
     dropMultiplierFor: dropMult,
     p1Heal: s.attackerHeal,
-    p2Heal: s.defenderHeal
+    p2Heal: s.defenderHeal,
+    pelletHitChanceFor: pelletHitChance,
+    p1Class: s.attacker.class,
+    p2Class: s.defender.class
   });
 
   return {

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-08",
+  "generated": "2026-10-02",
   "generator": "tools/ingest_weapon_history.mjs",
   "note": "Derived from community data sheets only. Every event is a measured difference between two sheets, not a quoted patch note. verified_against_patch_notes is false everywhere until the patch-note source is ingested; a change with no matching patch note is a shadow-change candidate.",
   "versions": [
@@ -179,6 +179,11 @@
       "weapons_matched": 46,
       "fields_compared": 187,
       "mismatches": []
+    },
+    "pellet_counts": {
+      "versions_checked": 49,
+      "mismatches": [],
+      "note": "Pellet counts come from the launch count in tools/weapon_aliases.json plus `pellets` rows in csv/patches. A mismatch is a version whose body damage does not divide into whole pellets at that count."
     }
   },
   "events": [

@@ -46,7 +46,7 @@ const distance = +(process.argv[3] || 15);
 const profileName = process.argv[4] || 'Average';
 const holdWindow = +(process.argv[5] || 7);
 const attackerStagger = process.argv[6] || 'spread';
-const version = '11.4.1';
+const version = '11.10.0';
 const SQUAD_SIZES = [1, 2, 3];
 
 const PROFILES = {

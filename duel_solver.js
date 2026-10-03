@@ -22,9 +22,12 @@
 // having to build one.
 //
 // ── When this does NOT apply ──────────────────────────────────────
-// It assumes every shot from a given weapon deals the same damage, which
-// holds whenever the range is fixed — the Meta Simulation's stand-and-fight
-// grid. Once fighters move, damage changes shot by shot and the state
+// It assumes every shot from a given weapon has the same damage profile —
+// the same chances of the same outcomes — which holds whenever the range is
+// fixed. Pellet dispersion keeps to that: how much of a cone lands depends
+// on range alone, so a shotgun shot is still the same roll every time, just
+// with one outcome per pellet count instead of two. The Meta Simulation's
+// stand-and-fight grid always has a fixed range. Once fighters move, damage changes shot by shot and the state
 // space stops collapsing. `canSolveExactly()` reports that, and callers
 // fall back to the seeded sampling engine in simulate.js.
 //
@@ -172,9 +175,19 @@ function buildFiringSchedule(stats, firstShotDelay, maxTime) {
  * so its hit chance collapses to zero here instead of becoming a special
  * case in the solver.
  */
-function describeShot(stats, accuracy, headshotChance, distance, dropMultiplier) {
+function describeShot(stats, accuracy, headshotChance, distance, dropMultiplier, pelletChance = 1) {
   const withinReach = !stats.isMelee || distance <= (stats.dropMin ?? 2.0);
-  const hitChance = withinReach ? accuracy : 0;
+
+  // A cone that fully covers the target is no cone at all, so dispersion
+  // only ever enters below full coverage — and with it off, or up close,
+  // every shot is described exactly as it always was.
+  if (stats.pellets > 1 && pelletChance < 1) {
+    return describePelletShot(stats, withinReach ? accuracy : 0, dropMultiplier, pelletChance);
+  }
+
+  // A single bullet out of a cone (the minigun) either lands or it does not,
+  // so the cone just scales the hit chance.
+  const hitChance = withinReach ? accuracy * pelletChance : 0;
 
   // No headshot bonus means no headshots, matching the engine's
   // `headDmg > bodyDmg` guard. When they are equal every hit is simply a
@@ -189,6 +202,51 @@ function describeShot(stats, accuracy, headshotChance, distance, dropMultiplier)
     bodyDamage: stats.bodyDmg * dropMultiplier,
     headDamage: stats.headDmg * dropMultiplier
   };
+}
+
+/**
+ * A shotgun shot whose cone overruns the target: on target with
+ * `hitChance`, then Binomial(pellets, pelletChance) pellets connect. One
+ * outcome per pellet count, and landing none is folded into the miss.
+ *
+ * No headshots — no sheet records a shotgun head multiplier, which is the
+ * same `headDmg > bodyDmg` guard the single-bullet path applies.
+ */
+function describePelletShot(stats, hitChance, dropMultiplier, pelletChance) {
+  const n = stats.pellets;
+  const pelletDamage = stats.bodyDmg * dropMultiplier / n;
+
+  const outcomes = [];
+  let landed = 0;
+  let ways = 1;                                   // n choose k, built up as k rises
+  for (let k = 1; k <= n; k++) {
+    ways = ways * (n - k + 1) / k;
+    const chance = hitChance * ways * pelletChance ** k * (1 - pelletChance) ** (n - k);
+    if (chance <= 0) continue;
+    outcomes.push({ chance, damage: k * pelletDamage, pellets: k });
+    landed += chance;
+  }
+
+  return {
+    missChance: 1 - landed,
+    bodyChance: 0,
+    headChance: 0,
+    // The whole shot landing, which is what the reachability bounds need.
+    bodyDamage: n * pelletDamage,
+    headDamage: n * pelletDamage,
+    pellets: n,
+    pelletDamage,
+    outcomes
+  };
+}
+
+/** Every way a shot can land, with its damage. Misses are not included. */
+function shotOutcomes(shot) {
+  if (shot.outcomes) return shot.outcomes;
+  const outcomes = [];
+  if (shot.bodyChance > 0) outcomes.push({ chance: shot.bodyChance, damage: shot.bodyDamage });
+  if (shot.headChance > 0) outcomes.push({ chance: shot.headChance, damage: shot.headDamage });
+  return outcomes;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -337,8 +395,13 @@ function rationalApproximation(x, limit) {
  */
 function bucketPlanFor(targetHealth, shot) {
   const damages = [];
-  if (shot.bodyChance > 0 && shot.bodyDamage > 0) damages.push(shot.bodyDamage);
-  if (shot.headChance > 0 && shot.headDamage > 0) damages.push(shot.headDamage);
+  // Every outcome of a dispersed shotgun is a whole number of pellets, so
+  // the pellet is already the common measure the search below looks for.
+  if (shot.pelletDamage > 0) damages.push(shot.pelletDamage);
+  else {
+    if (shot.bodyChance > 0 && shot.bodyDamage > 0) damages.push(shot.bodyDamage);
+    if (shot.headChance > 0 && shot.headDamage > 0) damages.push(shot.headDamage);
+  }
 
   const smallest = damages.length ? Math.min(...damages) : targetHealth;
   // The fallback unit is fine enough that rounding a shot to it moves the
@@ -390,11 +453,10 @@ function solveKillTimesByHealth(shotTimes, shot, targetHealth, healSchedule, shi
 
   // Damage is fixed for the whole walk, so its bucket split is worked out
   // once rather than per shot.
-  const bodyDrop = shot.bodyDamage / step;
-  const headDrop = shot.headDamage / step;
-  const outcomes = [];
-  if (shot.bodyChance > 0) outcomes.push({ chance: shot.bodyChance, damage: shot.bodyDamage, whole: Math.floor(bodyDrop), frac: bodyDrop - Math.floor(bodyDrop) });
-  if (shot.headChance > 0) outcomes.push({ chance: shot.headChance, damage: shot.headDamage, whole: Math.floor(headDrop), frac: headDrop - Math.floor(headDrop) });
+  const outcomes = shotOutcomes(shot).map(o => {
+    const drop = o.damage / step;
+    return { chance: o.chance, damage: o.damage, whole: Math.floor(drop), frac: drop - Math.floor(drop) };
+  });
 
   // ── The shield layer ──
   // Its own grid, in whole shots rather than in health. See the block
@@ -618,6 +680,12 @@ function solveKillTimes(shotTimes, shot, targetHealth, healSchedule = null, shie
     return solveKillTimesByHealth(shotTimes, shot, targetHealth, healSchedule, shield);
   }
 
+  // A dispersed shotgun has a dozen outcomes rather than two, but every one
+  // is a whole number of pellets — so one count replaces the two.
+  if (shot.pelletDamage > 0) {
+    return solveKillTimesByPellets(shotTimes, shot, targetHealth);
+  }
+
   // ── Phase 1: the grid of hit combinations the target survives ──
   // A cell is worth tracking only while its damage is under the kill
   // threshold, and the threshold is at its highest on the last shot. It is
@@ -688,6 +756,55 @@ function solveKillTimes(shotTimes, shot, targetHealth, healSchedule = null, shie
   }
 
   // ── Phase 4: anyone still standing when the shots run out never dies ──
+  return { kills, neverKillsProbability: Math.max(0, aliveProbability) };
+}
+
+/**
+ * The hit-count walk for a dispersed shotgun, indexed by pellets landed.
+ *
+ * Damage done is pellets × pellet damage whatever order they arrived in,
+ * so the pellet total describes the fight as completely as body and head
+ * counts do for a rifle — and it is exact, with no health grid to round
+ * onto. Unhealed only; healing goes to solveKillTimesByHealth as usual.
+ */
+function solveKillTimesByPellets(shotTimes, shot, targetHealth) {
+  // Fewest pellets that kill, checked against the same `>=` the other
+  // walks use rather than trusting a division to land on the right side.
+  let pelletsToKill = Math.max(1, Math.ceil(targetHealth / shot.pelletDamage));
+  while (pelletsToKill > 1 && (pelletsToKill - 1) * shot.pelletDamage >= targetHealth) pelletsToKill--;
+  while (pelletsToKill * shot.pelletDamage < targetHealth) pelletsToKill++;
+
+  let alive = new Float64Array(pelletsToKill);
+  let next = new Float64Array(pelletsToKill);
+  alive[0] = 1;
+
+  const kills = [];
+  let aliveProbability = 1;
+
+  for (const atMicros of shotTimes) {
+    if (aliveProbability < NEGLIGIBLE_PROBABILITY) break;
+
+    next.fill(0);
+    let killedByThisShot = 0;
+
+    for (let landed = 0; landed < pelletsToKill; landed++) {
+      const mass = alive[landed];
+      if (mass === 0) continue;
+      if (shot.missChance > 0) next[landed] += mass * shot.missChance;
+      for (const outcome of shot.outcomes) {
+        const total = landed + outcome.pellets;
+        if (total >= pelletsToKill) killedByThisShot += mass * outcome.chance;
+        else next[total] += mass * outcome.chance;
+      }
+    }
+
+    if (killedByThisShot > 0) {
+      kills.push({ atMicros, probability: killedByThisShot });
+      aliveProbability -= killedByThisShot;
+    }
+    const swap = alive; alive = next; next = swap;
+  }
+
   return { kills, neverKillsProbability: Math.max(0, aliveProbability) };
 }
 
@@ -870,17 +987,24 @@ function solveDuelExactly({
   dropMultiplierFor,
   // Schedules for the healing each fighter is receiving, from
   // heals.js combineSchedules(). Null means nobody is healing them.
-  p1Heal = null, p2Heal = null
+  p1Heal = null, p2Heal = null,
+  // simulate.js pelletHitChance(stats, distance, targetClass), and the class
+  // each fighter is, which sets how big a target they make. Injected like
+  // dropMultiplierFor; left out, every shot lands whole as it always did.
+  pelletHitChanceFor = null, p1Class = null, p2Class = null
 }) {
   // First-shot advantage: whoever does not open waits one of their own
   // shot intervals, exactly as the engine sets it up.
   const p1FirstShotDelay = firstShot === 'p2' ? p1Stats.interval : 0;
   const p2FirstShotDelay = firstShot === 'p1' ? p2Stats.interval : 0;
 
+  const coneFor = (stats, targetClass) => pelletHitChanceFor
+    ? pelletHitChanceFor(stats, distance, targetClass) : 1;
+
   const p1Shot = describeShot(p1Stats, p1Accuracy, p1HeadshotChance,
-    distance, dropMultiplierFor(distance, p1Stats));
+    distance, dropMultiplierFor(distance, p1Stats), coneFor(p1Stats, p2Class));
   const p2Shot = describeShot(p2Stats, p2Accuracy, p2HeadshotChance,
-    distance, dropMultiplierFor(distance, p2Stats));
+    distance, dropMultiplierFor(distance, p2Stats), coneFor(p2Stats, p1Class));
 
   // P1 is shooting at P2, so it is P2's healing that raises the bar.
   const p1Kills = solveKillTimes(
@@ -963,10 +1087,14 @@ function solveSurvival({
   // How many attackers are firing on the defender. They all carry
   // `attackerStats` and shoot to `attackerAccuracy` — see
   // buildVolleySchedule for why that restriction is load-bearing.
-  attackerCount = 1, attackerStagger = 'spread'
+  attackerCount = 1, attackerStagger = 'spread',
+  // See solveDuelExactly. The defender's class sizes the target the cone
+  // has to hit.
+  pelletHitChanceFor = null, defenderClass = null
 }) {
   const shot = describeShot(attackerStats, attackerAccuracy, attackerHeadshotChance,
-    distance, dropMultiplierFor(distance, attackerStats));
+    distance, dropMultiplierFor(distance, attackerStats),
+    pelletHitChanceFor ? pelletHitChanceFor(attackerStats, distance, defenderClass) : 1);
 
   const killResult = solveKillTimes(
     buildVolleySchedule(attackerStats, attackerCount, attackerStagger, maxTime),
@@ -996,7 +1124,7 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     MICROS_PER_SECOND, toMicros, toSeconds,
     buildFiringSchedule, buildVolleySchedule, describeShot, killIsReachable,
-    solveKillTimes, solveKillTimesByHealth,
+    solveKillTimes, solveKillTimesByHealth, solveKillTimesByPellets,
     scanAgainst, compareKillTimes, warnIfProbabilitiesDoNotSumToOne,
     canSolveExactly, solveDuelExactly,
     survivalCurve, solveSurvival

@@ -9,7 +9,12 @@
     "(8.3.0 spelling where it exists, else the 10.0.0 spelling title-cased) and class.",
     "'ignore' lists sheet artefacts that are section headers, not weapons.",
     "",
-    "Judgement calls are recorded in 'notes' and surface in the generated history."
+    "Judgement calls are recorded in 'notes' and surface in the generated history.",
+    "",
+    "'pellets' on a shotgun is its pellet count BEFORE any patch on record changed it. No",
+    "sheet records pellets, so later counts come only from `pellets` rows in csv/patches,",
+    "and the ingest checks that body damage divides into whole pellets at every version.",
+    "'dispersion' marks a single-bullet weapon that fires from a cone (the minigun)."
   ],
 
   "weapons": {
@@ -20,10 +25,10 @@
     "dagger_alt_backstab":    { "name": "Dagger (Alt. w/ Backstab)", "class": "light", "type": "Melee" },
     "lh1":                    { "name": "LH1",                       "class": "light", "type": "Marksman Rifle", "firing_mode": "Single" },
     "m11":                    { "name": "M11",                       "class": "light", "type": "SMG", "firing_mode": "Automatic" },
-    "m26_matter":             { "name": "M26 Matter",                "class": "light", "type": "Shotgun", "firing_mode": "Single" },
+    "m26_matter":             { "name": "M26 Matter",                "class": "light", "type": "Shotgun", "firing_mode": "Single", "pellets": 11 },
     "recurve_bow_uncharged":  { "name": "Recurve Bow (uncharged)",   "class": "light", "type": "Miscellaneous", "firing_mode": "Single" },
     "recurve_bow_charged":    { "name": "Recurve Bow (charged)",     "class": "light", "type": "Marksman Rifle", "firing_mode": "Single" },
-    "sh1900":                 { "name": "SH1900",                    "class": "light", "type": "Shotgun", "firing_mode": "Single" },
+    "sh1900":                 { "name": "SH1900",                    "class": "light", "type": "Shotgun", "firing_mode": "Single", "pellets": 15 },
     "sr_84":                  { "name": "SR-84",                     "class": "light", "type": "Marksman Rifle", "firing_mode": "Single" },
     "sword":                  { "name": "Sword",                     "class": "light", "type": "Melee" },
     "sword_alt":              { "name": "Sword (Alt.)",              "class": "light", "type": "Melee" },
@@ -34,7 +39,7 @@
 
     "akm":                    { "name": "AKM",                       "class": "medium", "type": "Assault Rifle", "firing_mode": "Automatic" },
     "cb_01_repeater":         { "name": "CB-01 Repeater",            "class": "medium", "type": "Marksman Rifle", "firing_mode": "Single" },
-    "cerberus_12ga":          { "name": "Cerberus 12GA",             "class": "medium", "type": "Shotgun", "firing_mode": "Single" },
+    "cerberus_12ga":          { "name": "Cerberus 12GA",             "class": "medium", "type": "Shotgun", "firing_mode": "Single", "pellets": 12 },
     "chimera_xb":             { "name": "Chimera-XB",                "class": "medium", "type": "Marksman Rifle", "firing_mode": "Single" },
     "cl_40_direct":           { "name": "CL-40 (Direct)",            "class": "medium", "type": "Grenade Launcher", "firing_mode": "Single" },
     "cl_40_splash":           { "name": "CL-40 (Splash)",            "class": "medium", "type": "Grenade Launcher", "firing_mode": "Single" },
@@ -42,7 +47,7 @@
     "dual_blades_alt":        { "name": "Dual Blades (Cross Slash)", "class": "medium", "type": "Melee" },
     "famas":                { "name": "FAMAS",                     "class": "medium", "type": "Assault Rifle", "firing_mode": "Burst" },
     "fcar":                   { "name": "FCAR",                      "class": "medium", "type": "Assault Rifle", "firing_mode": "Automatic" },
-    "model_1887":             { "name": "Model 1887",                "class": "medium", "type": "Shotgun", "firing_mode": "Single" },
+    "model_1887":             { "name": "Model 1887",                "class": "medium", "type": "Shotgun", "firing_mode": "Single", "pellets": 8 },
     "p90":                    { "name": "P90",                       "class": "medium", "type": "SMG", "firing_mode": "Automatic" },
     "pike_556":               { "name": "Pike .556",                 "class": "medium", "type": "Marksman Rifle", "firing_mode": "Single" },
     "r_357":                  { "name": "R.357",                     "class": "medium", "type": "Handgun", "firing_mode": "Single" },
@@ -54,10 +59,10 @@
     "flamethrower":           { "name": "Flamethrower",              "class": "heavy", "type": "Melee", "firing_mode": "Automatic" },
     "ks_23":                  { "name": "KS-23",                     "class": "heavy", "type": "Shotgun", "firing_mode": "Single" },
     "lewis_gun":              { "name": "Lewis Gun",                 "class": "heavy", "type": "LMG", "firing_mode": "Automatic" },
-    "m134_minigun":           { "name": "M134 Minigun",              "class": "heavy", "type": "HMG", "firing_mode": "Automatic" },
+    "m134_minigun":           { "name": "M134 Minigun",              "class": "heavy", "type": "HMG", "firing_mode": "Automatic", "dispersion": true },
     "m60":                    { "name": "M60",                       "class": "heavy", "type": "LMG", "firing_mode": "Automatic" },
     "mgl_32":                 { "name": "MGL-32",                    "class": "heavy", "type": "Grenade Launcher", "firing_mode": "Single" },
-    "sa1216":                 { "name": "SA1216",                    "class": "heavy", "type": "Shotgun", "firing_mode": "Automatic/Single" },
+    "sa1216":                 { "name": "SA1216",                    "class": "heavy", "type": "Shotgun", "firing_mode": "Automatic/Single", "pellets": 13 },
     "shak_50":                { "name": "ShAK-50",                   "class": "heavy", "type": "Assault Rifle", "firing_mode": "Automatic" },
     "sledgehammer":           { "name": "Sledgehammer",              "class": "heavy", "type": "Melee" },
     "sledgehammer_alt":       { "name": "Sledgehammer (Alt.)",       "class": "heavy", "type": "Melee" },
@@ -136,7 +141,7 @@
   ],
 
   "runtime_defaults": {
-    "_comment": "Values no community sheet records but the engine needs. `reach` is a hard range limit, stored the way weapons_s10_cleaned.json encodes it (dropoff min = max, 100% reduction). Applied only when the selected version's sheet gives no dropoff data for that weapon.",
+    "_comment": "Values no community sheet records but the engine needs. `reach` is a hard range limit, stored the way weapons_s10_cleaned.json encodes it (dropoff min = max, and 0 damage kept past it). Applied only when the selected version's sheet gives no dropoff data for that weapon.",
     "dagger": {"reach": 3},
     "dagger_alt": {"reach": 3},
     "dagger_alt_backstab": {"reach": 3},
