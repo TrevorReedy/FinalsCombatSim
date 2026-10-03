@@ -1,0 +1,61 @@
+weapon,field,value,note,kind
+AKM,body_dmg,21,"Increased damage from 20 to 21",
+AKM,,,"While the AKM remains ever popular, it performs slightly worse than weapons like the FAMAS and FCAR, which it should perform more similarly to. This nudge to damage should bring it more in line with those weapons.",dev
+
+ARN-220,rpm,750,"Increased fire rate from 725 RPM to 750 RPM",
+ARN-220,empty_reload,2.7,"Decreased the length of the empty reload from 2.73s to 2.7s. The note's prior value of 2.73s does not match the 11.3.0 sheet, which measures 2.8s; both figures are recorded rather than picking a side.",
+ARN-220,,,"Decreased the length of the quick reload animation from 0.75s to 0.66s. Kept as a note rather than a tactical_reload value: the sheets measure the ARN's tactical reload at 2.45s, so a 0.75s reload ANIMATION is a different quantity and writing 0.66s into that column would misstate the weapon.",buff
+ARN-220,,,"The ARN has lagged behind the XP-54 and M11 for quite some time and we'd like to see it on a more equal footing with those weapons. These changes aim to get it to that place.",dev
+
+BFR Titan,dropoff_reduction,70,"Increased damage falloff multiplier from 0.65 to 0.7, increasing the weapon's damage at range. Recorded as a retained-damage percentage to match the sheets' column.",
+BFR Titan,,,"The BFR has been outperformed by some other Heavy weapons at distances in which it should really dominate. Alongside other changes, this change is aimed at making sure the BFR can have its own niche.",dev
+
+Cerberus 12GA,body_dmg,117,"Increased damage per pellet from 8 to 9, increasing a full shot's damage from 104 to 117. Converted to the sheets' unit: the sheets record total per-shot damage across all 13 pellets, so 9 x 13 = 117.",
+Cerberus 12GA,,,"The Cerberus was more negatively impacted by the reduction in damage to Quick Melee than some other weapons. This change to damage aims to offset that.",dev
+
+Dagger,body_dmg,49,"Primary Attack: increased base damage from 42 to 49",
+Dagger,head_dmg,70,"Primary Attack: increased damage for precise hits from 60 to 70",
+Dagger,,,"Primary Attack: lunge duration increased from 0.15s to 0.22s to help the lunge reach its intended range. Lunge duration is not a field this schema holds — only lunge distance is.",buff
+Dagger (Alt.),body_dmg,85,"Secondary Attack - Backstab: increased base damage from 75 to 85. The stated prior matches the 75 the 10.0.0 sheet measured, which the 11.0.0 rework left alone.",
+Dagger (Alt.),,,"Secondary Attack - Backstab: lunge duration increased from 0.22s to 0.32s to help the lunge reach its intended range",buff
+Dagger (Alt. w/ Backstab),body_dmg,340,"Increased backstab damage from 337 to 340. The stated prior of 337 is 11.0.0's arithmetic — 75 base x the 4.5 multiplier that patch set, which it stated as a multiplier and never as a damage value — so the last recorded value here is instead the 320 the 10.0.0 sheet measured under the older 4.26 multiplier. 340 is 85 x 4, so the multiplier came down as the base went up.",
+Dagger,,,"We're continuing to further dial in our melee weapons during Season 11, as we get data back and better learn how the new melee system performs in the wild. These new damage values and lunge distance changes should help the Dagger to get onto targets more reliably, but we know there's still more to be done. We're working towards some networking improvements for lunge attacks that should really help, but they're a little while away yet. In the meantime, we think these balance changes will improve the overall experience.",dev
+
+Dual Blades,precision_angle,12,"Primary Attack: increased precision zone angle from 9 to 12 degrees, making it easier to land precise strikes",
+Dual Blades,,,"We feel the two strike animation on the Dual Blades frequently causes the second strike to miss precise hits and only land normal ones. To address this, we're broadening the precision zone angle for the Dual Blades, making precise hits easier to land, especially for that second strike animation.",dev
+Dual Blades,,,"Fixed an issue where not all Primary Attacks dealt a consistent 25 environmental damage",soft
+Dual Blades,,,"Deflect: fixed an issue where the wide angle deflect blocked damage completely instead of the center of the deflect radius. The imprecise deflect damage modifier went from 0% to 20% and the precise one from 20% to 0%, so a centred deflect now blocks fully and a wide one lets 20% through — the reverse of how it behaved.",soft
+
+KS-23,dropoff_reduction,58,"Decreased damage falloff multiplier from 0.675 to 0.58, meaning the weapon does less damage at range. Recorded as a retained-damage percentage to match the sheets' column.",
+KS-23,dropoff_min,12,"Decreased damage fall-off start range from 18m to 12m, reducing its effective range",
+KS-23,dropoff_max,22,"Decreased damage fall-off end range from 23m to 22m, reducing its effective range",
+KS-23,,,"As mentioned under the BFR change, the KS-23 is one weapon that performs well at ranges where the BFR should really dominate. These changes bring in the KS-23's effective range a bit, making it less effective at medium to long range.",dev
+
+M11,,,"Increased recoil when firing from the hip by approximately 75%",nerf
+M11,,,"Increased recoil when aiming down sights (ADS) by approximately 25%",nerf
+M11,,,"Increased bullet dispersion in ADS, in most movement stances by 25%",nerf
+M11,,,"Increased bullet dispersion in ADS when airborne by 120%",nerf
+M11,,,"The M11 outperforms its intended range by quite a bit, cannibalizing combat distances that the ARN and XP-54 should really be a best fit for. These changes bring in that effective range for the M11 by making it less precise. It should be noted, while some of the numbers look very large, because they are percentage changes on the current very low levels of M11 recoil and dispersion they won't actually feel quite as crazy as they look.",dev
+
+Recurve Bow (charged),body_dmg,126,"Increased damage per shot, when the bow is at max draw, from 124 to 126. The base damage per shot remains at 60, which lives on the Recurve Bow (uncharged) row and is not moved by this patch.",
+Recurve Bow (charged),,,"Similar to the Cerberus, the Quick Melee damage change from 40 to 25 negatively impacted the Bow more than most. This damage change offsets that lost power and opens up Quick Melee combos versus Lights for Bow users again.",dev
+
+Riot Shield,body_dmg,60,"Primary Attack: increased base damage from 58 to 60. The records have 57 here, set by 11.0.0, against the note's stated prior of 58 — 11.3.0 raised the precise-hit value by 1 and appears to have raised the base by 1 without saying so. Both figures recorded rather than picking a side.",
+Riot Shield,head_dmg,86,"Primary Attack: increased damage for precise hits from 83 to 86",
+Riot Shield,lunge_distance,5,"Primary Attack: increased lunge distance from 4.25m to 5m — ""this change was originally listed in 11.3 but didn't work correctly. This has now been fixed."" The value therefore matches the 11.3.0 record and moves nothing: this is the patch where it takes effect.",soft
+Riot Shield (Shield Bash),body_dmg,50,"Secondary Attack - Shield Bash: increased damage from 40 to 50",
+Riot Shield (Shield Bash),,,"Secondary Attack - Shield Bash: increased environmental damage from 50 to 100. Environmental damage is not a stat any data sheet records.",buff
+Riot Shield (Shield Bash),,,"Secondary Attack - Shield Bash: lunge duration increased from 0.5s to 0.6s to extend the lunge's max distance slightly",buff
+Riot Shield,,,"As part of the changes to the Riot Shield in 11.0, we very deliberately moved the weapon towards the style of play we originally planned for it, that is a role as a hyper defensive weapon capable of controlling interior spaces, anchoring for their team and playing around deployables such as Turrets and Mines. The way the Riot Shield was sometimes used in the past, to charge enemies while blocking bullets from one side then flailing in with a flurry of hits, was never an intended role for the weapon and felt too similar to the Dual Blades and the Light's Sword. The Riot Shield was not supposed to be about running up a high kill count, so much as being a powerful defender of objectives and we moved to reinforce that style with 11.0. That said, we feel the changes in 11.0 did reduce the Riot Shield's ability to get eliminations a little too much and since then, while its win rate has looked very healthy, its elimination rate has been slightly too low. These changes nudge its combat potential back up slightly, while hopefully still making the weapon a 'stall first' tool more than anything else.",dev
+Riot Shield,,,"Fixed an issue where visual and sound effects would not be displayed from a third-person perspective when impacting the Riot Shield",soft
+
+Spear,lunge_distance,6.5,"Primary Attacks: increased lunge distance from 5m to 6.5m",
+Spear,,,"Primary Attacks: increased the size of the weapon's damage sweep box by 60%, making it slightly easier to land hits",buff
+Spear,,,"Primary Attacks: increased lunge duration from 0.3s to 0.45s to help the lunge reach its intended range",buff
+Spear,,,"Primary Attacks: increased lunge speed by 50% to improve the chances of the lunge catching up to fast-moving targets",buff
+Spear (Alt.),,,"Secondary Attack - Spin Attack: increased the delay before the secondary attack resets back to the first attack in the sequence from 0.2s to 0.35s. This is a small quality of life change to make it easier to keep the sequence going if the player hit a target.",buff
+Spear,,,"Similar to the Dagger, we're still trying to get the Spear to a place where it feels reliable to close in on targets. Like the Dagger, the Spear will also benefit greatly from the networking changes we're currently investigating for melee combat, but in the short term these buffs to lunges should help it perform more reliably.",dev
+
+XP-54,,,"Updated the recoil curve to prevent an issue where the recoil pattern would jump down if the player emptied the whole magazine in a single burst",soft
+XP-54,,,"Decreased bullet dispersion in ADS when airborne by 8%",buff
+XP-54,,,"These are a couple of small quality of life changes for the XP-54, dealing with a couple of edge cases that didn't feel very consistent but should feel much better now.",dev
